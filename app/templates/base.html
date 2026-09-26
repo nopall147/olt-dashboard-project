@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}OLT Monitoring System{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans text-slate-800 bg-[#f4f6f9]">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shrink-0">
+        <div class="px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-6">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center">C</div>
+                    <span class="text-xl font-bold tracking-tight text-blue-900">CONFIG</span>
+                </div>
+                <div class="relative">
+                    <input type="text" placeholder="Search ONU" class="w-72 pl-9 pr-4 py-1.5 text-xs bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                    <svg class="w-4 h-4 absolute left-3 top-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <span class="text-xs text-slate-500 font-medium">NOC Operator</span>
+                <div class="w-8 h-8 rounded-full bg-slate-300"></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+        <!-- Sidebar Navigation (Sama persis di semua halaman) -->
+        <aside class="w-60 bg-white border-r border-slate-200 p-4 space-y-6 shrink-0 overflow-y-auto">
+            <nav class="space-y-1">
+                <a href="/" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                    <span>Dashboard</span>
+                </a>
+                
+                <div class="pt-4 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3">FTTH Management</div>
+                
+                <a href="/add-onu" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    <span>Add ONU</span>
+                </a>
+                <a href="/all-onus" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                    <span>All ONUs</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Area Konten Dinamis -->
+        <main class="flex-1 p-8 space-y-6 overflow-y-auto">
+            {% block content %}
+            <!-- Isi halaman disuntikkan ke sini -->
+            {% endblock %}
+        </main>
+    </div>
+
+</body>
+</html>

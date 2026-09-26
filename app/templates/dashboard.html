@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - OLT Monitoring System{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<div>
+    <h1 class="text-xl font-bold text-slate-900">Dashboard</h1>
+    <p class="text-xs text-slate-400">Home / Monitoring</p>
+</div>
+
+<!-- TOP STATS CARDS SUMMARY -->
+<div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <!-- OLTs Total -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+            <p class="text-xs text-slate-500 font-semibold">OLTs</p>
+            <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.total_olts }}</h2>
+            <p class="text-[10px] text-blue-600 font-medium mt-1">📡 {{ data.summary.total_onus }} ONUs Total</p>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold">⚡</div>
+    </div>
+
+    <!-- Online Summary -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between relative overflow-hidden">
+        <div>
+            <div class="flex items-center space-x-2">
+                <p class="text-xs text-slate-500 font-semibold">Online</p>
+                <span class="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">{{ data.summary.online_percentage }}%</span>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.online_onus }}</h2>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">✓</div>
+    </div>
+
+    <!-- DyingGasp Summary -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+            <div class="flex items-center space-x-2">
+                <p class="text-xs text-slate-500 font-semibold">DyingGasp</p>
+                <span class="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold">{{ data.summary.dying_gasp_percentage }}%</span>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.dying_gasp_onus }}</h2>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center font-bold">🔌</div>
+    </div>
+
+    <!-- LOS Summary -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+            <div class="flex items-center space-x-2">
+                <p class="text-xs text-slate-500 font-semibold">LOS</p>
+                <span class="text-[9px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold">{{ data.summary.los_percentage }}%</span>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.los_onus }}</h2>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center font-bold">📡</div>
+    </div>
+
+    <!-- Offline Summary -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+            <div class="flex items-center space-x-2">
+                <p class="text-xs text-slate-500 font-semibold">Offline</p>
+                <span class="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold">{{ data.summary.offline_percentage }}%</span>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.offline_onus }}</h2>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold">!</div>
+    </div>
+</div>
+
+<!-- INDIVIDUAL OLT CARDS LIST -->
+<div class="space-y-6">
+    {% for olt in data.olts %}
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-5 flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 gap-4">
+            <div class="flex items-center space-x-4">
+                <div class="w-16 h-12 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-xs font-mono text-slate-400">
+                    [OLT]
+                </div>
+                <div>
+                    <div class="flex items-center space-x-3">
+                        <h3 class="text-base font-bold text-slate-900">{{ olt.name }}</h3>
+                        <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">● {{ olt.status }}</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-0.5">{{ olt.model }} &bull; Uptime: {{ olt.uptime }}</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-6 text-center text-xs">
+                <div>
+                    <p class="text-slate-400 text-[10px]">Total Fan</p>
+                    <p class="font-bold text-slate-700">{{ olt.total_fan }}</p>
+                </div>
+                <div>
+                    <p class="text-slate-400 text-[10px]">Total ONU</p>
+                    <p class="font-bold text-slate-900">{{ olt.total_onu }}</p>
+                </div>
+                <div>
+                    <p class="text-emerald-600 text-[10px]">Online</p>
+                    <p class="font-bold text-emerald-600">{{ olt.online }}</p>
+                </div>
+                <div>
+                    <p class="text-rose-500 text-[10px]">LOS</p>
+                    <p class="font-bold text-rose-500">{{ olt.los }}</p>
+                </div>
+                <div>
+                    <p class="text-amber-500 text-[10px]">Dyinggaps</p>
+                    <p class="font-bold text-amber-500">{{ olt.dying_gasp }}</p>
+                </div>
+                <div>
+                    <p class="text-slate-500 text-[10px]">Offline</p>
+                    <p class="font-bold text-slate-600">{{ olt.offline }}</p>
+                </div>
+                <div class="pl-4 border-l border-slate-200">
+                    <span class="text-xs font-semibold text-slate-600">🌡️ {{ olt.temperature }}°C</span>
+                </div>
+            </div>
+        </div>
+
+        {% if olt.fans %}
+        <div class="p-4 bg-slate-50/50 grid grid-cols-1 md:grid-cols-3 gap-4">
+            {% for fan in olt.fans %}
+            <div class="bg-white p-3 rounded-lg border border-slate-200 flex items-center justify-between">
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs font-bold text-slate-700">🌀 {{ fan.name }}</span>
+                        <span class="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.2 rounded font-bold">● {{ fan.status }}</span>
+                    </div>
+                    <p class="text-xs font-bold text-slate-900 mt-1">{{ fan.rpm }} <span class="text-[10px] text-slate-400 font-normal">RPM</span></p>
+                    <p class="text-[10px] text-slate-400">Speed Level: {{ fan.level }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

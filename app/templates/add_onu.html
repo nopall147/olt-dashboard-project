@@ -70,7 +70,8 @@
                         </div>
                         <select id="olt_ip" name="olt_ip" class="input-field" required>
                             <option value="" disabled selected>Pilih OLT...</option>
-                            {% for olt in olts %}<option value="{{ olt.ip_address }}">{{ olt.name }} ({{ olt.ip_address }})</option>{% endfor %}
+                            <option value="192.168.100.20">OLT-C300 Tajur (192.168.100.20)</option>
+                            <option value="10.10.10.5">OLT-C320 Anggraeni (10.10.10.5)</option>
                         </select>
                     </div>
                 </div>

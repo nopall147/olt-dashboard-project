@@ -1,115 +1,23 @@
 import os
 import re
 import json
-import urllib.parse
 from datetime import datetime, timezone, timedelta
-from pathlib import Path
 from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
-from sqlalchemy import create_engine, Column, Integer, BigInteger, String, Float, DateTime, Text, ForeignKey
-from sqlalchemy.orm import declarative_base, sessionmaker, Session
-from sqlalchemy.sql import func
-from sqlalchemy import func as sql_func, text
+from sqlalchemy.orm import Session
+from sqlalchemy.sql import func as sql_func
+from sqlalchemy import text
+from app.database import Base, SessionLocal, engine, get_db
+from app.models import ActivityEvent, OLTConfig, OLTSettingEntry, OnuDevice, TrafficSample
 from app.services.olt_client import env_key, read_onu_traffic, read_pon_snapshot, read_pon_state, snmp_community, telnet_password, test_snmp, test_telnet
 from app.services.netmiko_driver import deploy_onu_zte
 
-def load_local_environment():
-    env_path = Path(__file__).resolve().parent.parent / ".env"
-    if not env_path.is_file():
-        return
-    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key, value = key.strip(), value.strip().strip("\"'")
-        if key:
-            os.environ.setdefault(key, value)
-
-load_local_environment()
-
-# ==============================================================================
-# 1. KONFIGURASI DATABASE POSTGRESQL (SQLALCHEMY)
-# ==============================================================================
-DB_USER = "postgres"
-DB_PASS = urllib.parse.quote_plus("caca2008")
-DB_HOST = "127.0.0.1"  # Menggunakan IP loopback eksplisit untuk menghindari isu IPv6
-DB_PORT = "5432"
-DB_NAME = "olt_db"
-
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
-
-# Model Tabel ONU Terdaftar di PostgreSQL
-class OnuDevice(Base):
-    __tablename__ = "onu_devices"
-
-    id = Column(Integer, primary_key=True, index=True)
-    olt_name = Column(String(100), nullable=False)
-    customer_name = Column(String(150), nullable=False)
-    description = Column(String(255), nullable=True)
-    pppoe_user = Column(String(100), nullable=True)
-    gpon_port = Column(String(50), nullable=False)       # Contoh: 1/2/1:8
-    status = Column(String(50), default="Online")        # Online, DyingGasp, LOS, Offline
-    rx_olt = Column(Float, nullable=True)                # Nilai Rx OLT (dBm)
-    rx_onu = Column(Float, nullable=True)                # Nilai Rx ONU (dBm)
-    sn_mac = Column(String(50), unique=True, index=True) # Serial Number ONU
-    actual_type = Column(String(50), default="GPON")     # Model ONU
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-class ActivityEvent(Base):
-    __tablename__ = "activity_events"
-    id = Column(Integer, primary_key=True, index=True)
-    event_type = Column(String(40), nullable=False, index=True)
-    username = Column(String(100), nullable=False, default="system")
-    information = Column(Text, nullable=False)
-    client_ip = Column(String(64), nullable=True)
-    user_agent = Column(String(255), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-
-class OLTConfig(Base):
-    __tablename__ = "olt_configs"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=False, unique=True)
-    ip_address = Column(String(64), nullable=False, unique=True)
-    model = Column(String(80), nullable=False, default="ZTE C300/C320")
-    snmp_version = Column(String(10), nullable=False, default="2c")
-    snmp_port = Column(Integer, nullable=False, default=161)
-    telnet_username = Column(String(100), nullable=False, default="admin")
-    telnet_port = Column(Integer, nullable=False, default=23)
-    snmp_status = Column(String(40), nullable=True)
-    telnet_status = Column(String(40), nullable=True)
-    last_connection_test = Column(DateTime(timezone=True), nullable=True)
-    system_description = Column(Text, nullable=True)
-    uptime_ticks = Column(BigInteger, nullable=True)
-    last_sync = Column(DateTime(timezone=True), nullable=True)
-
-class TrafficSample(Base):
-    __tablename__ = "traffic_samples"
-    id = Column(Integer, primary_key=True, index=True)
-    onu_id = Column(Integer, ForeignKey("onu_devices.id", ondelete="CASCADE"), nullable=False, index=True)
-    download_bps = Column(Float, nullable=False)
-    upload_bps = Column(Float, nullable=False)
-    sampled_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-
-class OLTSettingEntry(Base):
-    __tablename__ = "olt_setting_entries"
-    id = Column(Integer, primary_key=True, index=True)
-    category = Column(String(40), nullable=False, index=True)
-    name = Column(String(120), nullable=False)
-    data_json = Column(Text, nullable=False, default="{}")
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-
-# Buat tabel otomatis jika belum ada di database
+# Models dan database didefinisikan bersama di app.models dan app.database.
 Base.metadata.create_all(bind=engine)
 
-# create_all() tidak menambahkan kolom baru pada tabel yang sudah ada.
-# Migrasi idempotent ini menjaga database lama tetap kompatibel tanpa menghapus data.
+# Migrasi idempotent untuk skema lama.
 with engine.begin() as connection:
     connection.execute(text("ALTER TABLE olt_configs ADD COLUMN IF NOT EXISTS snmp_status VARCHAR(40)"))
     connection.execute(text("ALTER TABLE olt_configs ADD COLUMN IF NOT EXISTS telnet_status VARCHAR(40)"))
@@ -138,15 +46,6 @@ def format_uptime(ticks):
     minutes = seconds // 60
     return f"{days} hari {hours} jam {minutes} menit"
 
-# Dependency untuk inject Session DB ke FastAPI Routes
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 # ==============================================================================
 # 2. INISIALISASI FASTAPI & TEMPLATES
 # ==============================================================================
@@ -172,7 +71,7 @@ def olt_management_page(request: Request, db: Session = Depends(get_db)):
     for config in configs:
         name = config.name
         devices = db.query(OnuDevice).filter(OnuDevice.olt_name == name).all()
-        olts.append({"id": config.id, "name": name, "model": config.model, "system_description": config.system_description or "Belum tersedia di database", "ip": config.ip_address, "temperature": "—", "total_onu": len(devices), "uptime": format_uptime(config.uptime_ticks), "synced": config.last_sync.strftime("%Y-%m-%d %H:%M:%S") if config.last_sync else "Belum pernah", "telnet": config.telnet_status or "Belum tersedia di database", "snmp": config.snmp_status or "Belum tersedia di database", "online": sum(x.status == "Online" for x in devices), "los": sum(x.status == "LOS" for x in devices), "dying_gasp": sum(x.status == "DyingGasp" for x in devices), "offline": sum(x.status == "Offline" for x in devices)})
+        olts.append({"id": config.id, "name": name, "model": config.model, "ip": config.ip_address, "temperature": "—", "total_onu": len(devices), "uptime": format_uptime(config.uptime_ticks), "synced": config.last_sync.strftime("%Y-%m-%d %H:%M:%S") if config.last_sync else "Belum pernah", "telnet": config.telnet_status or "Belum dites", "snmp": config.snmp_status or "Belum dites", "snmp_version": config.snmp_version, "snmp_port": config.snmp_port, "telnet_username": config.telnet_username, "telnet_port": config.telnet_port, "env_suffix": env_key(name), "tested": config.last_connection_test.strftime("%Y-%m-%d %H:%M:%S") if config.last_connection_test else "Belum dites", "online": sum(x.status == "Online" for x in devices), "los": sum(x.status == "LOS" for x in devices), "dying_gasp": sum(x.status == "DyingGasp" for x in devices), "offline": sum(x.status == "Offline" for x in devices)})
     return templates.TemplateResponse(request=request, name="olt_management.html", context={"olts": olts})
 
 @app.get("/olt-settings", response_class=HTMLResponse)
@@ -384,8 +283,8 @@ def api_sync_olt(olt_id: int, request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=502, detail=f"Sinkronisasi gagal: {exc}")
     return {"status": "success", "updated": updated, "interfaces": len(pon_interfaces), "synced_at": olt.last_sync.isoformat()}
 
-@app.get("/api/traffic/{onu_id}")
-def api_onu_traffic(onu_id: int, db: Session = Depends(get_db)):
+@app.post("/api/traffic/{onu_id}/sample")
+def api_sample_onu_traffic(onu_id: int, db: Session = Depends(get_db)):
     onu = db.query(OnuDevice).filter(OnuDevice.id == onu_id).first()
     if not onu:
         raise HTTPException(status_code=404, detail="ONU tidak ditemukan")
@@ -402,11 +301,14 @@ def api_onu_traffic(onu_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=502, detail="Output trafik OLT tidak dikenali; periksa format CLI firmware.")
     def to_bps(match):
         return float(match.group(1)) * {"": 8, "K": 8_000, "M": 8_000_000, "G": 8_000_000_000}[match.group(2).upper()]
-    sample = TrafficSample(onu_id=onu.id, download_bps=to_bps(input_match), upload_bps=to_bps(output_match))
+    # On the ONU interface, input is traffic arriving from the subscriber (upload);
+    # output is traffic sent toward the subscriber (download).
+    sample = TrafficSample(onu_id=onu.id, download_bps=to_bps(output_match), upload_bps=to_bps(input_match))
     db.add(sample)
     db.query(TrafficSample).filter(TrafficSample.sampled_at < datetime.now(timezone.utc) - timedelta(days=30)).delete(synchronize_session=False)
     db.commit()
-    return {"onu_id": onu.id, "sampled_at": datetime.now(timezone.utc).isoformat(), "download_bps": sample.download_bps, "upload_bps": sample.upload_bps}
+    db.refresh(sample)
+    return {"onu_id": onu.id, "sampled_at": sample.sampled_at.isoformat(), "download_bps": sample.download_bps, "upload_bps": sample.upload_bps}
 
 @app.get("/api/traffic/{onu_id}/history")
 def api_onu_traffic_history(onu_id: int, period: str = "3H", db: Session = Depends(get_db)):

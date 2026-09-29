@@ -3,242 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        {% block title %}
-        OLT Monitoring System
-        {% endblock %}
-    </title>
+    <title>{% block title %}OLT Monitoring System{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet"
-    >
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
+        body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
 <body class="h-full flex flex-col font-sans text-slate-800 bg-[#f4f6f9]">
-    <!-- ========================================================= -->
-    <!-- TOP NAVIGATION BAR -->
-    <!-- ========================================================= -->
+
+    <!-- Top Navigation Bar -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shrink-0">
         <div class="px-6 h-16 flex items-center justify-between">
-            <!-- LEFT -->
             <div class="flex items-center space-x-6">
-                <!-- LOGO -->
                 <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center">
-                        C
-                    </div>
-                    <span class="text-xl font-bold tracking-tight text-blue-900">
-                        CONFIG
-                    </span>
+                    <div class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center">C</div>
+                    <span class="text-xl font-bold tracking-tight text-blue-900">CONFIG</span>
                 </div>
-
-                <!-- SEARCH -->
                 <div class="relative">
-                    <input
-                        type="text"
-                        placeholder="Search ONU"
-                        class="w-72 pl-9 pr-4 py-1.5 text-xs bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                    >
-                    <svg
-                        class="w-4 h-4 absolute left-3 top-2 text-slate-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                        ></path>
-                    </svg>
+                    <input type="text" placeholder="Search ONU" class="w-72 pl-9 pr-4 py-1.5 text-xs bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                    <svg class="w-4 h-4 absolute left-3 top-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
             </div>
 
-            <!-- RIGHT -->
-            <div class="flex items-center gap-3">
-                <a href="/all-onus?status=DyingGasp" title="ONU DyingGasp" class="relative p-2 rounded-lg text-amber-600 hover:bg-amber-50" aria-label="ONU DyingGasp">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v10m6.36-6.36a9 9 0 1 1-12.72 0"/></svg>
-                    <span data-status-count="DyingGasp" class="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-amber-500 text-white text-[9px] font-bold text-center">{{ nav_counts.dying_gasp|default(0) }}</span>
-                </a>
-                <a href="/all-onus?status=LOS" title="ONU LOS" class="relative p-2 rounded-lg text-rose-600 hover:bg-rose-50" aria-label="ONU LOS">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18M8.5 8.5a5 5 0 0 0 7 7M5.6 5.6a9 9 0 0 0 12.8 12.8M12 2v2m0 16v2"/></svg>
-                    <span data-status-count="LOS" class="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold text-center">{{ nav_counts.los|default(0) }}</span>
-                </a>
-                <a href="/unregistered-onus" title="ONU belum dikonfigurasi" class="p-2 rounded-lg text-blue-600 hover:bg-blue-50" aria-label="ONU belum dikonfigurasi">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l2.2 11.2a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 2-1.6L22 7H6m6-4v6m-3-3h6"/></svg>
-                </a>
-                <div class="relative" id="profileMenu">
-                    <button type="button" id="profileButton" aria-expanded="false" class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50">
-                        <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">HP</span>
-                        <span class="text-left"><span class="block text-xs text-slate-700 font-semibold">Hari Pujianto</span><span class="block text-[10px] text-slate-400">Full</span></span>
-                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
-                    </button>
-                    <div id="profileDropdown" class="hidden absolute right-0 mt-2 w-44 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-50">
-                        <a href="/my-account" class="block px-4 py-2 text-xs text-slate-700 hover:bg-slate-50">My Account</a>
-                        <a href="/sign-out" class="block px-4 py-2 text-xs text-slate-700 hover:bg-slate-50">Sign Out</a>
-                    </div>
-                </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-xs text-slate-500 font-medium">NOC Operator</span>
+                <div class="w-8 h-8 rounded-full bg-slate-300"></div>
             </div>
         </div>
     </header>
 
-    <!-- ========================================================= -->
-    <!-- MAIN LAYOUT -->
-    <!-- ========================================================= -->
     <div class="flex-1 flex overflow-hidden">
-        <!-- ===================================================== -->
-        <!-- SIDEBAR -->
-        <!-- ===================================================== -->
-        <aside
-            class="w-60 bg-white border-r border-slate-200 p-4 space-y-6 shrink-0 overflow-y-auto"
-        >
+        <!-- Sidebar Navigation (Sama persis di semua halaman) -->
+        <aside class="w-60 bg-white border-r border-slate-200 p-4 space-y-6 shrink-0 overflow-y-auto">
             <nav class="space-y-1">
-                <!-- DASHBOARD -->
-                <a
-                    href="/"
-                    class="flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs transition"
-                >
-                    <svg
-                        class="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z
-                               M14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z
-                               M4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z
-                               M14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                        ></path>
-                    </svg>
-                    <span>
-                        Dashboard
-                    </span>
+                <a href="/" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                    <span>Dashboard</span>
                 </a>
-                <!-- SECTION -->
-                <div class="pt-4 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3">
-                    FTTH Management
-                </div>
-                <!-- ================================================= -->
-                <!-- UNREGISTERED ONU -->
-                <!-- ================================================= -->
-                <a
-                    href="/unregistered-onus"
-                    class="flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs transition"
-                >
-                    <svg
-                        class="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M12 4v16M4 12h16"
-                        ></path>
-                    </svg>
-                    <span>
-                        Add ONU
-                    </span>
+                
+                <div class="pt-4 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3">FTTH Management</div>
+                
+                <a href="/add-onu" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    <span>Add ONU</span>
                 </a>
-                <!-- ================================================= -->
-                <!-- ALL ONUS -->
-                <!-- ================================================= -->
-                <a
-                    href="/all-onus"
-                    class="flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs transition"
-                >
-                    <svg
-                        class="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M4 6h16M4 10h16M4 14h16M4 18h16"
-                        ></path>
-
-                    </svg>
-
-                    <span>
-                        All ONUs
-                    </span>
-
+                <a href="/all-onus" class="flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                    <span>All ONUs</span>
                 </a>
-
             </nav>
-
-            <div class="border-t border-slate-100 pt-4">
-                <p class="px-3 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">OLT & System</p>
-                <a href="/olt-management" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs"><span>▤</span> OLT Management</a>
-                <a href="/olt-settings" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs"><span>⚙</span> OLT Settings</a>
-                <a href="/activity-log" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs"><span>◷</span> Activity Log</a>
-                <a href="/graphs" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs"><span>▥</span> Graphs</a>
-                <p class="px-3 mt-4 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Template</p>
-                <a href="/tr069-profiles" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs"><span>▧</span> TR-069 Profile</a>
-            </div>
-
         </aside>
 
-
-
-        <!-- ===================================================== -->
-        <!-- CONTENT -->
-        <!-- ===================================================== -->
-
+        <!-- Area Konten Dinamis -->
         <main class="flex-1 p-8 space-y-6 overflow-y-auto">
-
             {% block content %}
-
-            <!-- Isi halaman akan dimasukkan di sini -->
-
+            <!-- Isi halaman disuntikkan ke sini -->
             {% endblock %}
-
         </main>
-
-
     </div>
 
 </body>
-<script>
-    const profileButton = document.getElementById('profileButton');
-    const profileDropdown = document.getElementById('profileDropdown');
-    profileButton?.addEventListener('click', () => {
-        const isOpen = !profileDropdown.classList.toggle('hidden');
-        profileButton.setAttribute('aria-expanded', String(isOpen));
-    });
-    document.addEventListener('click', (event) => {
-        if (!event.target.closest('#profileMenu')) {
-            profileDropdown?.classList.add('hidden');
-            profileButton?.setAttribute('aria-expanded', 'false');
-        }
-    });
-    async function refreshStatusBadges() {
-        try {
-            const response = await fetch('/api/summary');
-            if (!response.ok) return;
-            const counts = await response.json();
-            document.querySelectorAll('[data-status-count]').forEach((badge) => {
-                badge.textContent = counts[badge.dataset.statusCount] ?? 0;
-            });
-        } catch (error) { /* badges retain their server-rendered values */ }
-    }
-    setInterval(refreshStatusBadges, 15000);
-</script>
-
 </html>

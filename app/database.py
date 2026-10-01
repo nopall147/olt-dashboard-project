@@ -5,11 +5,19 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 
-# 1. Definisikan fungsi pembaca .env terlebih dahulu
 def _load_local_environment():
-    env_path = Path(__file__).resolve().parent.parent / ".env"
-    if not env_path.is_file():
+    # Menemukan root direktori project secara dinamis
+    current_dir = Path(__file__).resolve().parent
+    env_path = None
+    for parent in [current_dir] + list(current_dir.parents):
+        candidate = parent / ".env"
+        if candidate.is_file():
+            env_path = candidate
+            break
+
+    if not env_path or not env_path.is_file():
         return
+
     for raw_line in env_path.read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()
         if not line or line.startswith("#") or "=" not in line:
@@ -18,18 +26,17 @@ def _load_local_environment():
         os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
 
 
-# 2. Panggil fungsinya setelah didefinisikan
 _load_local_environment()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL tidak ditemukan. Pastikan sudah mengisi file .env dengan URL Neon!")
 
-# Pastikan menggunakan driver psycopg2 jika skema bawaan URL adalah postgresql://
+# Pastikan driver menggunakan postgresql+psycopg2 jika memakai format URL postgresql://
 if DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
 
-# Konfigurasi engine dengan pre-ping agar koneksi Neon tidak putus di tengah jalan
+# Konfigurasi engine dengan pre-ping dan recycle untuk mencegah koneksi serverless Neon drop
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,

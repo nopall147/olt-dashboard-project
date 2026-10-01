@@ -1,6 +1,6 @@
 import random
 
-# Buat saklar simulasi (True jika sedang koding di rumah/lokal, False jika sudah colok OLT asli)
+# Saklar simulasi: True jika coding offline/di rumah, False jika terhubung ke OLT fisik
 USE_MOCK_DATA = True 
 
 def fetch_onu_realtime(olt_ip, slot, port, onu_id):

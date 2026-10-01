@@ -1,22 +1,230 @@
 {% extends "base.html" %}
 {% block title %}OLT Management - OLT Monitoring System{% endblock %}
 {% block content %}
-<div class="flex items-start justify-between"><div><h1 class="text-2xl font-bold text-slate-900">OLT Management</h1><p class="mt-1 text-xs text-slate-500">Simpan profil OLT, uji koneksi SNMP/Telnet, dan sinkronkan status ONU melalui Telnet.</p></div><button onclick="openOltDialog('add')" class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white">+ Add OLT</button></div>
-<div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
-{% for olt in olts %}<section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-<div class="flex justify-between border-b border-slate-100 p-5"><div><div class="flex items-center gap-2"><h2 class="font-bold text-slate-900">{{ olt.name }}</h2><span class="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">{{ olt.model }}</span></div><p class="mt-1 text-xs text-slate-500">{{ olt.ip }} · SNMP v2c:{{ olt.snmp_port }} · Telnet:{{ olt.telnet_port }}</p></div><button onclick='openOltDialog("edit", {{ olt.id }}, {{ olt.name|tojson }}, {{ olt.ip|tojson }}, {{ olt.model|tojson }}, {{ olt.snmp_version|tojson }}, {{ olt.snmp_port }}, {{ olt.telnet_username|tojson }}, {{ olt.telnet_port }})' class="text-xs font-semibold text-blue-600">Edit</button></div>
-<div class="grid grid-cols-2 gap-3 p-5 sm:grid-cols-4"><div class="rounded-lg bg-slate-50 p-3"><p class="text-[10px] text-slate-500">Temperature</p><b>{{ olt.temperature }}°C</b></div><div class="rounded-lg bg-slate-50 p-3"><p class="text-[10px] text-slate-500">Total ONU</p><b>{{ olt.total_onu }}</b></div><div class="rounded-lg bg-slate-50 p-3"><p class="text-[10px] text-slate-500">Uptime</p><b class="text-xs">{{ olt.uptime }}</b></div><div class="rounded-lg bg-slate-50 p-3"><p class="text-[10px] text-slate-500">Last Sync</p><b class="text-xs">{{ olt.synced }}</b></div></div>
-<div class="flex flex-wrap gap-x-5 gap-y-2 px-5 pb-4 text-xs"><span>ONU online <b class="text-emerald-600">{{ olt.online }}</b></span><span>LOS <b class="text-rose-600">{{ olt.los }}</b></span><span>DyingGasp <b class="text-amber-600">{{ olt.dying_gasp }}</b></span><span>Offline <b>{{ olt.offline }}</b></span></div>
-<div class="flex flex-wrap gap-x-5 gap-y-2 px-5 pb-3 text-xs"><span>SNMP: <b class="{{ 'text-emerald-600' if olt.snmp == 'Connected' else 'text-rose-600' if olt.snmp == 'Failed' else 'text-slate-500' }}">{{ olt.snmp }}</b></span><span>Telnet: <b class="{{ 'text-emerald-600' if olt.telnet == 'Connected' else 'text-rose-600' if olt.telnet == 'Failed' else 'text-slate-500' }}">{{ olt.telnet }}</b></span><span class="text-slate-400">Tes terakhir: {{ olt.tested }}</span></div>
-<div class="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-5 py-3"><span class="text-[10px] text-slate-500">Env: OLT_{{ olt.env_suffix }}_SNMP_COMMUNITY ? OLT_{{ olt.env_suffix }}_TELNET_PASSWORD</span><button onclick="confirmSync({{ olt.id }}, {{ olt.name|tojson }}, this)" class="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold hover:bg-blue-50">Sync Now</button></div>
-</section>{% endfor %}</div>
-<p class="text-[11px] text-slate-500">Isi community SNMP dan password Telnet masing-masing OLT di <code>.env</code>. Secret tidak disimpan di database. Setelah menyimpan OLT baru, buka Edit lalu pilih Test Connection.</p>
-<dialog id="oltDialog" class="w-full max-w-xl rounded-xl p-0 shadow-2xl backdrop:bg-slate-900/30"><form id="oltForm" class="space-y-4 p-6"><div class="flex justify-between"><div><h2 id="dialogTitle" class="text-lg font-bold">Edit OLT</h2><p class="text-xs text-slate-500">Password Telnet dan SNMP community hanya dibaca dari environment.</p></div><button type="button" onclick="oltDialog.close()" class="text-xl text-slate-400">×</button></div><div class="grid grid-cols-2 gap-3"><label class="text-xs">Name<input id="oltName" required class="mt-1 w-full rounded-lg border px-3 py-2"></label><label class="text-xs">IP Address<input id="oltIp" required class="mt-1 w-full rounded-lg border px-3 py-2"></label><label class="text-xs">Type<select id="oltModel" class="mt-1 w-full rounded-lg border px-3 py-2"><option>ZTE C300/C320</option><option>ZTE C300</option><option>ZTE C320</option></select></label><label class="text-xs">SNMP Version<select id="snmpVersion" class="mt-1 w-full rounded-lg border px-3 py-2"><option value="2c">v2c</option></select></label><label class="text-xs">SNMP Port<input id="snmpPort" type="number" min="1" max="65535" value="161" class="mt-1 w-full rounded-lg border px-3 py-2"></label><label class="text-xs">Telnet Username<input id="telnetUsername" value="admin" class="mt-1 w-full rounded-lg border px-3 py-2"></label><label class="text-xs">Telnet Port<input id="telnetPort" type="number" min="1" max="65535" value="23" class="mt-1 w-full rounded-lg border px-3 py-2"></label></div><div id="connectionMessage" class="hidden rounded-lg p-3 text-xs"></div><div class="flex justify-between pt-2"><button id="testConnectionButton" type="button" onclick="testOltConnection()" class="rounded-lg border px-3 py-2 text-xs">Test Connection</button><div class="flex gap-2"><button type="button" onclick="oltDialog.close()" class="rounded-lg border px-3 py-2 text-xs">Close</button><button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white">Save</button></div></div></form></dialog>
+<div class="flex items-start justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900">OLT Management</h1>
+        <p class="mt-1 text-xs text-slate-500">Simpan profil OLT, uji koneksi SNMP/Telnet, dan sinkronkan status ONU melalui Telnet.</p>
+    </div>
+    <button type="button" onclick="openOltDialog('add')" class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition">+ Add OLT</button>
+</div>
+
+<div class="grid grid-cols-1 gap-5 xl:grid-cols-2 mt-6">
+{% for olt in olts %}
+<section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div class="flex justify-between border-b border-slate-100 p-5">
+        <div>
+            <div class="flex items-center gap-2">
+                <h2 class="font-bold text-slate-900">{{ olt.name }}</h2>
+                <span class="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">{{ olt.model }}</span>
+            </div>
+            <p class="mt-1 text-xs text-slate-500">{{ olt.ip }} · SNMP v2c:{{ olt.snmp_port }} · Telnet:{{ olt.telnet_port }}</p>
+        </div>
+        <button type="button"
+            class="text-xs font-semibold text-blue-600 hover:text-blue-800 edit-olt-btn"
+            data-id="{{ olt.id }}"
+            data-name="{{ olt.name }}"
+            data-ip="{{ olt.ip }}"
+            data-model="{{ olt.model }}"
+            data-snmp-version="{{ olt.snmp_version }}"
+            data-snmp-port="{{ olt.snmp_port }}"
+            data-telnet-username="{{ olt.telnet_username }}"
+            data-telnet-port="{{ olt.telnet_port }}">
+            Edit
+        </button>
+    </div>
+    <div class="grid grid-cols-2 gap-3 p-5 sm:grid-cols-4">
+        <div class="rounded-lg bg-slate-50 p-3"><p class="text-[10px] text-slate-500">Temperature</p><b>{{ olt.temperature }}°C</b></div>
+        <div class="rounded-lg bg-slate-50 p-3"><p class="text-[10px] text-slate-500">Total ONU</p><b>{{ olt.total_onu }}</b></div>
+        <div class="rounded-lg bg-slate-50 p-3"><p class="text-[10px] text-slate-500">Uptime</p><b class="text-xs">{{ olt.uptime }}</b></div>
+        <div class="rounded-lg bg-slate-50 p-3"><p class="text-[10px] text-slate-500">Last Sync</p><b class="text-xs">{{ olt.synced }}</b></div>
+    </div>
+    <div class="flex flex-wrap gap-x-5 gap-y-2 px-5 pb-4 text-xs">
+        <span>ONU online <b class="text-emerald-600">{{ olt.online }}</b></span>
+        <span>LOS <b class="text-rose-600">{{ olt.los }}</b></span>
+        <span>DyingGasp <b class="text-amber-600">{{ olt.dying_gasp }}</b></span>
+        <span>Offline <b>{{ olt.offline }}</b></span>
+    </div>
+    <div class="flex flex-wrap gap-x-5 gap-y-2 px-5 pb-3 text-xs">
+        <span>SNMP: <b class="{{ 'text-emerald-600' if olt.snmp == 'Connected' else 'text-rose-600' if olt.snmp == 'Failed' else 'text-slate-500' }}">{{ olt.snmp }}</b></span>
+        <span>Telnet: <b class="{{ 'text-emerald-600' if olt.telnet == 'Connected' else 'text-rose-600' if olt.telnet == 'Failed' else 'text-slate-500' }}">{{ olt.telnet }}</b></span>
+        <span class="text-slate-400">Tes terakhir: {{ olt.tested }}</span>
+    </div>
+    <div class="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-5 py-3">
+        <span class="text-[10px] text-slate-500">Env: OLT_{{ olt.env_suffix }}_SNMP_COMMUNITY &amp; OLT_{{ olt.env_suffix }}_TELNET_PASSWORD</span>
+        <button type="button" 
+            class="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold hover:bg-blue-50 sync-olt-btn"
+            data-id="{{ olt.id }}"
+            data-name="{{ olt.name }}">
+            Sync Now
+        </button>
+    </div>
+</section>
+{% else %}
+<div class="col-span-full rounded-xl border border-dashed border-slate-300 p-8 text-center bg-white">
+    <p class="text-sm font-semibold text-slate-600">Belum ada perangkat OLT yang terdaftar</p>
+    <p class="text-xs text-slate-400 mt-1">Klik tombol "+ Add OLT" di atas untuk menambahkan profil perangkat baru.</p>
+</div>
+{% endfor %}
+</div>
+
+<p class="mt-6 text-[11px] text-slate-500">Isi community SNMP dan password Telnet masing-masing OLT di <code>.env</code>. Secret tidak disimpan di database. Setelah menyimpan OLT baru, buka Edit lalu pilih Test Connection.</p>
+
+<dialog id="oltDialog" class="w-full max-w-xl rounded-xl p-0 shadow-2xl backdrop:bg-slate-900/30">
+    <form id="oltForm" class="space-y-4 p-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 id="dialogTitle" class="text-lg font-bold">Edit OLT</h2>
+                <p class="text-xs text-slate-500">Password Telnet dan SNMP community hanya dibaca dari environment.</p>
+            </div>
+            <button type="button" onclick="oltDialog.close()" class="text-xl text-slate-400 hover:text-slate-600">×</button>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            <label class="text-xs">Name<input id="oltName" required class="mt-1 w-full rounded-lg border px-3 py-2"></label>
+            <label class="text-xs">IP Address<input id="oltIp" required class="mt-1 w-full rounded-lg border px-3 py-2"></label>
+            <label class="text-xs">Type
+                <select id="oltModel" class="mt-1 w-full rounded-lg border px-3 py-2">
+                    <option>ZTE C300/C320</option>
+                    <option>ZTE C300</option>
+                    <option>ZTE C320</option>
+                </select>
+            </label>
+            <label class="text-xs">SNMP Version
+                <select id="snmpVersion" class="mt-1 w-full rounded-lg border px-3 py-2">
+                    <option value="2c">v2c</option>
+                </select>
+            </label>
+            <label class="text-xs">SNMP Port<input id="snmpPort" type="number" min="1" max="65535" value="161" class="mt-1 w-full rounded-lg border px-3 py-2"></label>
+            <label class="text-xs">Telnet Username<input id="telnetUsername" value="admin" class="mt-1 w-full rounded-lg border px-3 py-2"></label>
+            <label class="text-xs">Telnet Port<input id="telnetPort" type="number" min="1" max="65535" value="23" class="mt-1 w-full rounded-lg border px-3 py-2"></label>
+        </div>
+        <div id="connectionMessage" class="hidden rounded-lg p-3 text-xs"></div>
+        <div class="flex justify-between pt-2">
+            <button id="testConnectionButton" type="button" onclick="testOltConnection()" class="rounded-lg border px-3 py-2 text-xs hover:bg-slate-50">Test Connection</button>
+            <div class="flex gap-2">
+                <button type="button" onclick="oltDialog.close()" class="rounded-lg border px-3 py-2 text-xs hover:bg-slate-50">Close</button>
+                <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700">Save</button>
+            </div>
+        </div>
+    </form>
+</dialog>
+
 <script>
-const oltDialog=document.getElementById('oltDialog');let activeOltId=null;
-function openOltDialog(mode,id=null,name='',ip='',model='ZTE C300',snmpVersion='2c',snmpPort=161,telnetUsername='admin',telnetPort=23){activeOltId=id;document.getElementById('dialogTitle').textContent=mode==='add'?'Add OLT':'Edit OLT';document.getElementById('oltName').value=name;document.getElementById('oltIp').value=ip;document.getElementById('oltModel').value=model;document.getElementById('snmpVersion').value=snmpVersion;document.getElementById('snmpPort').value=snmpPort;document.getElementById('telnetUsername').value=telnetUsername;document.getElementById('telnetPort').value=telnetPort;document.getElementById('testConnectionButton').disabled=!id;document.getElementById('connectionMessage').className='hidden rounded-lg p-3 text-xs';oltDialog.showModal()}
-document.getElementById('oltForm').addEventListener('submit',async e=>{e.preventDefault();const message=document.getElementById('connectionMessage');const payload={id:activeOltId,name:document.getElementById('oltName').value,ip_address:document.getElementById('oltIp').value,model:document.getElementById('oltModel').value,snmp_version:document.getElementById('snmpVersion').value,snmp_port:Number(document.getElementById('snmpPort').value),telnet_username:document.getElementById('telnetUsername').value,telnet_port:Number(document.getElementById('telnetPort').value)};try{const response=await fetch('/api/olts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),result=await response.json();if(!response.ok)throw new Error(result.detail||'Gagal menyimpan');location.reload()}catch(error){message.textContent=error.message;message.className='rounded-lg bg-rose-50 p-3 text-xs text-rose-700'}});
-async function testOltConnection(){const message=document.getElementById('connectionMessage');if(!activeOltId){message.textContent='Simpan OLT terlebih dahulu sebelum tes koneksi.';message.className='rounded-lg bg-amber-50 p-3 text-xs text-amber-700';return}const button=document.getElementById('testConnectionButton');button.disabled=true;button.textContent='Testing...';message.textContent='Menguji SNMP v2c dan Telnet...';message.className='rounded-lg bg-blue-50 p-3 text-xs text-blue-700';try{const response=await fetch(`/api/olts/${activeOltId}/test`,{method:'POST'}),result=await response.json();const snmp=result.SNMP,telnet=result.Telnet;message.textContent=`SNMP: ${snmp?.ok?'Connected':'Failed'} — ${typeof snmp?.detail==='object'?JSON.stringify(snmp.detail):snmp?.detail||'Tidak ada detail'} | Telnet: ${telnet?.ok?'Connected':'Failed'} — ${telnet?.detail||'Tidak ada detail'}`;message.className='rounded-lg p-3 text-xs '+(snmp?.ok&&telnet?.ok?'bg-emerald-50 text-emerald-700':'bg-amber-50 text-amber-800');setTimeout(()=>location.reload(),1800)}catch(error){message.textContent=error.message;message.className='rounded-lg bg-rose-50 p-3 text-xs text-rose-700'}finally{button.disabled=false;button.textContent='Test Connection'}}
-async function confirmSync(id,name,button){if(!confirm(`Sinkronkan status dan RX ONU dari ${name}?`))return;button.disabled=true;button.textContent='Syncing...';try{const response=await fetch(`/api/olts/${id}/sync`,{method:'POST'}),result=await response.json();if(!response.ok)throw new Error(result.detail||'Sync gagal');alert(`${result.updated} ONU diperbarui dari ${result.interfaces} PON.`);location.reload()}catch(error){alert(error.message);button.disabled=false;button.textContent='Sync Now'}}
+const oltDialog = document.getElementById('oltDialog');
+let activeOltId = null;
+
+function openOltDialog(mode, id = null, name = '', ip = '', model = 'ZTE C300', snmpVersion = '2c', snmpPort = 161, telnetUsername = 'admin', telnetPort = 23) {
+    activeOltId = id;
+    document.getElementById('dialogTitle').textContent = mode === 'add' ? 'Add OLT' : 'Edit OLT';
+    document.getElementById('oltName').value = name;
+    document.getElementById('oltIp').value = ip;
+    document.getElementById('oltModel').value = model;
+    document.getElementById('snmpVersion').value = snmpVersion;
+    document.getElementById('snmpPort').value = snmpPort;
+    document.getElementById('telnetUsername').value = telnetUsername;
+    document.getElementById('telnetPort').value = telnetPort;
+    document.getElementById('testConnectionButton').disabled = !id;
+    document.getElementById('connectionMessage').className = 'hidden rounded-lg p-3 text-xs';
+    oltDialog.showModal();
+}
+
+document.querySelectorAll('.edit-olt-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const d = this.dataset;
+        openOltDialog(
+            'edit',
+            Number(d.id),
+            d.name,
+            d.ip,
+            d.model,
+            d.snmpVersion,
+            Number(d.snmpPort),
+            d.telnetUsername,
+            Number(d.telnetPort)
+        );
+    });
+});
+
+document.querySelectorAll('.sync-olt-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const id = Number(this.dataset.id);
+        const name = this.dataset.name;
+        confirmSync(id, name, this);
+    });
+});
+
+document.getElementById('oltForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const message = document.getElementById('connectionMessage');
+    const payload = {
+        id: activeOltId,
+        name: document.getElementById('oltName').value,
+        ip_address: document.getElementById('oltIp').value,
+        model: document.getElementById('oltModel').value,
+        snmp_version: document.getElementById('snmpVersion').value,
+        snmp_port: Number(document.getElementById('snmpPort').value),
+        telnet_username: document.getElementById('telnetUsername').value,
+        telnet_port: Number(document.getElementById('telnetPort').value)
+    };
+    try {
+        const response = await fetch('/api/olts', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || 'Gagal menyimpan');
+        location.reload();
+    } catch (error) {
+        message.textContent = error.message;
+        message.className = 'rounded-lg bg-rose-50 p-3 text-xs text-rose-700';
+    }
+});
+
+async function testOltConnection() {
+    const message = document.getElementById('connectionMessage');
+    if (!activeOltId) {
+        message.textContent = 'Simpan OLT terlebih dahulu sebelum tes koneksi.';
+        message.className = 'rounded-lg bg-amber-50 p-3 text-xs text-amber-700';
+        return;
+    }
+    const button = document.getElementById('testConnectionButton');
+    button.disabled = true;
+    button.textContent = 'Testing...';
+    message.textContent = 'Menguji SNMP v2c dan Telnet...';
+    message.className = 'rounded-lg bg-blue-50 p-3 text-xs text-blue-700';
+    try {
+        const response = await fetch(`/api/olts/${activeOltId}/test`, {method: 'POST'});
+        const result = await response.json();
+        const snmp = result.SNMP;
+        const telnet = result.Telnet;
+        message.textContent = `SNMP: ${snmp?.ok ? 'Connected' : 'Failed'} — ${typeof snmp?.detail === 'object' ? JSON.stringify(snmp.detail) : (snmp?.detail || 'Tidak ada detail')} | Telnet: ${telnet?.ok ? 'Connected' : 'Failed'} — ${telnet?.detail || 'Tidak ada detail'}`;
+        message.className = 'rounded-lg p-3 text-xs ' + (snmp?.ok && telnet?.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800');
+        setTimeout(() => location.reload(), 1800);
+    } catch (error) {
+        message.textContent = error.message;
+        message.className = 'rounded-lg bg-rose-50 p-3 text-xs text-rose-700';
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Test Connection';
+    }
+}
+
+async function confirmSync(id, name, button) {
+    if (!confirm(`Sinkronkan status dan RX ONU dari ${name}?`)) return;
+    button.disabled = true;
+    button.textContent = 'Syncing...';
+    try {
+        const response = await fetch(`/api/olts/${id}/sync`, {method: 'POST'});
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || 'Sync gagal');
+        alert(`${result.updated} ONU diperbarui dari ${result.interfaces} PON.`);
+        location.reload();
+    } catch (error) {
+        alert(error.message);
+        button.disabled = false;
+        button.textContent = 'Sync Now';
+    }
+}
 </script>
 {% endblock %}

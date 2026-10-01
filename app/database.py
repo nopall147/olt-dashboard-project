@@ -1,12 +1,11 @@
 """Database engine, declarative base, and request-scoped session dependency."""
 import os
-import urllib.parse
 from pathlib import Path
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 
+# 1. Definisikan fungsi pembaca .env terlebih dahulu
 def _load_local_environment():
     env_path = Path(__file__).resolve().parent.parent / ".env"
     if not env_path.is_file():
@@ -19,18 +18,26 @@ def _load_local_environment():
         os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
 
 
+# 2. Panggil fungsinya setelah didefinisikan
 _load_local_environment()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
-    db_user = os.getenv("DB_USER", "postgres")
-    db_password = urllib.parse.quote_plus(os.getenv("DB_PASSWORD", "caca2008"))
-    db_host = os.getenv("DB_HOST", "127.0.0.1")
-    db_port = os.getenv("DB_PORT", "5432")
-    db_name = os.getenv("DB_NAME", "olt_db")
-    DATABASE_URL = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+    raise RuntimeError("DATABASE_URL tidak ditemukan. Pastikan sudah mengisi file .env dengan URL Neon!")
 
-engine = create_engine(DATABASE_URL)
+# Pastikan menggunakan driver psycopg2 jika skema bawaan URL adalah postgresql://
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+# Konfigurasi engine dengan pre-ping agar koneksi Neon tidak putus di tengah jalan
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=300,
+    pool_size=5,
+    max_overflow=10,
+)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

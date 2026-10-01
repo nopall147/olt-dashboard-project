@@ -39,7 +39,7 @@
         </div>
         <p class="text-[11px] text-slate-400 mt-1">Rx Signal &ge; -27 dBm</p>
         <div class="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
-            <div class="bg-emerald-500 h-1.5 rounded-full" style="width: {{ stats.good_percentage }}%"></div>
+            <div class="bg-emerald-500 h-1.5 rounded-full" style="--w: {{ stats.good_percentage }}%; width: var(--w);"></div>
         </div>
     </div>
 
@@ -59,7 +59,7 @@
         </div>
         <p class="text-[11px] text-slate-400 mt-1">-30 dBm &le; Rx &lt; -27 dBm</p>
         <div class="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
-            <div class="bg-amber-500 h-1.5 rounded-full" style="width: {{ stats.warning_percentage }}%"></div>
+            <div class="bg-amber-500 h-1.5 rounded-full" style="--w: {{ stats.warning_percentage }}%; width: var(--w);"></div>
         </div>
     </div>
 
@@ -79,7 +79,7 @@
         </div>
         <p class="text-[11px] text-slate-400 mt-1">Rx Signal &lt; -30 dBm (High Loss)</p>
         <div class="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
-            <div class="bg-rose-500 h-1.5 rounded-full" style="width: {{ stats.critical_percentage }}%"></div>
+            <div class="bg-rose-500 h-1.5 rounded-full" style="--w: {{ stats.critical_percentage }}%; width: var(--w);"></div>
         </div>
     </div>
 
@@ -99,7 +99,7 @@
         </div>
         <p class="text-[11px] text-slate-400 mt-1">LOS / Power Off / Offline</p>
         <div class="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
-            <div class="bg-slate-400 h-1.5 rounded-full" style="width: {{ stats.other_percentage }}%"></div>
+            <div class="bg-slate-400 h-1.5 rounded-full" style="--w: {{ stats.other_percentage }}%; width: var(--w);"></div>
         </div>
     </div>
 </div>
@@ -246,7 +246,18 @@
     </div>
 </div>
 
-<dialog id="onuDetailDialog" class="rounded-xl p-0 shadow-2xl w-full max-w-xl backdrop:bg-slate-900/30"><div class="p-6"><div class="flex justify-between items-center"><h2 class="font-bold text-lg">ONU Detail</h2><button onclick="document.getElementById('onuDetailDialog').close()" class="text-xl text-slate-400">×</button></div><dl id="onuDetailFields" class="grid grid-cols-2 gap-3 mt-5 text-xs"></dl><div class="mt-5 flex justify-end"><button onclick="document.getElementById('onuDetailDialog').close()" class="px-4 py-2 border rounded-lg text-xs">Close</button></div></div></dialog>
+<dialog id="onuDetailDialog" class="rounded-xl p-0 shadow-2xl w-full max-w-xl backdrop:bg-slate-900/30">
+    <div class="p-6">
+        <div class="flex justify-between items-center">
+            <h2 class="font-bold text-lg">ONU Detail</h2>
+            <button onclick="document.getElementById('onuDetailDialog').close()" class="text-xl text-slate-400">×</button>
+        </div>
+        <dl id="onuDetailFields" class="grid grid-cols-2 gap-3 mt-5 text-xs"></dl>
+        <div class="mt-5 flex justify-end">
+            <button onclick="document.getElementById('onuDetailDialog').close()" class="px-4 py-2 border rounded-lg text-xs">Close</button>
+        </div>
+    </div>
+</dialog>
 
 <!-- Client-side Search and Status Filtering Script -->
 <script>

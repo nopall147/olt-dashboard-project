@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Unregistered ONU - OLT Monitoring System{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Unregistered ONU</h1>
+        <p class="text-xs text-slate-500 mt-1">Daftar ONU yang terdeteksi di OLT tetapi belum dikonfigurasi.</p>
+    </div>
+    <a href="/all-onus" class="inline-flex items-center gap-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-lg transition">
+        Lihat Semua ONU
+    </a>
+</div>
+
+<div class="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div>
+            <h2 class="text-sm font-bold text-slate-800">ONU Belum Dikonfigurasi</h2>
+            <p class="text-xs text-slate-500 mt-1">{{ unregistered_onus|length }} perangkat</p>
+        </div>
+    </div>
+    {% if unregistered_onus %}
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider text-[11px]">
+                <tr><th class="px-5 py-3">OLT</th><th class="px-5 py-3">PON Port</th><th class="px-5 py-3">Serial Number</th><th class="px-5 py-3">Model</th><th class="px-5 py-3 text-right">Aksi</th></tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700">
+                {% for onu in unregistered_onus %}
+                <tr>
+                    <td class="px-5 py-3 font-medium">{{ onu.olt_name }}</td>
+                    <td class="px-5 py-3 font-mono">{{ onu.pon_port }}</td>
+                    <td class="px-5 py-3 font-mono">{{ onu.sn }}</td>
+                    <td class="px-5 py-3">{{ onu.model or '-' }}</td>
+                    <td class="px-5 py-3 text-right"><a href="/all-onus" class="text-blue-600 hover:text-blue-700 font-semibold">Kelola</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="px-6 py-14 text-center">
+        <div class="mx-auto w-11 h-11 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xl">⌕</div>
+        <h3 class="mt-3 text-sm font-semibold text-slate-800">Belum ada ONU unregistered</h3>
+        <p class="mt-1 text-xs text-slate-500">ONU yang belum dikonfigurasi akan muncul di daftar ini setelah terdeteksi dari OLT.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

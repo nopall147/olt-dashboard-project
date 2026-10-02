@@ -353,14 +353,12 @@ def dashboard_page(request: Request, db: Session = Depends(get_db)):
 @app.get("/add-onu", response_class=HTMLResponse)
 @app.get("/unregistered-onus", response_class=HTMLResponse)
 def unregistered_onus_page(request: Request, db: Session = Depends(get_db)):
-    # Dummy data daftar ONU yang terdeteksi otomatis tapi belum terkonfigurasi
-    unregistered_list = [
-        # {"olt_name": "OLT-C300 Tajur", "pon_port": "1/1/2", "sn": "ZTEGC8123456", "model": "F660"},
-    ]
+    # Placeholder until ONU discovery from the OLT is available.
+    unregistered_list = []
     return templates.TemplateResponse(
         request=request, 
-        name="add_onu.html", 
-        context={"unregistered_onus": unregistered_list, "olts": db.query(OLTConfig).order_by(OLTConfig.name).all()}
+        name="unregistered_onus.html",
+        context={"unregistered_onus": unregistered_list}
     )
 
 

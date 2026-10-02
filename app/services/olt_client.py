@@ -1,6 +1,9 @@
 import os
 import re
+import base64
+import hashlib
 
+from cryptography.fernet import Fernet, InvalidToken
 from netmiko import ConnectHandler
 
 from app.services.snmp_client import get_value
@@ -19,8 +22,41 @@ def telnet_password(olt_name):
     return os.getenv(f"OLT_{env_key(olt_name)}_TELNET_PASSWORD", "")
 
 
+def _secret_cipher():
+    configured_key = os.getenv("OLT_CREDENTIALS_KEY")
+    if configured_key:
+        try:
+            return Fernet(configured_key.encode("ascii"))
+        except (ValueError, UnicodeEncodeError) as exc:
+            raise RuntimeError("OLT_CREDENTIALS_KEY harus berupa key Fernet yang valid.") from exc
+    # Keep existing deployments working; set OLT_CREDENTIALS_KEY for an independent stable key.
+    seed = os.getenv("DATABASE_URL", "olt-dashboard-local-credential-key")
+    return Fernet(base64.urlsafe_b64encode(hashlib.sha256((seed + ":olt-credentials").encode()).digest()))
+
+
+def encrypt_olt_secret(secret):
+    return _secret_cipher().encrypt(secret.encode("utf-8")).decode("ascii") if secret else None
+
+
+def decrypt_olt_secret(encrypted):
+    if not encrypted:
+        return ""
+    try:
+        return _secret_cipher().decrypt(encrypted.encode("ascii")).decode("utf-8")
+    except (InvalidToken, ValueError, UnicodeDecodeError) as exc:
+        raise RuntimeError("Password OLT tidak dapat dibuka. Periksa OLT_CREDENTIALS_KEY.") from exc
+
+
+def get_snmp_community(olt):
+    return decrypt_olt_secret(olt.snmp_community_encrypted) or snmp_community(olt.name)
+
+
+def get_telnet_password(olt):
+    return decrypt_olt_secret(olt.telnet_password_encrypted) or telnet_password(olt.name)
+
+
 def test_snmp(olt):
-    community = snmp_community(olt.name)
+    community = get_snmp_community(olt)
     if not community:
         raise RuntimeError(f"Set OLT_{env_key(olt.name)}_SNMP_COMMUNITY di environment")
     return {
@@ -30,7 +66,7 @@ def test_snmp(olt):
 
 
 def open_telnet(olt):
-    password = telnet_password(olt.name)
+    password = get_telnet_password(olt)
     if not password:
         raise RuntimeError(f"Set OLT_{env_key(olt.name)}_TELNET_PASSWORD di environment")
     return ConnectHandler(device_type="zte_zxros", host=olt.ip_address,

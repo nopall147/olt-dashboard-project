@@ -43,7 +43,9 @@ class OLTConfig(Base):
     model = Column(String(80), nullable=False, default="ZTE C300/C320")
     snmp_version = Column(String(10), nullable=False, default="2c")
     snmp_port = Column(Integer, nullable=False, default=161)
+    snmp_community_encrypted = Column(Text, nullable=True)
     telnet_username = Column(String(100), nullable=False, default="admin")
+    telnet_password_encrypted = Column(Text, nullable=True)
     telnet_port = Column(Integer, nullable=False, default=23)
     snmp_status = Column(String(40), nullable=True)
     telnet_status = Column(String(40), nullable=True)
@@ -71,3 +73,14 @@ class OLTSettingEntry(Base):
     name = Column(String(120), nullable=False)
     data_json = Column(Text, nullable=False, default="{}")
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class OLTConfigBackup(Base):
+    __tablename__ = "olt_config_backups"
+
+    id = Column(Integer, primary_key=True, index=True)
+    olt_id = Column(Integer, ForeignKey("olt_configs.id", ondelete="CASCADE"), nullable=True, index=True)
+    filename = Column(String(180), nullable=False)
+    backup_type = Column(String(20), nullable=False, index=True)
+    content_json = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)

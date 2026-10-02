@@ -75,8 +75,8 @@
                 </a>
                 <div class="relative" id="profileMenu">
                     <button type="button" id="profileButton" aria-expanded="false" class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50">
-                        <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">HP</span>
-                        <span class="text-left"><span class="block text-xs text-slate-700 font-semibold">Hari Pujianto</span><span class="block text-[10px] text-slate-400">Full</span></span>
+                        {% if account_profile.image %}<img src="{{ account_profile.image }}" alt="" class="h-8 w-8 rounded-full object-cover">{% else %}<span class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">{{ account_profile.full_name[:1]|upper }}{{ account_profile.full_name.split(' ')[-1][:1]|upper }}</span>{% endif %}
+                        <span class="text-left"><span class="block text-xs text-slate-700 font-semibold">{{ account_profile.full_name }}</span><span class="block text-[10px] text-slate-400">Full</span></span>
                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
                     </button>
                     <div id="profileDropdown" class="hidden absolute right-0 mt-2 w-44 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-50">
@@ -96,16 +96,16 @@
         <!-- SIDEBAR -->
         <!-- ===================================================== -->
         <aside
-            class="w-60 bg-white border-r border-slate-200 p-4 space-y-6 shrink-0 overflow-y-auto"
+            class="w-72 bg-white border-r border-slate-200 p-4 space-y-6 shrink-0 overflow-y-auto"
         >
             <nav class="space-y-1">
                 <!-- DASHBOARD -->
                 <a
                     href="/"
-                    class="flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs transition"
+                    class="flex items-center space-x-3 px-4 py-3 rounded-lg text-blue-950 hover:bg-slate-50 font-medium text-base transition"
                 >
                     <svg
-                        class="w-4 h-4"
+                        class="w-5 h-5 text-slate-400"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -125,9 +125,25 @@
                     </span>
                 </a>
                 <!-- SECTION -->
-                <div class="pt-4 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3">
-                    FTTH Management
+                <div class="pt-4 pb-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wide px-4">
+                    FTTH
                 </div>
+                <button id="onuMenuToggle" type="button" aria-expanded="{{ 'true' if request.url.path in ['/unregistered-onus', '/all-onus'] else 'false' }}" aria-controls="onuSubmenu" class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path in ['/unregistered-onus', '/all-onus'] %}bg-blue-50 text-sky-600{% endif %}">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="6" rx="2" stroke-width="2"/><rect x="3" y="13" width="18" height="6" rx="2" stroke-width="2"/><circle cx="7" cy="8" r=".8" fill="currentColor"/><circle cx="7" cy="16" r=".8" fill="currentColor"/></svg>
+                    <span>ONU</span><svg class="ml-auto h-4 w-4 transition-transform" data-chevron="onu" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div id="onuSubmenu" class="space-y-1 pb-1 pl-10 {% if request.url.path not in ['/unregistered-onus', '/all-onus'] %}hidden{% endif %}">
+                    <a href="/unregistered-onus" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/unregistered-onus' %}text-sky-600{% endif %}"><span class="text-slate-400">○</span><span>Unregistered ONU</span></a>
+                    <a href="/all-onus" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/all-onus' %}text-sky-600{% endif %}"><span class="text-slate-400">○</span><span>All ONUs</span></a>
+                </div>
+                <button id="templateMenuToggle" type="button" aria-expanded="{{ 'true' if request.url.path == '/tr069-profiles' else 'false' }}" aria-controls="templateSubmenu" class="mt-3 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/tr069-profiles' %}bg-blue-50 text-sky-600{% endif %}">
+                    <svg class="h-5 w-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" stroke-width="1.8"/><path d="M9 8h6M9 12h6M9 16h4" stroke-width="1.8" stroke-linecap="round"/></svg>
+                    <span>Template</span><svg class="ml-auto h-4 w-4 transition-transform {% if request.url.path != '/tr069-profiles' %}-rotate-90{% endif %}" data-chevron="template" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div id="templateSubmenu" class="space-y-1 pb-1 pl-10 {% if request.url.path != '/tr069-profiles' %}hidden{% endif %}">
+                    <a href="/tr069-profiles" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/tr069-profiles' %}text-sky-600{% endif %}"><span class="text-slate-400">○</span><span>TR069 Profile</span></a>
+                </div>
+                <div class="hidden">
                 <!-- ================================================= -->
                 <!-- UNREGISTERED ONU -->
                 <!-- ================================================= -->
@@ -181,9 +197,10 @@
 
                 </a>
 
+                </div>
             </nav>
 
-            <div class="border-t border-slate-100 pt-4">
+            <div class="hidden border-t border-slate-100 pt-4">
                 <p class="px-3 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">OLT & System</p>
                 <a href="/olt-management" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs"><span>▤</span> OLT Management</a>
                 <a href="/olt-settings" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs"><span>⚙</span> OLT Settings</a>
@@ -191,6 +208,24 @@
                 <a href="/graphs" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs"><span>▥</span> Graphs</a>
                 <p class="px-3 mt-4 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Template</p>
                 <a href="/tr069-profiles" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs"><span>▧</span> TR-069 Profile</a>
+            </div>
+
+            <div class="mt-4 space-y-2 border-t border-slate-100 pt-3">
+                <p class="px-4 pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Graphs</p>
+                <a href="/graphs" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/graphs' %}bg-blue-50 text-sky-600{% endif %}"><svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 3v18h18M7 15l4-4 4 3 6-8"/></svg><span>Traffic</span></a>
+
+                <p class="px-4 pt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Infrastructure</p>
+                <a href="/olt-management" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium transition {% if request.url.path in ['/olt-management', '/olt-settings'] %}bg-blue-50 text-sky-600{% else %}text-blue-950 hover:bg-slate-50{% endif %}"><svg class="h-5 w-5 {% if request.url.path in ['/olt-management', '/olt-settings'] %}text-sky-600{% else %}text-slate-400{% endif %}" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="6" rx="2"/><rect x="3" y="13" width="18" height="6" rx="2"/><circle cx="7" cy="8" r=".8" fill="white"/><circle cx="7" cy="16" r=".8" fill="white"/><path d="M10 8h7M10 16h7" stroke="white" stroke-width="1.2"/></svg><span>OLT Settings</span></a>
+                <a href="/olt-settings" class="{% if request.url.path != '/olt-settings' %}hidden {% endif %}ml-10 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-sky-600"><span>●</span><span>OLT Configuration</span></a>
+                <a href="/tr069-profiles" class="flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-blue-950 transition hover:bg-slate-50"><span class="w-5 text-center text-slate-400">▧</span><span>TR-069 Profile</span></a>
+
+                <p class="px-4 pt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Account</p>
+                <a href="/my-account" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium transition {% if request.url.path == '/my-account' %}bg-blue-50 text-sky-600{% else %}text-blue-950 hover:bg-slate-50{% endif %}"><svg class="h-5 w-5 {% if request.url.path == '/my-account' %}text-sky-600{% else %}text-slate-400{% endif %}" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="4"/><path d="M2 20a7 7 0 0 1 14 0v1H2z"/><path d="M17 5h5M17 9h5M17 13h5" stroke="currentColor" stroke-width="1.5"/></svg><span>My Account</span></a>
+
+                <p class="px-4 pt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">System</p>
+                <a href="/activity-log" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/activity-log' %}bg-blue-50 text-sky-600{% endif %}"><span class="w-5 text-center text-slate-400">☷</span><span>Activity Log</span></a>
+                <a href="/customization" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-blue-950 transition hover:bg-slate-50"><span class="w-5 text-center text-slate-400">☷</span><span>Customization</span></a>
+                <a href="/user-management" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-blue-950 transition hover:bg-slate-50"><svg class="h-5 w-5 text-slate-400" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><circle cx="18" cy="9" r="3"/><path d="M1 21a8 8 0 0 1 16 0v1H1zM17 15a6 6 0 0 1 6 6h-4a9 9 0 0 0-3-6z"/></svg><span>User Management</span></a>
             </div>
 
         </aside>
@@ -216,6 +251,26 @@
 
 </body>
 <script>
+    function bindSidebarGroup(buttonId, submenuId, groupName) {
+        const button = document.getElementById(buttonId);
+        const submenu = document.getElementById(submenuId);
+        const chevron = document.querySelector(`[data-chevron="${groupName}"]`);
+        button?.addEventListener('click', () => {
+            const isExpanded = button.getAttribute('aria-expanded') === 'true';
+            button.setAttribute('aria-expanded', String(!isExpanded));
+            submenu?.classList.toggle('hidden', isExpanded);
+            chevron?.classList.toggle('-rotate-90', isExpanded);
+            button.classList.toggle('bg-blue-50', !isExpanded);
+            button.classList.toggle('text-sky-600', !isExpanded);
+            button.classList.toggle('text-blue-950', isExpanded);
+        });
+    }
+    bindSidebarGroup('onuMenuToggle', 'onuSubmenu', 'onu');
+    bindSidebarGroup('templateMenuToggle', 'templateSubmenu', 'template');
+    document.querySelectorAll('a[href="/tr069-profiles"]').forEach(link => {
+        if (!link.closest('#templateSubmenu')) link.classList.add('hidden');
+    });
+
     const profileButton = document.getElementById('profileButton');
     const profileDropdown = document.getElementById('profileDropdown');
     profileButton?.addEventListener('click', () => {

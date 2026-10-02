@@ -1,305 +1,164 @@
 {% extends "base.html" %}
 
-{% block title %}All ONUs - OLT Monitoring System{% endblock %}
+{% block title %}All-ONUs - OLT Monitoring System{% endblock %}
 
 {% block content %}
-<!-- Header Page & Action Buttons -->
-<div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-    <div>
-        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Daftar Semua Perangkat ONU</h1>
-        <p class="text-xs text-slate-500 mt-1">Monitoring status optik dan manajemen perangkat pelanggan pada OLT ZTE C300 / C320</p>
-    </div>
+<div class="-m-8 min-h-full bg-[#edf3ff] p-8">
+    <header class="mb-5 flex items-start justify-between gap-4">
+        <div>
+        <h1 class="text-2xl font-medium text-slate-900">All-ONUs</h1>
+        <p class="mt-1 text-sm text-slate-500"><a href="/" class="hover:text-blue-600">Home</a><span class="mx-2">/</span>All-ONUs</p>
+        </div>
+        <a href="/add-onu" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">＋ Add ONU / Register Manual</a>
+    </header>
 
-    <div class="flex items-center gap-3">
-        <a href="/unregistered-onus"
-            class="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-700 hover:to-sky-600 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm shadow-blue-500/20 transition-all duration-150 transform active:scale-95">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-            Unregistered ONU
-        </a>
-    </div>
+    <section class="mb-7 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        {% for key,title,color,bg,percentage,rxolt,rxonu in [
+            ('good','Good','#22c55e','#dcfce7',stats.good_percentage,stats.good_olt_count,stats.good_count),
+            ('warning','Warning','#f97316','#ffedd5',stats.warning_percentage,stats.warning_olt_count,stats.warning_count),
+            ('critical','Critical','#ef4444','#fee2e2',stats.critical_percentage,stats.critical_olt_count,stats.critical_count)
+        ] %}
+        <article class="rounded-lg bg-white p-6 shadow-sm">
+            <div class="flex items-start justify-between gap-3"><h2 class="text-xl font-semibold text-slate-900">{{ title }}</h2><span class="rounded-md px-2 py-0.5 text-xs font-bold text-white" style="background:{{ color }}">{% if key == 'good' %}≥ -27.00 dBm{% elif key == 'warning' %}-27.00 ~ -30.00 dBm{% else %}&lt; -30.00 dBm{% endif %}</span></div>
+            <div class="mt-4 flex items-center gap-5">
+                <div class="relative grid h-[76px] w-[76px] shrink-0 place-items-center rounded-full" style="background:conic-gradient({{ color }} {{ percentage }}%, #e2e8f0 0)">
+                    <div class="grid h-[60px] w-[60px] place-items-center rounded-full text-sm font-bold" style="background:{{ bg }};color:{{ color }}">{{ percentage }}%</div>
+                </div>
+                <div class="min-w-0 flex-1 space-y-2 text-sm">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-1"><span class="font-semibold text-slate-700">RX OLT</span><b class="text-slate-900">{{ rxolt }}</b></div>
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-1"><span class="font-semibold text-slate-700">RX ONU</span><b class="text-slate-900">{{ rxonu }}</b></div>
+                    <div class="h-1.5 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full" style="width:{{ percentage }}%;background:{{ color }}"></div></div>
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+        <article class="rounded-lg bg-white p-6 shadow-sm">
+            <div class="flex items-start justify-between gap-3"><h2 class="text-xl font-semibold text-slate-900">Other</h2><span class="rounded-md bg-red-500 px-2 py-0.5 text-xs font-bold text-white">LOS / N/A</span></div>
+            <div class="mt-4 flex items-center gap-5">
+                <div class="relative grid h-[76px] w-[76px] shrink-0 place-items-center rounded-full" style="background:conic-gradient(#ef4444 {{ stats.other_percentage }}%, #e2e8f0 0)"><div class="grid h-[60px] w-[60px] place-items-center rounded-full bg-rose-50 text-xl text-red-500">⌁</div></div>
+                <div class="min-w-0 flex-1 space-y-2 text-sm"><div class="flex items-center justify-between border-b border-slate-100 pb-1"><span class="font-semibold text-slate-700">LOS</span><b>{{ stats.los_count }}</b></div><div class="flex items-center justify-between border-b border-slate-100 pb-1"><span class="font-semibold text-slate-700">N/A</span><b>{{ stats.na_count }}</b></div><div class="text-xs font-bold text-red-500">{{ stats.other_percentage }}% without RX</div></div>
+            </div>
+        </article>
+    </section>
+
+    <section class="rounded-xl bg-white p-6 shadow-sm">
+        <div class="mb-5 flex items-center justify-between"><h2 class="text-xl font-medium text-slate-900">ONUs</h2><button type="button" title="Filters" class="text-xl text-slate-700">☷</button></div>
+        <div class="mb-6 flex flex-wrap items-center gap-2 rounded-lg border-l-4 border-blue-500 bg-slate-50 p-4 shadow-sm">
+            <label><span class="sr-only">Filter OLT</span><select data-filter="olt" class="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white"><option value="">▤ All OLTs</option>{% for name in olt_names %}<option value="{{ name }}">{{ name }}</option>{% endfor %}</select></label>
+            <label><span class="sr-only">Filter card</span><select data-filter="card" class="rounded-lg bg-blue-500 px-3 py-2 text-sm font-medium text-white"><option value="">▣ All Cards</option>{% for card in card_names %}<option value="{{ card }}">Card {{ card }}</option>{% endfor %}</select></label>
+            <label><span class="sr-only">Filter PON</span><select data-filter="pon" class="rounded-lg bg-blue-500 px-3 py-2 text-sm font-medium text-white"><option value="">▦ All Pons</option>{% for pon in pon_names %}<option value="{{ pon }}">{{ pon }}</option>{% endfor %}</select></label>
+            <label><span class="sr-only">Filter ONU type</span><select data-filter="type" class="rounded-lg border border-slate-400 bg-white px-3 py-2 text-sm text-slate-700"><option value="">♧ All Types</option>{% for kind in onu_types %}<option value="{{ kind }}">{{ kind }}</option>{% endfor %}</select></label>
+
+            <span class="ml-2 text-sm font-semibold text-slate-800">Status:</span>
+            <div class="inline-flex overflow-hidden rounded-md border border-slate-300 bg-white">{% for value,icon,label in [('Online','✓','Online'),('Offline','♟','Offline'),('LOS','◩','LOS'),('DyingGasp','!','DyingGasp'),('Other','?','Other')] %}<button type="button" data-status-filter="{{ value }}" title="{{ label }}" class="status-filter px-3 py-2 text-sm hover:bg-blue-50 {% if selected_status == value %}bg-blue-100{% endif %}">{{ icon }}</button>{% endfor %}</div>
+            <span class="ml-2 text-sm font-semibold text-slate-800">Signal:</span>
+            <div class="inline-flex overflow-hidden rounded-md border border-slate-300 bg-white">{% for value,icon,color in [('Good','▮','#16a34a'),('Warning','▂','#f97316'),('Critical','▂','#ef4444'),('Other','----','#64748b')] %}<button type="button" data-signal-filter="{{ value }}" title="{{ value }}" class="signal-filter px-3 py-2 text-sm hover:bg-blue-50" style="color:{{ color }}">{{ icon }}</button>{% endfor %}</div>
+            <button id="exportOnus" type="button" class="ml-auto rounded-lg border border-emerald-600 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50">▦ Export</button>
+        </div>
+
+        <div class="mb-4 flex flex-col justify-between gap-3 text-sm sm:flex-row sm:items-center">
+            <label class="flex items-center gap-2 text-slate-700">Show <select id="pageSize" class="rounded border border-slate-300 bg-white px-2 py-2"><option>5</option><option>10</option><option>25</option><option value="all">All</option></select> entries</label>
+            <label class="flex items-center gap-2 text-slate-700">Search: <input id="tableSearch" type="search" class="rounded border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"></label>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table id="onuTable" class="w-full min-w-[1120px] border-collapse text-left text-sm">
+                <thead><tr class="border-b border-slate-200 text-slate-700">
+                    <th class="px-2 py-3"><input id="selectAllOnus" type="checkbox" aria-label="Select all ONUs"></th>
+                    {% for heading in ['OLT','Name','Description','PPPoE','ONU ID','Status','RX OLT','RX ONU','SN / MAC','Actual Type','Action'] %}<th class="cursor-pointer px-3 py-3 font-semibold">{{ heading }} <span class="text-slate-300">↕</span></th>{% endfor %}
+                </tr></thead>
+                <tbody class="divide-y divide-slate-100" id="onuRows">
+                    {% for onu in onus %}
+                    {% set port_base = onu.gpon_port.split(':')[0] if onu.gpon_port else '' %}
+                    {% set parts = port_base.split('/') %}
+                    {% set signal = 'Good' if onu.rx_onu is not none and onu.rx_onu >= -27 else 'Warning' if onu.rx_onu is not none and onu.rx_onu >= -30 else 'Critical' if onu.rx_onu is not none else 'Other' %}
+                    <tr class="onu-row hover:bg-blue-50/50" data-olt="{{ onu.olt_name }}" data-card="{{ parts[1] if parts|length > 1 else '' }}" data-pon="{{ port_base }}" data-type="{{ onu.actual_type or 'GPON' }}" data-status="{{ onu.status }}" data-signal="{{ signal }}">
+                        <td class="px-2 py-3"><input type="checkbox" class="row-select" aria-label="Select {{ onu.sn_mac }}"></td>
+                        <td class="px-3 py-3 text-slate-700">{{ onu.olt_name }}</td>
+                        <td class="px-3 py-3 font-medium text-slate-900">{{ onu.customer_name }}</td>
+                        <td class="max-w-[190px] truncate px-3 py-3 text-slate-700" title="{{ onu.description or '' }}">{{ onu.description or '—' }}</td>
+                        <td class="px-3 py-3 text-slate-700">{{ onu.pppoe_user or '—' }}</td>
+                        <td class="px-3 py-3"><span class="rounded-lg bg-amber-100 px-3 py-1.5 font-semibold text-slate-900">{{ onu.gpon_port or '—' }}</span></td>
+                        <td class="px-3 py-3"><span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"><span class="h-2 w-2 rounded-full {% if onu.status == 'Online' %}bg-emerald-500{% elif onu.status == 'LOS' %}bg-rose-500{% elif onu.status == 'DyingGasp' %}bg-amber-500{% else %}bg-slate-400{% endif %}"></span>{{ onu.status }}</span></td>
+                        <td class="px-3 py-3 font-medium {% if onu.rx_olt is none %}text-slate-400{% elif onu.rx_olt < -30 %}text-rose-600{% elif onu.rx_olt < -27 %}text-amber-600{% else %}text-emerald-600{% endif %}">{{ '%.2f dBm'|format(onu.rx_olt) if onu.rx_olt is not none else 'N/A' }}</td>
+                        <td class="px-3 py-3 font-medium {% if onu.rx_onu is none %}text-slate-400{% elif onu.rx_onu < -30 %}text-rose-600{% elif onu.rx_onu < -27 %}text-amber-600{% else %}text-emerald-600{% endif %}">{{ '%.2f dBm'|format(onu.rx_onu) if onu.rx_onu is not none else 'N/A' }}</td>
+                        <td class="px-3 py-3 font-mono text-xs text-slate-700">{{ onu.sn_mac or '—' }}</td>
+                        <td class="px-3 py-3"><span class="rounded bg-slate-100 px-2 py-1 font-mono text-xs text-slate-600">{{ onu.actual_type or 'GPON' }}</span></td>
+                        <td class="px-3 py-3"><button type="button" onclick="showOnuDetail(this)" class="whitespace-nowrap rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700">⚙ Setting</button></td>
+                    </tr>
+                    {% else %}<tr id="emptyOnus"><td colspan="12" class="px-4 py-12 text-center text-slate-500">Belum ada ONU yang terdaftar di database.</td></tr>{% endfor %}
+                    <tr id="noFilterResults" class="hidden"><td colspan="12" class="px-4 py-12 text-center text-slate-500">Tidak ada ONU yang cocok dengan filter.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-4 flex items-center justify-between text-sm text-slate-600"><span id="tableInfo"></span><div class="flex gap-1"><button id="previousPage" type="button" class="rounded border border-slate-300 px-3 py-1.5">Previous</button><button id="nextPage" type="button" class="rounded border border-slate-300 px-3 py-1.5">Next</button></div></div>
+    </section>
 </div>
 
-<!-- TOP METRIC CARDS (Persentase & Distribusi Redaman Sinyal Rx) -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    <!-- Good Signal Card -->
-    <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition">
-        <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Good Signals</span>
-            <span class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-            </span>
-        </div>
-        <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-2xl font-black text-slate-900">{{ stats.good_percentage }}%</span>
-            <span class="text-xs text-slate-500 font-medium">({{ stats.good_count }} ONU)</span>
-        </div>
-        <p class="text-[11px] text-slate-400 mt-1">Rx Signal &ge; -27 dBm</p>
-        <div class="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
-            <div class="bg-emerald-500 h-1.5 rounded-full" style="--w: {{ stats.good_percentage }}%; width: var(--w);"></div>
-        </div>
-    </div>
-
-    <!-- Warning Signal Card -->
-    <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition">
-        <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Warning</span>
-            <span class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xs">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
-            </span>
-        </div>
-        <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-2xl font-black text-slate-900">{{ stats.warning_percentage }}%</span>
-            <span class="text-xs text-slate-500 font-medium">({{ stats.warning_count }} ONU)</span>
-        </div>
-        <p class="text-[11px] text-slate-400 mt-1">-30 dBm &le; Rx &lt; -27 dBm</p>
-        <div class="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
-            <div class="bg-amber-500 h-1.5 rounded-full" style="--w: {{ stats.warning_percentage }}%; width: var(--w);"></div>
-        </div>
-    </div>
-
-    <!-- Critical Signal Card -->
-    <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition">
-        <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Critical</span>
-            <span class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-xs">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </span>
-        </div>
-        <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-2xl font-black text-slate-900">{{ stats.critical_percentage }}%</span>
-            <span class="text-xs text-slate-500 font-medium">({{ stats.critical_count }} ONU)</span>
-        </div>
-        <p class="text-[11px] text-slate-400 mt-1">Rx Signal &lt; -30 dBm (High Loss)</p>
-        <div class="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
-            <div class="bg-rose-500 h-1.5 rounded-full" style="--w: {{ stats.critical_percentage }}%; width: var(--w);"></div>
-        </div>
-    </div>
-
-    <!-- Other / Offline Card -->
-    <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md transition">
-        <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Other / Unread</span>
-            <span class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-xs">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-            </span>
-        </div>
-        <div class="mt-2 flex items-baseline gap-2">
-            <span class="text-2xl font-black text-slate-900">{{ stats.other_percentage }}%</span>
-            <span class="text-xs text-slate-500 font-medium">({{ stats.other_count }} ONU)</span>
-        </div>
-        <p class="text-[11px] text-slate-400 mt-1">LOS / Power Off / Offline</p>
-        <div class="w-full bg-slate-100 rounded-full h-1.5 mt-3 overflow-hidden">
-            <div class="bg-slate-400 h-1.5 rounded-full" style="--w: {{ stats.other_percentage }}%; width: var(--w);"></div>
-        </div>
-    </div>
-</div>
-
-<!-- Filter & Search Bar Toolbar -->
-<div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-    <!-- Live Search Input -->
-    <div class="relative flex-1 max-w-md">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-            </svg>
-        </div>
-        <input type="text" id="tableSearch" placeholder="Cari berdasarkan Nama, SN, PPPoE, atau Port..."
-            class="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition text-slate-700">
-    </div>
-
-    <!-- Filter Dropdown & Status Count -->
-    <div class="flex items-center gap-3">
-        <select id="statusFilter" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none text-slate-700 font-medium focus:ring-2 focus:ring-blue-500/20">
-            <option value="ALL" {% if selected_status == 'ALL' %}selected{% endif %}>Semua Status</option>
-            <option value="Online" {% if selected_status == 'Online' %}selected{% endif %}>Online</option>
-            <option value="DyingGasp" {% if selected_status == 'DyingGasp' %}selected{% endif %}>DyingGasp</option>
-            <option value="LOS" {% if selected_status == 'LOS' %}selected{% endif %}>LOS</option>
-            <option value="Offline" {% if selected_status == 'Offline' %}selected{% endif %}>Offline</option>
-        </select>
-
-        <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-2 rounded-lg border border-slate-200">
-            Total: <span id="totalCount" class="text-slate-900 font-bold">{{ onus|length }}</span> ONU
-        </span>
-    </div>
-</div>
-
-<!-- Main Table Card -->
-<div class="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
-    <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse text-xs" id="onuTable">
-            <thead>
-                <tr class="bg-slate-50/80 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200 text-[11px]">
-                    <th class="py-3.5 px-4">Nama Pelanggan / Alamat</th>
-                    <th class="py-3.5 px-4">OLT Target</th>
-                    <th class="py-3.5 px-4">Port / ONU ID</th>
-                    <th class="py-3.5 px-4">SN / MAC</th>
-                    <th class="py-3.5 px-4">PPPoE User</th>
-                    <th class="py-3.5 px-4">Tipe ONT</th>
-                    <th class="py-3.5 px-4 text-center">Status</th>
-                    <th class="py-3.5 px-4 text-center">Optic Power (Rx)</th>
-                    <th class="py-3.5 px-4 text-right">Aksi</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 text-slate-700 font-normal">
-                {% for onu in onus %}
-                <tr class="hover:bg-blue-50/40 transition-colors duration-100 group onu-row" data-status="{{ onu.status }}">
-                    
-                    <!-- Customer Name & Description -->
-                    <td class="py-3.5 px-4">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 font-bold flex items-center justify-center text-xs flex-shrink-0 border border-blue-100">
-                                {{ onu.customer_name[:1] if onu.customer_name else 'U' }}
-                            </div>
-                            <div>
-                                <p class="font-bold text-slate-900 text-xs">{{ onu.customer_name }}</p>
-                                <p class="text-[11px] text-slate-400 font-normal truncate max-w-xs">{{ onu.description or '-' }}</p>
-                            </div>
-                        </div>
-                    </td>
-
-                    <!-- OLT Name -->
-                    <td class="py-3.5 px-4 whitespace-nowrap">
-                        <span class="font-medium text-slate-800">{{ onu.olt_name }}</span>
-                    </td>
-
-                    <!-- Port / ONU ID -->
-                    <td class="py-3.5 px-4 whitespace-nowrap font-mono text-[11px] text-slate-700 font-semibold">
-                        {{ onu.gpon_port }}
-                    </td>
-
-                    <!-- SN / MAC -->
-                    <td class="py-3.5 px-4 whitespace-nowrap font-mono text-[11px] text-slate-600">
-                        {{ onu.sn_mac }}
-                    </td>
-
-                    <!-- PPPoE -->
-                    <td class="py-3.5 px-4 whitespace-nowrap font-mono text-slate-600">
-                        {{ onu.pppoe_user }}
-                    </td>
-
-                    <!-- ONT Type -->
-                    <td class="py-3.5 px-4 whitespace-nowrap">
-                        <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[10px] border border-slate-200">
-                            {{ onu.actual_type or 'GPON' }}
-                        </span>
-                    </td>
-
-                    <!-- Status Badge -->
-                    <td class="py-3.5 px-4 text-center whitespace-nowrap">
-                        {% if onu.status == 'Online' %}
-                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online
-                            </span>
-                        {% elif onu.status == 'DyingGasp' %}
-                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> DyingGasp
-                            </span>
-                        {% elif onu.status == 'LOS' %}
-                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 border border-rose-200">
-                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> LOS
-                            </span>
-                        {% else %}
-                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Offline
-                            </span>
-                        {% endif %}
-                    </td>
-
-                    <!-- Redaman Optik (Rx Power) -->
-                    <td class="py-3.5 px-4 text-center whitespace-nowrap font-mono text-[11px]">
-                        {% if onu.rx_onu %}
-                            <span class="{% if onu.rx_onu < -30 %}text-rose-600 font-bold{% elif onu.rx_onu < -27 %}text-amber-600 font-semibold{% else %}text-emerald-600 font-semibold{% endif %}">
-                                {{ onu.rx_onu }} dBm
-                            </span>
-                        {% else %}
-                            <span class="text-slate-400">-</span>
-                        {% endif %}
-                    </td>
-
-                    <!-- Action Column -->
-                    <td class="py-3.5 px-4 text-right whitespace-nowrap">
-                        <button onclick="showOnuDetail(this)"
-                            class="text-blue-600 hover:text-blue-800 font-semibold text-[11px] p-1 rounded hover:bg-blue-50 transition">
-                            Detail
-                        </button>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="9" class="py-8 text-center text-slate-400 text-xs">
-                        Belum ada ONU yang terdaftar di database.
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<dialog id="onuDetailDialog" class="rounded-xl p-0 shadow-2xl w-full max-w-xl backdrop:bg-slate-900/30">
-    <div class="p-6">
-        <div class="flex justify-between items-center">
-            <h2 class="font-bold text-lg">ONU Detail</h2>
-            <button onclick="document.getElementById('onuDetailDialog').close()" class="text-xl text-slate-400">×</button>
-        </div>
-        <dl id="onuDetailFields" class="grid grid-cols-2 gap-3 mt-5 text-xs"></dl>
-        <div class="mt-5 flex justify-end">
-            <button onclick="document.getElementById('onuDetailDialog').close()" class="px-4 py-2 border rounded-lg text-xs">Close</button>
-        </div>
-    </div>
+<dialog id="onuDetailDialog" class="w-full max-w-xl rounded-xl p-0 shadow-2xl backdrop:bg-slate-900/30">
+    <div class="p-6"><div class="flex items-center justify-between"><h2 class="text-lg font-bold">ONU Details</h2><button type="button" onclick="document.getElementById('onuDetailDialog').close()" class="text-xl text-slate-400">×</button></div><dl id="onuDetailFields" class="mt-5 grid grid-cols-2 gap-3 text-xs"></dl><div class="mt-5 flex justify-end"><button type="button" onclick="document.getElementById('onuDetailDialog').close()" class="rounded-lg border px-4 py-2 text-xs">Close</button></div></div>
 </dialog>
 
-<!-- Client-side Search and Status Filtering Script -->
 <script>
-    const searchInput = document.getElementById('tableSearch');
-    const filterSelect = document.getElementById('statusFilter');
-    const tableRows = document.querySelectorAll('.onu-row');
-    const countDisplay = document.getElementById('totalCount');
-
-    function showOnuDetail(button) {
-        const row = button.closest('tr');
-        const labels = ['Customer / Description', 'OLT', 'PON / ONU ID', 'SN / MAC', 'PPPoE', 'ONU Type', 'Status', 'RX ONU'];
-        const values = [...row.cells].slice(0, 8).map(cell => cell.innerText.trim());
-        document.getElementById('onuDetailFields').innerHTML = labels.map((label, index) => `<div class="border-b border-slate-100 pb-2"><dt class="text-slate-400">${label}</dt><dd class="mt-1 font-semibold text-slate-800"></dd></div>`).join('');
-        document.querySelectorAll('#onuDetailFields dd').forEach((field, index) => field.textContent = values[index] || '—');
-        document.getElementById('onuDetailDialog').showModal();
-    }
-
-    function applyFilters() {
-        const query = searchInput.value.toLowerCase().trim();
-        const status = filterSelect.value;
-        let visibleCount = 0;
-
-        tableRows.forEach(row => {
-            const rowText = row.innerText.toLowerCase();
-            const rowStatus = row.getAttribute('data-status');
-
-            const matchesSearch = rowText.includes(query);
-            const matchesStatus = (status === 'ALL' || rowStatus === status);
-
-            if (matchesSearch && matchesStatus) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-
-        countDisplay.innerText = visibleCount;
-    }
-
-    searchInput.addEventListener('input', applyFilters);
-    filterSelect.addEventListener('change', applyFilters);
-    applyFilters();
+const rows = [...document.querySelectorAll('.onu-row')];
+const filterState = { olt: '', card: '', pon: '', type: '', status: '{{ selected_status }}' === 'ALL' ? '' : '{{ selected_status }}', signal: '', query: '' };
+let page = 1;
+const pageSizeSelect = document.getElementById('pageSize');
+function filteredRows() {
+    return rows.filter(row => Object.entries(filterState).every(([key, value]) => {
+        if (!value) return true;
+        if (key === 'query') return row.innerText.toLowerCase().includes(value);
+        if (key === 'status' && value === 'Other') return !['Online','Offline','LOS','DyingGasp'].includes(row.dataset.status);
+        return row.dataset[key] === value;
+    }));
+}
+function renderTable() {
+    const matches = filteredRows();
+    const size = pageSizeSelect.value === 'all' ? Math.max(matches.length, 1) : Number(pageSizeSelect.value);
+    const pages = Math.max(1, Math.ceil(matches.length / size)); page = Math.min(page, pages);
+    const start = (page - 1) * size;
+    const shown = new Set(matches.slice(start, start + size));
+    rows.forEach(row => row.classList.toggle('hidden', !shown.has(row)));
+    document.getElementById('noFilterResults').classList.toggle('hidden', matches.length !== 0 || rows.length === 0);
+    document.getElementById('tableInfo').textContent = matches.length ? `Showing ${start + 1} to ${Math.min(start + size, matches.length)} of ${matches.length} entries` : 'Showing 0 entries';
+    document.getElementById('previousPage').disabled = page <= 1;
+    document.getElementById('nextPage').disabled = page >= pages;
+    document.getElementById('previousPage').classList.toggle('opacity-50', page <= 1);
+    document.getElementById('nextPage').classList.toggle('opacity-50', page >= pages);
+}
+document.querySelectorAll('[data-filter]').forEach(select => select.addEventListener('change', () => { filterState[select.dataset.filter] = select.value; page = 1; renderTable(); }));
+document.querySelectorAll('[data-status-filter]').forEach(button => button.addEventListener('click', () => {
+    const status = button.dataset.statusFilter;
+    filterState.status = filterState.status === status ? '' : status;
+    document.querySelectorAll('[data-status-filter]').forEach(item => item.classList.toggle('bg-blue-100', item.dataset.statusFilter === filterState.status));
+    page = 1; renderTable();
+}));
+document.querySelectorAll('[data-signal-filter]').forEach(button => button.addEventListener('click', () => {
+    const signal = button.dataset.signalFilter;
+    filterState.signal = filterState.signal === signal ? '' : signal;
+    document.querySelectorAll('[data-signal-filter]').forEach(item => item.classList.toggle('bg-blue-100', item.dataset.signalFilter === filterState.signal));
+    page = 1; renderTable();
+}));
+document.getElementById('tableSearch').addEventListener('input', event => { filterState.query = event.target.value.toLowerCase().trim(); page = 1; renderTable(); });
+pageSizeSelect.addEventListener('change', () => { page = 1; renderTable(); });
+document.getElementById('previousPage').addEventListener('click', () => { page--; renderTable(); });
+document.getElementById('nextPage').addEventListener('click', () => { page++; renderTable(); });
+document.getElementById('selectAllOnus').addEventListener('change', event => rows.filter(row => !row.classList.contains('hidden')).forEach(row => row.querySelector('.row-select').checked = event.target.checked));
+function showOnuDetail(button) {
+    const row = button.closest('tr');
+    const labels = ['OLT','Name','Description','PPPoE','ONU ID','Status','RX OLT','RX ONU','SN / MAC','Actual Type'];
+    const cells = [...row.cells].slice(1, 11);
+    document.getElementById('onuDetailFields').innerHTML = labels.map(label => `<div class="border-b border-slate-100 pb-2"><dt class="text-slate-400">${label}</dt><dd class="mt-1 font-semibold text-slate-800"></dd></div>`).join('');
+    document.querySelectorAll('#onuDetailFields dd').forEach((field, index) => field.textContent = cells[index]?.innerText.trim() || '—');
+    document.getElementById('onuDetailDialog').showModal();
+}
+document.getElementById('exportOnus').addEventListener('click', () => {
+    const visible = filteredRows();
+    const csvRows = [['OLT','Name','Description','PPPoE','ONU ID','Status','RX OLT','RX ONU','SN / MAC','Actual Type'], ...visible.map(row => [...row.cells].slice(1, 11).map(cell => cell.innerText.trim()))];
+    const csv = csvRows.map(row => row.map(value => `"${value.replaceAll('"','""')}"`).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+    const link = document.createElement('a'); link.href = url; link.download = 'all-onus.csv'; link.click(); URL.revokeObjectURL(url);
+});
+renderTable();
 </script>
 {% endblock %}

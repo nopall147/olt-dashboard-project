@@ -1,188 +1,86 @@
 {% extends "base.html" %}
-{% block title %}TR-069 Profiles - OLT Monitoring System{% endblock %}
+{% block title %}TR069 Profile - OLT Monitoring System{% endblock %}
 {% block content %}
-<div class="flex items-start justify-between">
-    <div>
-        <h1 class="text-2xl font-bold text-slate-900">TR-069 Profiles</h1>
-        <p class="mt-1 text-xs text-slate-500">Profil TR-069 menyimpan alamat ACS (server manajemen jarak jauh) dan kredensial yang dapat digunakan ONU. Data profil tersimpan di database aplikasi.</p>
-    </div>
-    <button type="button" onclick="document.getElementById('profileForm').scrollIntoView({behavior:'smooth'})" class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition">+ Create Profile</button>
-</div>
+<header class="px-1">
+    <h1 class="text-2xl font-medium text-blue-950">TR069 Profile</h1>
+    <p class="mt-1 text-sm text-slate-500"><a href="/" class="hover:text-blue-600">Home</a><span class="px-2">/</span><a href="#" class="hover:text-blue-600">Template</a><span class="px-2">/</span>TR069 Profile</p>
+</header>
 
-<section class="mt-6 overflow-x-auto rounded-xl border border-slate-200 bg-white">
-    <table class="w-full min-w-[850px] text-left text-xs">
-        <thead class="bg-slate-50 text-slate-500">
-            <tr>
-                <th class="p-4">No.</th>
-                <th class="p-4">Profile Name</th>
-                <th class="p-4">ACS URL</th>
-                <th class="p-4">Username</th>
-                <th class="p-4">Password</th>
-                <th class="p-4">Default OLT</th>
-                <th class="p-4">VLAN</th>
-                <th class="p-4">Aksi</th>
-            </tr>
-        </thead>
-        <tbody id="profileRows" class="divide-y divide-slate-100">
-            {% for profile in profiles %}
-            <tr data-id="{{ profile.id }}" data-name="{{ profile.name|e }}">
-                <td class="p-4">{{ loop.index }}</td>
-                <td class="p-4 font-semibold">{{ profile.name }}</td>
-                <td class="p-4">{{ profile.data.acs_url|default('—') }}</td>
-                <td class="p-4">{{ profile.data.username|default('—') }}</td>
-                <td class="p-4">{% if profile.has_password %}••••••••{% else %}—{% endif %}</td>
-                <td class="p-4">{{ profile.data.default_olt|default('—') }}</td>
-                <td class="p-4">{{ profile.data.vlan|default('Untag') }}</td>
-                <td class="p-4">
-                    <script type="application/json" class="profile-raw-data">{{ profile.data|tojson }}</script>
-                    <button type="button" class="mr-2 text-blue-600 hover:text-blue-800 font-semibold edit-profile-btn">Edit</button>
-                    <button type="button" class="text-rose-600 hover:text-rose-800 font-semibold delete-profile-btn" data-id="{{ profile.id }}">Hapus</button>
-                </td>
-            </tr>
-            {% else %}
-            <tr id="emptyProfiles">
-                <td colspan="8" class="p-8 text-center text-slate-400">Belum ada TR-069 Profile.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<section class="mt-5 overflow-hidden rounded-xl border border-slate-100 bg-white p-5 shadow-sm md:p-6">
+    <header class="mb-4 flex items-center justify-between gap-4">
+        <h2 class="text-lg font-semibold text-blue-950">TR069 Profile</h2>
+        <button id="createTr069Profile" type="button" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100">⊕ Create</button>
+    </header>
+    <div class="overflow-x-auto">
+        <table class="w-full min-w-[1000px] border-collapse text-left text-sm">
+            <thead><tr class="border-b border-slate-200 text-xs font-bold uppercase tracking-wide text-blue-950"><th class="px-3 py-3 text-center">#</th><th class="px-3 py-3">Profile Name</th><th class="px-3 py-3">ACS URL</th><th class="px-3 py-3">Username</th><th class="px-3 py-3">Password</th><th class="px-3 py-3">Default OLT</th><th class="px-3 py-3">VLAN</th><th class="px-3 py-3 text-center">Action</th></tr></thead>
+            <tbody id="profileRows" class="divide-y divide-slate-200">
+                {% for profile in profiles %}
+                <tr class="text-slate-700" data-id="{{ profile.id }}" data-name="{{ profile.name|e }}">
+                    <td class="px-3 py-3 text-center">{{ loop.index }}</td>
+                    <td class="px-3 py-3 font-medium text-blue-950">{{ profile.name }}</td>
+                    <td class="max-w-[240px] truncate px-3 py-3" title="{{ profile.data.acs_url|default('') }}">{{ profile.data.acs_url|default('—') }}</td>
+                    <td class="px-3 py-3">{{ profile.data.username|default('—') }}</td>
+                    <td class="px-3 py-3">{% if profile.has_password %}••••••••{% else %}—{% endif %}</td>
+                    <td class="px-3 py-3">{{ (profile.data.default_olts|default([profile.data.default_olt] if profile.data.default_olt else []))|join(', ') or '—' }}</td>
+                    <td class="px-3 py-3">{% if profile.data.vlan_tag|default(profile.data.vlan is defined and profile.data.vlan) %}Tag {{ profile.data.vlan }}{% else %}Untag{% endif %}</td>
+                    <td class="px-3 py-2"><div class="flex justify-center gap-2">
+                        <script type="application/json" class="profile-raw-data">{{ profile.data|tojson }}</script>
+                        <button type="button" class="edit-profile-btn rounded-full bg-slate-100 p-2 text-slate-600 hover:bg-slate-200" title="Edit profile"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="m16 4 4 4M4 20l4-.8L19 8a2.1 2.1 0 0 0-3-3L5 16z"/></svg></button>
+                        <button type="button" class="delete-profile-btn rounded-full bg-rose-50 p-2 text-rose-600 hover:bg-rose-100" data-id="{{ profile.id }}" title="Delete profile"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg></button>
+                    </div></td>
+                </tr>
+                {% else %}<tr id="emptyProfiles"><td colspan="8" class="px-4 py-4 text-center text-slate-500">No profiles found</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
 </section>
 
-<section class="mt-6 rounded-xl border border-slate-200 bg-white p-5">
-    <div class="mb-4">
-        <h2 id="formTitle" class="font-bold">Create TR-069 Profile</h2>
-        <p class="mt-1 text-xs text-slate-500">Default OLT dan opsi penerapan disimpan sebagai pengaturan profil. Penerapan otomatis ke ONU belum dihubungkan ke proses registrasi.</p>
-    </div>
-    <form id="profileForm" class="grid gap-3 md:grid-cols-2">
-        <input id="profileId" type="hidden">
-        <label class="text-xs">Profile Name
-            <input id="profileName" required maxlength="120" class="mt-1 w-full rounded-lg border p-2">
-        </label>
-        <label class="text-xs">ACS URL
-            <input id="acsUrl" type="url" required placeholder="https://acs.example.com/" class="mt-1 w-full rounded-lg border p-2">
-        </label>
-        <label class="text-xs">Username
-            <input id="acsUsername" class="mt-1 w-full rounded-lg border p-2">
-        </label>
-        <label class="text-xs">Password
-            <input id="acsPassword" type="password" class="mt-1 w-full rounded-lg border p-2">
-        </label>
-        <label class="text-xs">VLAN Tag / Untag
-            <input id="profileVlan" type="number" min="1" max="4094" placeholder="Kosongkan untuk Untag" class="mt-1 w-full rounded-lg border p-2">
-        </label>
-        <label class="text-xs">Default OLT
-            <select id="defaultOlt" class="mt-1 w-full rounded-lg border p-2">
-                <option value="">Tidak ada</option>
-                {% for olt in olts %}
-                <option value="{{ olt.name }}">{{ olt.name }}</option>
-                {% endfor %}
-            </select>
-        </label>
-        <label class="flex items-start gap-2 text-xs md:col-span-2">
-            <input id="applyDefault" type="checkbox" class="mt-0.5">
-            <span>Tandai sebagai default untuk OLT ini (metadata; belum diterapkan otomatis).</span>
-        </label>
-        <div class="flex gap-2 md:col-span-2">
-            <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition">Save Profile</button>
-            <button type="button" onclick="resetProfileForm()" class="rounded-lg border px-4 py-2 text-xs hover:bg-slate-50 transition">Clear</button>
+<dialog id="tr069Dialog" class="w-[min(96vw,1000px)] overflow-hidden rounded-xl border border-slate-200 p-0 shadow-2xl backdrop:bg-slate-900/50">
+    <form id="profileForm" class="bg-white">
+        <header class="flex items-center justify-between border-b border-slate-200 px-5 py-4"><h2 id="formTitle" class="text-xl font-semibold text-blue-950">Add TR069 Profile</h2><button type="button" id="closeTr069Dialog" aria-label="Close" class="rounded p-1 text-2xl leading-none text-slate-500 hover:bg-slate-100">×</button></header>
+        <div class="max-h-[72vh] space-y-4 overflow-y-auto px-5 py-5">
+            <input id="profileId" type="hidden">
+            <label class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[235px_1fr]">Profile Name<input id="profileName" required maxlength="120" placeholder="e.g. ACS-SVR-MAIN" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal outline-none focus:border-blue-500"></label>
+            <label class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[235px_1fr]">ACS URL<input id="acsUrl" type="url" required placeholder="e.g. http://10.10.10.100:7547" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal outline-none focus:border-blue-500"></label>
+            <label class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[235px_1fr]">Username<input id="acsUsername" placeholder="e.g. acs_admin" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal outline-none focus:border-blue-500"></label>
+            <label class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[235px_1fr]">Password<input id="acsPassword" type="password" autocomplete="new-password" placeholder="e.g. Admin@123" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal outline-none focus:border-blue-500"></label>
+            <div class="grid items-start gap-3 text-sm font-medium text-blue-950 md:grid-cols-[235px_1fr]"><span class="pt-2">VLAN</span><div>
+                <div class="flex items-center gap-5 text-slate-600"><label class="flex items-center gap-2"><input type="radio" name="vlanMode" value="tag" checked class="accent-blue-600">Tag</label><label class="flex items-center gap-2"><input type="radio" name="vlanMode" value="untag" class="accent-blue-600">Untag</label></div>
+                <input id="profileVlan" type="number" min="1" max="4094" placeholder="e.g. 100" class="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal outline-none focus:border-blue-500">
+            </div></div>
+            <div class="grid items-start gap-3 text-sm font-medium text-blue-950 md:grid-cols-[235px_1fr]"><span class="pt-2">Default OLT <span class="font-normal text-slate-400">(optional)</span></span><div id="defaultOltOptions" class="space-y-2">
+                {% for olt in olts %}<label class="flex items-center gap-2 font-normal text-slate-600"><input type="checkbox" name="defaultOlt" value="{{ olt.name }}" class="accent-blue-600">{{ olt.name }}</label>{% else %}<span class="text-sm font-normal text-slate-400">Belum ada OLT terdaftar.</span>{% endfor %}
+                <p class="border-l-2 border-amber-500 bg-amber-50 px-3 py-2 text-sm font-normal text-amber-700">ⓘ OLT pilihan disimpan sebagai default profil. Penerapan otomatis saat registrasi ONU belum terhubung.</p>
+            </div></div>
+            <p id="profileMessage" class="hidden text-sm text-rose-600"></p>
         </div>
+        <footer class="flex justify-end gap-2 border-t border-slate-200 px-5 py-4"><button type="button" id="cancelTr069Dialog" class="rounded-lg bg-slate-500 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600">× Close</button><button id="saveTr069Profile" type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">⇩ Submit</button></footer>
     </form>
-    <p id="profileMessage" class="mt-3 hidden rounded-lg p-3 text-xs"></p>
-</section>
+</dialog>
 
 <script>
-const form = document.getElementById('profileForm');
-const message = document.getElementById('profileMessage');
-
-function resetProfileForm() {
-    form.reset();
-    document.getElementById('profileId').value = '';
-    document.getElementById('formTitle').textContent = 'Create TR-069 Profile';
-    message.classList.add('hidden');
+const form=document.getElementById('profileForm'),dialog=document.getElementById('tr069Dialog'),message=document.getElementById('profileMessage');
+function resetProfileForm(){form.reset();document.getElementById('profileId').value='';document.getElementById('formTitle').textContent='Add TR069 Profile';document.getElementById('acsPassword').placeholder='e.g. Admin@123';document.getElementById('profileMessage').classList.add('hidden');document.getElementById('profileVlan').disabled=false;document.getElementById('profileVlan').required=true}
+function selectedDefaultOlts(){return [...document.querySelectorAll('input[name="defaultOlt"]:checked')].map(input=>input.value)}
+function editProfile(row){
+    const data=JSON.parse(row.querySelector('.profile-raw-data')?.textContent||'{}');
+    document.getElementById('profileId').value=row.dataset.id;document.getElementById('profileName').value=row.dataset.name;
+    document.getElementById('acsUrl').value=data.acs_url||'';document.getElementById('acsUsername').value=data.username||'';document.getElementById('acsPassword').value='';document.getElementById('acsPassword').placeholder='Leave blank to keep current password';
+    const tagged=data.vlan_tag??Boolean(data.vlan);document.querySelector(`input[name="vlanMode"][value="${tagged?'tag':'untag'}"]`).checked=true;document.getElementById('profileVlan').value=data.vlan||'';document.getElementById('profileVlan').disabled=!tagged;document.getElementById('profileVlan').required=tagged;
+    const selected=data.default_olts|| (data.default_olt?[data.default_olt]:[]);document.querySelectorAll('input[name="defaultOlt"]').forEach(input=>input.checked=selected.includes(input.value));
+    document.getElementById('formTitle').textContent='Edit TR069 Profile';message.classList.add('hidden');dialog.showModal();
 }
-
-function editProfile(row) {
-    const rawDataScript = row.querySelector('.profile-raw-data');
-    let data = {};
-    if (rawDataScript) {
-        try {
-            data = JSON.parse(rawDataScript.textContent);
-        } catch (e) {
-            console.error('Gagal parsing data profil:', e);
-        }
-    }
-    document.getElementById('profileId').value = row.dataset.id;
-    document.getElementById('profileName').value = row.dataset.name;
-    document.getElementById('acsUrl').value = data.acs_url || '';
-    document.getElementById('acsUsername').value = data.username || '';
-    document.getElementById('acsPassword').value = '';
-    document.getElementById('acsPassword').placeholder = 'Kosongkan agar password tetap';
-    document.getElementById('profileVlan').value = data.vlan || '';
-    document.getElementById('defaultOlt').value = data.default_olt || '';
-    document.getElementById('applyDefault').checked = !!data.apply_default;
-    document.getElementById('formTitle').textContent = 'Edit TR-069 Profile';
-    form.scrollIntoView({ behavior: 'smooth' });
-}
-
-// Event delegation untuk tombol Edit dan Hapus agar bersih dari syntax inline linter
-document.querySelectorAll('.edit-profile-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        editProfile(this.closest('tr'));
-    });
+document.getElementById('createTr069Profile').addEventListener('click',()=>{resetProfileForm();dialog.showModal()});
+document.getElementById('closeTr069Dialog').addEventListener('click',()=>dialog.close());document.getElementById('cancelTr069Dialog').addEventListener('click',()=>dialog.close());
+document.querySelectorAll('input[name="vlanMode"]').forEach(radio=>radio.addEventListener('change',()=>{const tagged=document.querySelector('input[name="vlanMode"]:checked').value==='tag';document.getElementById('profileVlan').disabled=!tagged;document.getElementById('profileVlan').required=tagged;if(!tagged)document.getElementById('profileVlan').value=''}));
+document.querySelectorAll('.edit-profile-btn').forEach(button=>button.addEventListener('click',()=>editProfile(button.closest('tr'))));
+document.querySelectorAll('.delete-profile-btn').forEach(button=>button.addEventListener('click',async()=>{if(!confirm('Hapus TR069 Profile ini?'))return;try{const response=await fetch(`/api/olt-settings/data/${button.dataset.id}`,{method:'DELETE'}),result=await response.json();if(!response.ok)throw new Error(result.detail||'Gagal menghapus profil');location.reload()}catch(error){alert(error.message)}}));
+form.addEventListener('submit',async event=>{
+    event.preventDefault();const id=document.getElementById('profileId').value,name=document.getElementById('profileName').value.trim(),tagged=document.querySelector('input[name="vlanMode"]:checked').value==='tag';
+    const data={acs_url:document.getElementById('acsUrl').value.trim(),username:document.getElementById('acsUsername').value.trim(),password:document.getElementById('acsPassword').value,vlan:tagged?document.getElementById('profileVlan').value:'',vlan_tag:tagged,default_olts:selectedDefaultOlts(),apply_default:selectedDefaultOlts().length>0};data.default_olt=data.default_olts[0]||'';
+    try{const response=await fetch('/api/olt-settings/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id?Number(id):null,category:'tr069_profile',name,data})}),result=await response.json();if(!response.ok)throw new Error(result.detail||'Gagal menyimpan profil');location.reload()}
+    catch(error){message.textContent=error.message;message.className='text-sm text-rose-600'}
 });
-
-document.querySelectorAll('.delete-profile-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const id = Number(this.dataset.id);
-        deleteProfile(id);
-    });
-});
-
-form.addEventListener('submit', async event => {
-    event.preventDefault();
-    const id = document.getElementById('profileId').value;
-    const name = document.getElementById('profileName').value.trim();
-    const data = {
-        acs_url: document.getElementById('acsUrl').value.trim(),
-        username: document.getElementById('acsUsername').value.trim(),
-        password: document.getElementById('acsPassword').value,
-        vlan: document.getElementById('profileVlan').value,
-        default_olt: document.getElementById('defaultOlt').value,
-        apply_default: document.getElementById('applyDefault').checked
-    };
-    try {
-        const response = await fetch('/api/olt-settings/data', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id: id ? Number(id) : null,
-                category: 'tr069_profile',
-                name,
-                data
-            })
-        });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.detail || 'Gagal menyimpan');
-        location.reload();
-    } catch (error) {
-        message.textContent = error.message;
-        message.className = 'mt-3 rounded-lg bg-rose-50 p-3 text-xs text-rose-700';
-    }
-});
-
-async function deleteProfile(id) {
-    if (!confirm('Hapus TR-069 Profile ini?')) return;
-    try {
-        const response = await fetch(`/api/olt-settings/data/${id}`, { method: 'DELETE' });
-        const result = await response.json();
-        if (!response.ok) {
-            alert(result.detail || 'Gagal menghapus');
-            return;
-        }
-        location.reload();
-    } catch (err) {
-        alert(err.message || 'Terjadi kesalahan saat menghapus');
-    }
-}
 </script>
 {% endblock %}  

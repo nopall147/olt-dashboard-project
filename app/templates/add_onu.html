@@ -22,7 +22,7 @@
 <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <div>
         <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Provisioning ONU ZTE</h1>
-        <p class="text-xs text-slate-500 mt-1">Registrasi otomatis perangkat ONU GPON pada OLT ZTE C300 / C320</p>
+        <p class="text-xs text-slate-500 mt-1">Pratinjau UI untuk registrasi ONU GPON</p>
     </div>
 
     <div class="flex items-center gap-3">
@@ -42,6 +42,8 @@
         </button>
     </div>
 </div>
+
+<div class="mb-5 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-xs text-sky-800"><b>Mode uji:</b> simpan hanya membuat record di database aplikasi. Konfigurasi tidak dikirim ke OLT.</div>
 
 <form id="onuConfigForm" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -301,6 +303,7 @@
 
 <!-- AJAX Script -->
 <script>
+    const uiDemoMode = {{ 'true' if ui_demo else 'false' }};
     document.getElementById('onuConfigForm').addEventListener('submit', async function (e) {
         e.preventDefault();
 
@@ -332,6 +335,30 @@
                 formObject[key] = value;
             }
         });
+
+        if (uiDemoMode) {
+            try {
+                const response = await fetch('/api/v1/register-onu/demo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formObject),
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.detail || 'Gagal menyimpan data uji.');
+                statusPanel.classList.remove('bg-sky-50', 'text-sky-900', 'border-sky-200');
+                statusPanel.classList.add('bg-emerald-50', 'text-emerald-900', 'border', 'border-emerald-200');
+                statusPanel.textContent = `${result.message} Membuka All ONUs...`;
+                setTimeout(() => { window.location.href = '/all-onus'; }, 900);
+            } catch (error) {
+                statusPanel.classList.remove('bg-sky-50', 'text-sky-900', 'border-sky-200');
+                statusPanel.classList.add('bg-rose-50', 'text-rose-900', 'border', 'border-rose-200');
+                statusPanel.textContent = error.message;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            return;
+        }
 
         try {
             const response = await fetch('/api/v1/register-onu', {

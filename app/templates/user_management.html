@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block title %}User Management - OLT Monitoring System{% endblock %}
+{% block content %}
+<header class="px-1 flex flex-wrap items-center justify-between gap-4">
+    <div>
+        <h1 class="text-2xl font-medium text-blue-950">User Management</h1>
+        <p class="mt-1 text-sm text-slate-500"><a href="/" class="hover:text-blue-600">Home</a><span class="px-2">/</span>User Management</p>
+    </div>
+    <button type="button" onclick="openAddUserModal()" class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition">
+        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        <span>Tambah User</span>
+    </button>
+</header>
+
+<section class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm md:p-6 mt-4">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs border-collapse">
+            <thead>
+                <tr class="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    <th class="py-3 px-3 w-12 text-center">#</th>
+                    <th class="py-3 px-4">Nama Lengkap</th>
+                    <th class="py-3 px-4">Username</th>
+                    <th class="py-3 px-4">Email</th>
+                    <th class="py-3 px-4">Role</th>
+                    <th class="py-3 px-4 text-center">Status Akun</th>
+                    <th class="py-3 px-4 text-center">Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="userTableRows" class="divide-y divide-slate-100">
+                {% for u in users %}
+                <tr class="hover:bg-slate-50/70">
+                    <td class="py-3 px-3 text-center text-slate-400 font-medium">{{ loop.index }}</td>
+                    <td class="py-3 px-4 font-bold text-slate-800">{{ u.fullname }}</td>
+                    <td class="py-3 px-4 font-mono text-slate-600">{{ u.username }}</td>
+                    <td class="py-3 px-4 text-slate-500">{{ u.email }}</td>
+                    <td class="py-3 px-4">
+                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider {{ 'bg-purple-100 text-purple-700' if u.role == 'Super Admin' else ('bg-sky-100 text-sky-700' if u.role == 'NOC' else 'bg-slate-100 text-slate-600') }}">
+                            {{ u.role }}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold {{ 'bg-emerald-50 text-emerald-700 border border-emerald-200' if u.is_active else 'bg-rose-50 text-rose-700 border border-rose-200' }}">
+                            {{ 'Aktif' if u.is_active else 'Nonaktif' }}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <button type="button" onclick="openEditUserModal({{ u.id }}, '{{ u.fullname }}', '{{ u.role }}', {{ 'true' if u.is_active else 'false' }})" class="p-1 text-blue-600 hover:text-blue-800 transition" title="Edit">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </button>
+                            {% if u.id != current_user.id %}
+                            <button type="button" onclick="deleteUser({{ u.id }}, '{{ u.username }}')" class="p-1 text-slate-400 hover:text-rose-600 transition" title="Hapus">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- MODAL TAMBAH USER -->
+<dialog id="addUserModal" class="w-full max-w-md rounded-2xl p-0 shadow-2xl backdrop:bg-slate-900/50">
+    <form id="addUserForm" class="p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 class="text-base font-bold text-slate-900">Tambah User Baru</h3>
+            <button type="button" onclick="addUserModal.close()" class="text-slate-400 hover:text-slate-600">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="space-y-3 text-xs font-medium text-slate-700">
+            <div>
+                <label class="block text-slate-600 mb-1">Nama Lengkap</label>
+                <input id="addFullName" required placeholder="Contoh: Budi Santoso" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+            </div>
+            <div>
+                <label class="block text-slate-600 mb-1">Username</label>
+                <input id="addUsername" required placeholder="budi_noc" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+            </div>
+            <div>
+                <label class="block text-slate-600 mb-1">Email</label>
+                <input id="addEmail" type="email" required placeholder="budi@example.com" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+            </div>
+            <div>
+                <label class="block text-slate-600 mb-1">Password</label>
+                <input id="addPassword" type="password" required minlength="6" placeholder="Minimal 6 karakter" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+            </div>
+            <div>
+                <label class="block text-slate-600 mb-1">Role / Peran</label>
+                <select id="addRole" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+                    <option value="NOC">NOC (Read/Write)</option>
+                    <option value="Viewer">Viewer (Read-only)</option>
+                    <option value="Super Admin">Super Admin (Full)</option>
+                </select>
+            </div>
+            <p id="addUserError" class="hidden text-rose-600 text-xs"></p>
+        </div>
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button type="button" onclick="addUserModal.close()" class="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
+            <button type="submit" class="rounded-lg bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700">Simpan User</button>
+        </div>
+    </form>
+</dialog>
+
+<!-- MODAL EDIT USER -->
+<dialog id="editUserModal" class="w-full max-w-md rounded-2xl p-0 shadow-2xl backdrop:bg-slate-900/50">
+    <form id="editUserForm" class="p-6 space-y-4">
+        <input type="hidden" id="editUserId">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 class="text-base font-bold text-slate-900">Edit User</h3>
+            <button type="button" onclick="editUserModal.close()" class="text-slate-400 hover:text-slate-600">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="space-y-3 text-xs font-medium text-slate-700">
+            <div>
+                <label class="block text-slate-600 mb-1">Nama Lengkap</label>
+                <input id="editFullName" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+            </div>
+            <div>
+                <label class="block text-slate-600 mb-1">Role</label>
+                <select id="editRole" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+                    <option value="NOC">NOC (Read/Write)</option>
+                    <option value="Viewer">Viewer (Read-only)</option>
+                    <option value="Super Admin">Super Admin (Full)</option>
+                </select>
+            </div>
+            <div>
+                <label class="flex items-center gap-2 cursor-pointer mt-2">
+                    <input type="checkbox" id="editIsActive" class="rounded text-blue-600">
+                    <span>Akun Aktif (Bisa Login)</span>
+                </label>
+            </div>
+            <div>
+                <label class="block text-slate-600 mb-1 mt-2">Reset Password (Opsional)</label>
+                <input id="editPassword" type="password" placeholder="Kosongkan jika tidak ingin ganti" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+            </div>
+            <p id="editUserError" class="hidden text-rose-600 text-xs"></p>
+        </div>
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button type="button" onclick="editUserModal.close()" class="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
+            <button type="submit" class="rounded-lg bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700">Simpan Perubahan</button>
+        </div>
+    </form>
+</dialog>
+
+<script>
+const addUserModal = document.getElementById('addUserModal');
+const editUserModal = document.getElementById('editUserModal');
+
+function openAddUserModal() {
+    document.getElementById('addUserForm').reset();
+    document.getElementById('addUserError').classList.add('hidden');
+    addUserModal.showModal();
+}
+
+function openEditUserModal(id, fullname, role, isActive) {
+    document.getElementById('editUserId').value = id;
+    document.getElementById('editFullName').value = fullname;
+    document.getElementById('editRole').value = role;
+    document.getElementById('editIsActive').checked = isActive;
+    document.getElementById('editPassword').value = '';
+    document.getElementById('editUserError').classList.add('hidden');
+    editUserModal.showModal();
+}
+
+document.getElementById('addUserForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+        fullname: document.getElementById('addFullName').value.trim(),
+        username: document.getElementById('addUsername').value.trim(),
+        email: document.getElementById('addEmail').value.trim(),
+        password: document.getElementById('addPassword').value,
+        role: document.getElementById('addRole').value
+    };
+    try {
+        const res = await fetch('/api/users', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Gagal menambahkan user');
+        addUserModal.close();
+        window.location.reload();
+    } catch(err) {
+        const errEl = document.getElementById('addUserError');
+        errEl.textContent = err.message;
+        errEl.classList.remove('hidden');
+    }
+});
+
+document.getElementById('editUserForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('editUserId').value;
+    const payload = {
+        fullname: document.getElementById('editFullName').value.trim(),
+        role: document.getElementById('editRole').value,
+        is_active: document.getElementById('editIsActive').checked,
+        new_password: document.getElementById('editPassword').value || null
+    };
+    try {
+        const res = await fetch(`/api/users/${id}/update`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Gagal memperbarui user');
+        editUserModal.close();
+        window.location.reload();
+    } catch(err) {
+        const errEl = document.getElementById('editUserError');
+        errEl.textContent = err.message;
+        errEl.classList.remove('hidden');
+    }
+});
+
+async function deleteUser(id, username) {
+    if (!confirm(`Yakin ingin menghapus user "${username}"?`)) return;
+    try {
+        const res = await fetch(`/api/users/${id}`, {method: 'DELETE'});
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Gagal menghapus user');
+        window.location.reload();
+    } catch(err) {
+        alert(err.message);
+    }
+}
+</script>
+{% endblock %}

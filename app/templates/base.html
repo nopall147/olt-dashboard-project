@@ -3,31 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        {% block title %}
-        OLT Monitoring System
-        {% endblock %}
-    </title>
+    <title>{% block title %}OLT Monitoring System{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet"
-    >
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
+        body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
 <body class="h-full flex flex-col font-sans text-slate-800 bg-[#f4f6f9]">
     <!-- ========================================================= -->
-    <!-- TOP NAVIGATION BAR -->
+    <!-- TOP NAVIGATION BAR (LENGKAP DENGAN SEARCH & CART) -->
     <!-- ========================================================= -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shrink-0">
         <div class="px-6 h-16 flex items-center justify-between">
-            <!-- LEFT -->
+            <!-- LEFT: LOGO & SEARCH -->
             <div class="flex items-center space-x-6">
-                <!-- LOGO -->
                 <div class="flex items-center space-x-2">
                     <div class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center">
                         C
@@ -37,51 +27,57 @@
                     </span>
                 </div>
 
-                <!-- SEARCH -->
                 <div class="relative">
                     <input
                         type="text"
                         placeholder="Search ONU"
                         class="w-72 pl-9 pr-4 py-1.5 text-xs bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                     >
-                    <svg
-                        class="w-4 h-4 absolute left-3 top-2 text-slate-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                        ></path>
+                    <svg class="w-4 h-4 absolute left-3 top-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
                 </div>
             </div>
 
-            <!-- RIGHT -->
+            <!-- RIGHT: NOTIFIKASI & CART & PROFIL -->
             <div class="flex items-center gap-3">
+                <!-- DyingGasp -->
                 <a href="/all-onus?status=DyingGasp" title="ONU DyingGasp" class="relative p-2 rounded-lg text-amber-600 hover:bg-amber-50" aria-label="ONU DyingGasp">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v10m6.36-6.36a9 9 0 1 1-12.72 0"/></svg>
                     <span data-status-count="DyingGasp" class="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-amber-500 text-white text-[9px] font-bold text-center">{{ nav_counts.dying_gasp|default(0) }}</span>
                 </a>
+
+                <!-- LOS -->
                 <a href="/all-onus?status=LOS" title="ONU LOS" class="relative p-2 rounded-lg text-rose-600 hover:bg-rose-50" aria-label="ONU LOS">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18M8.5 8.5a5 5 0 0 0 7 7M5.6 5.6a9 9 0 0 0 12.8 12.8M12 2v2m0 16v2"/></svg>
                     <span data-status-count="LOS" class="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold text-center">{{ nav_counts.los|default(0) }}</span>
                 </a>
+
+                <!-- CART / UNREGISTERED ONUS -->
                 <a href="/unregistered-onus" title="ONU belum dikonfigurasi" class="p-2 rounded-lg text-blue-600 hover:bg-blue-50" aria-label="ONU belum dikonfigurasi">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l2.2 11.2a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 2-1.6L22 7H6m6-4v6m-3-3h6"/></svg>
                 </a>
+
+                <!-- PROFIL USER -->
                 <div class="relative" id="profileMenu">
                     <button type="button" id="profileButton" aria-expanded="false" class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50">
-                        {% if account_profile.image %}<img src="{{ account_profile.image }}" alt="" class="h-8 w-8 rounded-full object-cover">{% else %}<span class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">{{ account_profile.full_name[:1]|upper }}{{ account_profile.full_name.split(' ')[-1][:1]|upper }}</span>{% endif %}
-                        <span class="text-left"><span class="block text-xs text-slate-700 font-semibold">{{ account_profile.full_name }}</span><span class="block text-[10px] text-slate-400">Full</span></span>
+                        {% if account_profile.image %}
+                            <img src="{{ account_profile.image }}" alt="" class="h-8 w-8 rounded-full object-cover">
+                        {% else %}
+                            <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
+                                {{ account_profile.full_name[:1]|upper }}{{ account_profile.full_name.split(' ')[-1][:1]|upper }}
+                            </span>
+                        {% endif %}
+                        <span class="text-left">
+                            <span class="block text-xs text-slate-700 font-semibold">{{ account_profile.full_name }}</span>
+                            <span class="block text-[10px] text-slate-400 font-mono">{{ account_profile.role }}</span>
+                        </span>
                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
                     </button>
                     <div id="profileDropdown" class="hidden absolute right-0 mt-2 w-44 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-50">
                         <a href="/my-account" class="block px-4 py-2 text-xs text-slate-700 hover:bg-slate-50">My Account</a>
-                        <a href="/sign-out" class="block px-4 py-2 text-xs text-slate-700 hover:bg-slate-50">Sign Out</a>
+                        <hr class="border-slate-100 my-1">
+                        <a href="/logout" class="block px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 font-semibold">Logout</a>
                     </div>
                 </div>
             </div>
@@ -92,208 +88,143 @@
     <!-- MAIN LAYOUT -->
     <!-- ========================================================= -->
     <div class="flex-1 flex overflow-hidden">
-        <!-- ===================================================== -->
         <!-- SIDEBAR -->
-        <!-- ===================================================== -->
-        <aside
-            class="w-72 bg-white border-r border-slate-200 p-4 space-y-6 shrink-0 overflow-y-auto"
-        >
+        <aside class="w-72 bg-white border-r border-slate-200 p-4 space-y-6 shrink-0 overflow-y-auto">
+            {% set role = account_profile.role %}
             <nav class="space-y-1">
-                <!-- DASHBOARD -->
-                <a
-                    href="/"
-                    class="flex items-center space-x-3 px-4 py-3 rounded-lg text-blue-950 hover:bg-slate-50 font-medium text-base transition"
-                >
-                    <svg
-                        class="w-5 h-5 text-slate-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z
-                               M14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z
-                               M4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z
-                               M14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                        ></path>
+                <!-- 1. DASHBOARD (Semua Role) -->
+                <a href="/" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium text-base transition {% if request.url.path == '/' %}bg-blue-50 text-sky-600{% else %}text-blue-950 hover:bg-slate-50{% endif %}">
+                    <svg class="w-5 h-5 {% if request.url.path == '/' %}text-sky-600{% else %}text-slate-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z M14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z M4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z M14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
                     </svg>
-                    <span>
-                        Dashboard
-                    </span>
+                    <span>Dashboard</span>
                 </a>
-                <!-- SECTION -->
+
+                <!-- SECTION: FTTH -->
                 <div class="pt-4 pb-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wide px-4">
                     FTTH
                 </div>
-                <button id="onuMenuToggle" type="button" aria-expanded="{{ 'true' if request.url.path in ['/unregistered-onus', '/all-onus'] else 'false' }}" aria-controls="onuSubmenu" class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path in ['/unregistered-onus', '/all-onus'] %}bg-blue-50 text-sky-600{% endif %}">
+
+                <!-- 2. ONU (Semua Role) -->
+                <button id="onuMenuToggle" type="button" class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path in ['/unregistered-onus', '/all-onus', '/add-onu'] %}bg-blue-50 text-sky-600{% endif %}">
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="6" rx="2" stroke-width="2"/><rect x="3" y="13" width="18" height="6" rx="2" stroke-width="2"/><circle cx="7" cy="8" r=".8" fill="currentColor"/><circle cx="7" cy="16" r=".8" fill="currentColor"/></svg>
-                    <span>ONU</span><svg class="ml-auto h-4 w-4 transition-transform" data-chevron="onu" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
+                    <span>ONU</span>
+                    <svg class="ml-auto h-4 w-4 transition-transform" data-chevron="onu" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
                 </button>
-                <div id="onuSubmenu" class="space-y-1 pb-1 pl-10 {% if request.url.path not in ['/unregistered-onus', '/all-onus'] %}hidden{% endif %}">
+                <div id="onuSubmenu" class="space-y-1 pb-1 pl-10 {% if request.url.path not in ['/unregistered-onus', '/all-onus', '/add-onu'] %}hidden{% endif %}">
+                    {% if role in ['Super Admin', 'NOC'] %}
                     <a href="/unregistered-onus" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/unregistered-onus' %}text-sky-600{% endif %}"><span class="text-slate-400">○</span><span>Unregistered ONU</span></a>
+                    {% endif %}
                     <a href="/all-onus" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/all-onus' %}text-sky-600{% endif %}"><span class="text-slate-400">○</span><span>All ONUs</span></a>
                 </div>
-                <button id="templateMenuToggle" type="button" aria-expanded="{{ 'true' if request.url.path == '/tr069-profiles' else 'false' }}" aria-controls="templateSubmenu" class="mt-3 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/tr069-profiles' %}bg-blue-50 text-sky-600{% endif %}">
+
+                <!-- 3. TEMPLATE TR069 (Semua Role) -->
+                <button id="templateMenuToggle" type="button" class="mt-2 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/tr069-profiles' %}bg-blue-50 text-sky-600{% endif %}">
                     <svg class="h-5 w-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" stroke-width="1.8"/><path d="M9 8h6M9 12h6M9 16h4" stroke-width="1.8" stroke-linecap="round"/></svg>
-                    <span>Template</span><svg class="ml-auto h-4 w-4 transition-transform {% if request.url.path != '/tr069-profiles' %}-rotate-90{% endif %}" data-chevron="template" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
+                    <span>Template</span>
+                    <svg class="ml-auto h-4 w-4 transition-transform" data-chevron="template" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
                 </button>
                 <div id="templateSubmenu" class="space-y-1 pb-1 pl-10 {% if request.url.path != '/tr069-profiles' %}hidden{% endif %}">
                     <a href="/tr069-profiles" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/tr069-profiles' %}text-sky-600{% endif %}"><span class="text-slate-400">○</span><span>TR069 Profile</span></a>
                 </div>
-                <div class="hidden">
-                <!-- ================================================= -->
-                <!-- UNREGISTERED ONU -->
-                <!-- ================================================= -->
-                <a
-                    href="/unregistered-onus"
-                    class="flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs transition"
-                >
-                    <svg
-                        class="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M12 4v16M4 12h16"
-                        ></path>
-                    </svg>
-                    <span>
-                        Unregistered ONU
-                    </span>
-                </a>
-                <!-- ================================================= -->
-                <!-- ALL ONUS -->
-                <!-- ================================================= -->
-                <a
-                    href="/all-onus"
-                    class="flex items-center space-x-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs transition"
-                >
-                    <svg
-                        class="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
 
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M4 6h16M4 10h16M4 14h16M4 18h16"
-                        ></path>
-
-                    </svg>
-
-                    <span>
-                        All ONUs
-                    </span>
-
+                <!-- 4. TRAFFIC GRAPHS (Semua Role) -->
+                <div class="pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 px-4">Graphs</div>
+                <a href="/graphs" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/graphs' %}bg-blue-50 text-sky-600{% endif %}">
+                    <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 3v18h18M7 15l4-4 4 3 6-8"/></svg>
+                    <span>Traffic</span>
                 </a>
 
-                </div>
+                <!-- 5. OLT SETTINGS (Super Admin & NOC Saja) -->
+                {% if role in ['Super Admin', 'NOC'] %}
+                <div class="pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 px-4">Infrastructure</div>
+                <a href="/olt-management" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium transition {% if request.url.path in ['/olt-management', '/olt-settings'] %}bg-blue-50 text-sky-600{% else %}text-blue-950 hover:bg-slate-50{% endif %}">
+                    <svg class="h-5 w-5 {% if request.url.path in ['/olt-management', '/olt-settings'] %}text-sky-600{% else %}text-slate-400{% endif %}" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="6" rx="2"/><rect x="3" y="13" width="18" height="6" rx="2"/><circle cx="7" cy="8" r=".8" fill="white"/><circle cx="7" cy="16" r=".8" fill="white"/><path d="M10 8h7M10 16h7" stroke="white" stroke-width="1.2"/></svg>
+                    <span>OLT Settings</span>
+                </a>
+                {% endif %}
+
+                <!-- SECTION: ACCOUNT & SYSTEM -->
+                <div class="pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 px-4">Account</div>
+                <!-- 6. MY ACCOUNT -->
+                <a href="/my-account" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium transition {% if request.url.path == '/my-account' %}bg-blue-50 text-sky-600{% else %}text-blue-950 hover:bg-slate-50{% endif %}">
+                    <svg class="h-5 w-5 {% if request.url.path == '/my-account' %}text-sky-600{% else %}text-slate-400{% endif %}" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="4"/><path d="M2 20a7 7 0 0 1 14 0v1H2z"/><path d="M17 5h5M17 9h5M17 13h5" stroke="currentColor" stroke-width="1.5"/></svg>
+                    <span>My Account</span>
+                </a>
+
+                {% if role in ['Super Admin', 'NOC'] %}
+                <div class="pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 px-4">System</div>
+                <!-- 7. ACTIVITY LOG -->
+                <a href="/activity-log" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/activity-log' %}bg-blue-50 text-sky-600{% endif %}">
+                    <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Activity Log</span>
+                </a>
+                {% endif %}
+
+                <!-- 8. USER MANAGEMENT & CUSTOMIZATION (Khusus Super Admin Saja) -->
+                {% if role == 'Super Admin' %}
+                <a href="/customization" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/customization' %}bg-blue-50 text-sky-600{% endif %}">
+                    <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+                    <span>Customization</span>
+                </a>
+                <a href="/user-management" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/user-management' %}bg-blue-50 text-sky-600{% endif %}">
+                    <svg class="h-5 w-5 text-slate-400" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><circle cx="18" cy="9" r="3"/><path d="M1 21a8 8 0 0 1 16 0v1H1zM17 15a6 6 0 0 1 6 6h-4a9 9 0 0 0-3-6z"/></svg>
+                    <span>User Management</span>
+                </a>
+                {% endif %}
             </nav>
-
-            <div class="hidden border-t border-slate-100 pt-4">
-                <p class="px-3 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">OLT & System</p>
-                <a href="/olt-management" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs"><span>▤</span> OLT Management</a>
-                <a href="/olt-settings" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs"><span>⚙</span> OLT Settings</a>
-                <a href="/activity-log" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs"><span>◷</span> Activity Log</a>
-                <a href="/graphs" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs"><span>▥</span> Graphs</a>
-                <p class="px-3 mt-4 mb-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Template</p>
-                <a href="/tr069-profiles" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 font-medium text-xs"><span>▧</span> TR-069 Profile</a>
-            </div>
-
-            <div class="mt-4 space-y-2 border-t border-slate-100 pt-3">
-                <p class="px-4 pt-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Graphs</p>
-                <a href="/graphs" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/graphs' %}bg-blue-50 text-sky-600{% endif %}"><svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 3v18h18M7 15l4-4 4 3 6-8"/></svg><span>Traffic</span></a>
-
-                <p class="px-4 pt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Infrastructure</p>
-                <a href="/olt-management" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium transition {% if request.url.path in ['/olt-management', '/olt-settings'] %}bg-blue-50 text-sky-600{% else %}text-blue-950 hover:bg-slate-50{% endif %}"><svg class="h-5 w-5 {% if request.url.path in ['/olt-management', '/olt-settings'] %}text-sky-600{% else %}text-slate-400{% endif %}" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="6" rx="2"/><rect x="3" y="13" width="18" height="6" rx="2"/><circle cx="7" cy="8" r=".8" fill="white"/><circle cx="7" cy="16" r=".8" fill="white"/><path d="M10 8h7M10 16h7" stroke="white" stroke-width="1.2"/></svg><span>OLT Settings</span></a>
-                <a href="/olt-settings" class="{% if request.url.path != '/olt-settings' %}hidden {% endif %}ml-10 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-sky-600"><span>●</span><span>OLT Configuration</span></a>
-                <a href="/tr069-profiles" class="flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-blue-950 transition hover:bg-slate-50"><span class="w-5 text-center text-slate-400">▧</span><span>TR-069 Profile</span></a>
-
-                <p class="px-4 pt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Account</p>
-                <a href="/my-account" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium transition {% if request.url.path == '/my-account' %}bg-blue-50 text-sky-600{% else %}text-blue-950 hover:bg-slate-50{% endif %}"><svg class="h-5 w-5 {% if request.url.path == '/my-account' %}text-sky-600{% else %}text-slate-400{% endif %}" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="4"/><path d="M2 20a7 7 0 0 1 14 0v1H2z"/><path d="M17 5h5M17 9h5M17 13h5" stroke="currentColor" stroke-width="1.5"/></svg><span>My Account</span></a>
-
-                <p class="px-4 pt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">System</p>
-                <a href="/activity-log" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/activity-log' %}bg-blue-50 text-sky-600{% endif %}"><span class="w-5 text-center text-slate-400">☷</span><span>Activity Log</span></a>
-                <a href="/customization" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-blue-950 transition hover:bg-slate-50"><span class="w-5 text-center text-slate-400">☷</span><span>Customization</span></a>
-                <a href="/user-management" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-blue-950 transition hover:bg-slate-50"><svg class="h-5 w-5 text-slate-400" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><circle cx="18" cy="9" r="3"/><path d="M1 21a8 8 0 0 1 16 0v1H1zM17 15a6 6 0 0 1 6 6h-4a9 9 0 0 0-3-6z"/></svg><span>User Management</span></a>
-            </div>
-
         </aside>
 
-
-
-        <!-- ===================================================== -->
         <!-- CONTENT -->
-        <!-- ===================================================== -->
-
         <main class="flex-1 p-8 space-y-6 overflow-y-auto">
-
-            {% block content %}
-
-            <!-- Isi halaman akan dimasukkan di sini -->
-
-            {% endblock %}
-
+            {% block content %}{% endblock %}
         </main>
-
-
     </div>
 
-</body>
-<script>
-    function bindSidebarGroup(buttonId, submenuId, groupName) {
-        const button = document.getElementById(buttonId);
-        const submenu = document.getElementById(submenuId);
-        const chevron = document.querySelector(`[data-chevron="${groupName}"]`);
-        button?.addEventListener('click', () => {
-            const isExpanded = button.getAttribute('aria-expanded') === 'true';
-            button.setAttribute('aria-expanded', String(!isExpanded));
-            submenu?.classList.toggle('hidden', isExpanded);
-            chevron?.classList.toggle('-rotate-90', isExpanded);
-            button.classList.toggle('bg-blue-50', !isExpanded);
-            button.classList.toggle('text-sky-600', !isExpanded);
-            button.classList.toggle('text-blue-950', isExpanded);
-        });
-    }
-    bindSidebarGroup('onuMenuToggle', 'onuSubmenu', 'onu');
-    bindSidebarGroup('templateMenuToggle', 'templateSubmenu', 'template');
-    document.querySelectorAll('a[href="/tr069-profiles"]').forEach(link => {
-        if (!link.closest('#templateSubmenu')) link.classList.add('hidden');
-    });
-
-    const profileButton = document.getElementById('profileButton');
-    const profileDropdown = document.getElementById('profileDropdown');
-    profileButton?.addEventListener('click', () => {
-        const isOpen = !profileDropdown.classList.toggle('hidden');
-        profileButton.setAttribute('aria-expanded', String(isOpen));
-    });
-    document.addEventListener('click', (event) => {
-        if (!event.target.closest('#profileMenu')) {
-            profileDropdown?.classList.add('hidden');
-            profileButton?.setAttribute('aria-expanded', 'false');
-        }
-    });
-    async function refreshStatusBadges() {
-        try {
-            const response = await fetch('/api/summary');
-            if (!response.ok) return;
-            const counts = await response.json();
-            document.querySelectorAll('[data-status-count]').forEach((badge) => {
-                badge.textContent = counts[badge.dataset.statusCount] ?? 0;
+    <!-- SCRIPT JAVASCRIPT GLOBAL -->
+    <script>
+        function bindSidebarGroup(buttonId, submenuId, groupName) {
+            const button = document.getElementById(buttonId);
+            const submenu = document.getElementById(submenuId);
+            const chevron = document.querySelector(`[data-chevron="${groupName}"]`);
+            button?.addEventListener('click', () => {
+                const isExpanded = button.getAttribute('aria-expanded') === 'true';
+                button.setAttribute('aria-expanded', String(!isExpanded));
+                submenu?.classList.toggle('hidden', isExpanded);
+                chevron?.classList.toggle('-rotate-90', isExpanded);
+                button.classList.toggle('bg-blue-50', !isExpanded);
+                button.classList.toggle('text-sky-600', !isExpanded);
+                button.classList.toggle('text-blue-950', isExpanded);
             });
-        } catch (error) { /* badges retain their server-rendered values */ }
-    }
-    setInterval(refreshStatusBadges, 15000);
-</script>
+        }
+        bindSidebarGroup('onuMenuToggle', 'onuSubmenu', 'onu');
+        bindSidebarGroup('templateMenuToggle', 'templateSubmenu', 'template');
 
+        const profileButton = document.getElementById('profileButton');
+        const profileDropdown = document.getElementById('profileDropdown');
+        profileButton?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = !profileDropdown.classList.toggle('hidden');
+            profileButton.setAttribute('aria-expanded', String(isOpen));
+        });
+        document.addEventListener('click', (event) => {
+            if (!event.target.closest('#profileMenu')) {
+                profileDropdown?.classList.add('hidden');
+                profileButton?.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        async function refreshStatusBadges() {
+            try {
+                const response = await fetch('/api/summary');
+                if (!response.ok) return;
+                const counts = await response.json();
+                document.querySelectorAll('[data-status-count]').forEach((badge) => {
+                    badge.textContent = counts[badge.dataset.statusCount] ?? 0;
+                });
+            } catch (error) {}
+        }
+        setInterval(refreshStatusBadges, 15000);
+    </script>
+</body>
 </html>

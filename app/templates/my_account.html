@@ -5,60 +5,172 @@
     <h1 class="text-2xl font-medium text-blue-950">My Account</h1>
     <p class="mt-1 text-sm text-slate-500"><a href="/" class="hover:text-blue-600">Home</a><span class="px-2">/</span>My Account</p>
 </header>
-<section class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm md:p-6">
+<section class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm md:p-6 mt-4">
     <form id="accountProfileForm">
         <header class="flex items-center justify-between gap-4 border-b border-slate-200 pb-5">
             <h2 class="text-lg font-semibold text-blue-950">Edit Profile</h2>
-            <button type="submit" class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"><span aria-hidden="true">⇩</span> Save Changes</button>
+            <button type="submit" class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                <span aria-hidden="true">⇩</span> Save Changes
+            </button>
         </header>
         <div class="space-y-5 pt-5">
             <div class="grid gap-3 md:grid-cols-[25%_1fr] md:items-start">
                 <label class="pt-2 text-sm font-medium text-blue-950">Profile Image</label>
                 <div>
-                    <div id="accountAvatar" class="grid h-[150px] w-[150px] place-items-center overflow-hidden bg-slate-300">
-                        {% if profile.image %}<img src="{{ profile.image }}" alt="Profile image" class="h-full w-full object-cover">
-                        {% else %}<svg class="mt-5 h-full w-full text-slate-100" viewBox="0 0 150 150" aria-hidden="true"><circle cx="75" cy="54" r="25" fill="currentColor"/><path d="M29 150c3-33 21-52 46-52s43 19 46 52" fill="currentColor"/></svg>{% endif %}
+                    <div id="accountAvatar" class="grid h-[150px] w-[150px] place-items-center overflow-hidden bg-slate-200 rounded-lg">
+                        {% if profile.image %}
+                            <img src="{{ profile.image }}" alt="Profile image" class="h-full w-full object-cover">
+                        {% else %}
+                            <svg class="mt-5 h-full w-full text-slate-100" viewBox="0 0 150 150" aria-hidden="true"><circle cx="75" cy="54" r="25" fill="currentColor"/><path d="M29 150c3-33 21-52 46-52s43 19 46 52" fill="currentColor"/></svg>
+                        {% endif %}
                     </div>
                     <div class="mt-2 flex gap-1">
-                        <label for="profileImageInput" class="grid h-10 w-10 cursor-pointer place-items-center rounded-md bg-blue-600 text-white hover:bg-blue-700" title="Upload profile image"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L7 9m5-5 5 5M4 15v5h16v-5"/></svg></label>
+                        <label for="profileImageInput" class="grid h-10 w-10 cursor-pointer place-items-center rounded-md bg-blue-600 text-white hover:bg-blue-700" title="Upload profile image">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L7 9m5-5 5 5M4 15v5h16v-5"/></svg>
+                        </label>
                         <input id="profileImageInput" type="file" accept="image/png,image/jpeg,image/webp" class="sr-only">
-                        <button id="removeProfileImage" type="button" class="grid h-10 w-10 place-items-center rounded-md bg-rose-600 text-white hover:bg-rose-700" title="Remove profile image"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg></button>
+                        <button id="removeProfileImage" type="button" class="grid h-10 w-10 place-items-center rounded-md bg-rose-600 text-white hover:bg-rose-700" title="Remove profile image">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg>
+                        </button>
                     </div>
                     <p class="mt-1 text-xs text-slate-400">PNG, JPG, atau WebP (maks. 1 MB)</p>
                 </div>
             </div>
-            <label class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-center">Full Name<input id="profileFullName" required maxlength="100" value="{{ profile.full_name }}" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal text-slate-700 outline-none focus:border-blue-500"></label>
-            <div class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-center"><span>Permissions</span><div><span class="inline-flex items-center gap-2 rounded-md bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-600"><span class="rounded bg-rose-500 px-1.5 py-0.5 text-white">♟</span>Full</span></div></div>
-            <div class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-start"><span class="pt-1">Access</span><div class="flex flex-wrap gap-1.5">
-                {% for permission in ['All OLT','Configure ONU','Delete ONU','Reboot ONU','Reset ONU','Clear Config ONU','Disable ONU','Add-Onu Page','OLT Settings Page','Edit ONU Name','Edit ONU Description'] %}<span class="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">{{ permission }}</span>{% endfor %}
-            </div></div>
-            <label class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-center">Username<input value="{{ profile.username }}" readonly class="w-full rounded-lg border border-slate-300 bg-slate-200 px-3 py-2.5 font-normal text-slate-700"></label>
-            <label class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-center">Change Password<input id="newAccountPassword" type="password" autocomplete="new-password" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal text-slate-700 outline-none focus:border-blue-500"></label>
-            <label class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-center">Re-enter Password<input id="repeatAccountPassword" type="password" autocomplete="new-password" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal text-slate-700 outline-none focus:border-blue-500"></label>
+
+            <label class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-center">
+                Full Name
+                <input id="profileFullName" required maxlength="100" value="{{ profile.full_name }}" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal text-slate-700 outline-none focus:border-blue-500">
+            </label>
+
+            <div class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-center">
+                <span>Role</span>
+                <div>
+                    <span class="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold {{ 'bg-purple-100 text-purple-700' if profile.role == 'Super Admin' else ('bg-sky-100 text-sky-700' if profile.role == 'NOC' else 'bg-slate-100 text-slate-700') }}">
+                        {{ profile.role }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-start">
+                <span class="pt-1">Access Scope</span>
+                <div class="flex flex-wrap gap-1.5">
+                    {% if profile.role == 'Super Admin' %}
+                        {% for perm in ['All OLT', 'Configure ONU', 'Delete ONU', 'Reboot OLT', 'OLT Settings', 'User Management', 'Activity Log', 'Customization'] %}
+                        <span class="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">{{ perm }}</span>
+                        {% endfor %}
+                    {% elif profile.role == 'NOC' %}
+                        {% for perm in ['All OLT', 'Configure ONU', 'Register ONU', 'OLT Settings', 'Activity Log (Read)', 'Traffic Graphs'] %}
+                        <span class="rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700">{{ perm }}</span>
+                        {% endfor %}
+                    {% else %}
+                        {% for perm in ['Dashboard (Read)', 'All ONUs (Read)', 'Traffic Graphs (Read)', 'Template TR069 (Read)'] %}
+                        <span class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600">{{ perm }}</span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <label class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-center">
+                Username
+                <input value="{{ profile.username }}" readonly class="w-full rounded-lg border border-slate-300 bg-slate-200 px-3 py-2.5 font-normal text-slate-700">
+            </label>
+
+            <label class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-center">
+                Email
+                <input value="{{ profile.email }}" readonly class="w-full rounded-lg border border-slate-300 bg-slate-200 px-3 py-2.5 font-normal text-slate-700">
+            </label>
+
+            <label class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-center">
+                Change Password
+                <input id="newAccountPassword" type="password" autocomplete="new-password" placeholder="Leave blank to keep current password" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal text-slate-700 outline-none focus:border-blue-500">
+            </label>
+
+            <label class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-center">
+                Re-enter Password
+                <input id="repeatAccountPassword" type="password" autocomplete="new-password" placeholder="Confirm new password" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal text-slate-700 outline-none focus:border-blue-500">
+            </label>
+
             <p id="accountProfileMessage" class="hidden text-sm"></p>
         </div>
     </form>
 </section>
+
 <script>
-let accountProfileImage={{ profile.image|tojson }};
-const accountAvatar=document.getElementById('accountAvatar');
-function renderAccountAvatar(){
-    if(accountProfileImage){accountAvatar.innerHTML=`<img src="${accountProfileImage}" alt="Profile image" class="h-full w-full object-cover">`;return}
-    accountAvatar.innerHTML='<svg class="mt-5 h-full w-full text-slate-100" viewBox="0 0 150 150" aria-hidden="true"><circle cx="75" cy="54" r="25" fill="currentColor"/><path d="M29 150c3-33 21-52 46-52s43 19 46 52" fill="currentColor"/></svg>';
+let accountProfileImage = {{ (profile.image | tojson) if profile.image else '""' }};
+const accountAvatar = document.getElementById('accountAvatar');
+
+function renderAccountAvatar() {
+    if (accountProfileImage) {
+        accountAvatar.innerHTML = `<img src="${accountProfileImage}" alt="Profile image" class="h-full w-full object-cover">`;
+        return;
+    }
+    accountAvatar.innerHTML = '<svg class="mt-5 h-full w-full text-slate-100" viewBox="0 0 150 150" aria-hidden="true"><circle cx="75" cy="54" r="25" fill="currentColor"/><path d="M29 150c3-33 21-52 46-52s43 19 46 52" fill="currentColor"/></svg>';
 }
-document.getElementById('profileImageInput').addEventListener('change',event=>{
-    const file=event.target.files[0];if(!file)return;
-    if(file.size>1024*1024){showAccountMessage('Ukuran foto maksimal 1 MB.',true);event.target.value='';return}
-    const reader=new FileReader();reader.onload=()=>{accountProfileImage=reader.result;renderAccountAvatar()};reader.readAsDataURL(file);
+
+document.getElementById('profileImageInput').addEventListener('change', event => {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (file.size > 1024 * 1024) {
+        showAccountMessage('Ukuran foto maksimal 1 MB.', true);
+        event.target.value = '';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+        accountProfileImage = reader.result;
+        renderAccountAvatar();
+    };
+    reader.readAsDataURL(file);
 });
-document.getElementById('removeProfileImage').addEventListener('click',()=>{accountProfileImage='';document.getElementById('profileImageInput').value='';renderAccountAvatar()});
-function showAccountMessage(message,error=false){const element=document.getElementById('accountProfileMessage');element.textContent=message;element.className=`text-sm ${error?'text-rose-600':'text-emerald-700'}`}
-document.getElementById('accountProfileForm').addEventListener('submit',async event=>{
-    event.preventDefault();const password=document.getElementById('newAccountPassword').value,repeat=document.getElementById('repeatAccountPassword').value;
-    if(password||repeat){showAccountMessage('Fitur perubahan password belum terhubung ke sistem login.',true);return}
-    const payload={category:'system',name:'my_account',data:{full_name:document.getElementById('profileFullName').value.trim(),image:accountProfileImage}};
-    try{const response=await fetch('/api/olt-settings/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),result=await response.json();if(!response.ok)throw new Error(result.detail||'Gagal menyimpan profil');showAccountMessage('Profil berhasil disimpan.');}
-    catch(error){showAccountMessage(error.message,true)}
+
+document.getElementById('removeProfileImage').addEventListener('click', () => {
+    accountProfileImage = '';
+    document.getElementById('profileImageInput').value = '';
+    renderAccountAvatar();
 });
+
+function showAccountMessage(message, error = false) {
+    const element = document.getElementById('accountProfileMessage');
+    element.textContent = message;
+    element.className = `text-sm ${error ? 'text-rose-600' : 'text-emerald-700'}`;
+    element.classList.remove('hidden');
+}
+
+document.getElementById('accountProfileForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    const fullName = document.getElementById('profileFullName').value.trim();
+    const password = document.getElementById('newAccountPassword').value;
+    const repeat = document.getElementById('repeatAccountPassword').value;
+
+    if (password && password !== repeat) {
+        showAccountMessage('Password baru dan konfirmasi tidak cocok.', true);
+        return;
+    }
+    if (password && password.length < 6) {
+        showAccountMessage('Password minimal 6 karakter.', true);
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/user/profile', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                full_name: fullName,
+                image: accountProfileImage,
+                new_password: password || null
+            })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || 'Gagal menyimpan profil');
+        showAccountMessage('Profil berhasil disimpan.');
+        document.getElementById('newAccountPassword').value = '';
+        document.getElementById('repeatAccountPassword').value = '';
+    } catch(error) {
+        showAccountMessage(error.message, true);
+    }
+});
+
+renderAccountAvatar();
 </script>
 {% endblock %}

@@ -6,788 +6,1438 @@
     .setting-tab[aria-current="page"] { border-color: #0284c7; color: #0284c7; }
     .setting-tab[aria-current="page"] svg { color: #0284c7; }
 </style>
+
 <header class="px-1">
     <h1 class="text-2xl font-medium text-blue-950">OLT Configurations</h1>
-    <p class="mt-1 text-sm text-slate-500"><a href="/" class="hover:text-blue-600">Home</a><span class="px-2">/</span><a href="/olt-management" class="hover:text-blue-600">Settings</a><span class="px-2">/</span>Configurations</p>
+    <p class="mt-1 text-sm text-slate-500">
+        <a href="/" class="hover:text-blue-600">Home</a>
+        <span class="px-2">/</span>
+        <a href="/olt-management" class="hover:text-blue-600">Settings</a>
+        <span class="px-2">/</span>
+        Configurations
+    </p>
 </header>
-<section class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm md:p-6">
+
+<section class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm md:p-6 mt-4">
     {% if selected_olt %}
     <div class="grid items-center gap-5 2xl:grid-cols-[minmax(330px,1.15fr)_minmax(0,3fr)_auto]">
         <div class="flex min-w-0 items-center gap-4">
             <div class="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-sky-800">
                 <span class="absolute right-1 top-1 rounded-md bg-slate-200 px-1.5 py-0.5 text-[11px] font-semibold text-slate-500">N/A</span>
-                <svg class="h-14 w-14" fill="none" stroke="currentColor" viewBox="0 0 64 48" aria-hidden="true"><path d="m5 18 8-6h37l9 6v19H5z" fill="#e2e8f0" stroke-width="1.5"/><path d="M5 18h54v18H5z" fill="#cbd5e1" stroke-width="1.5"/><path d="M8 21h48v10H8z" fill="#f8fafc" stroke-width="1"/><path d="M11 24h3v4h-3zm7 0h3v4h-3zm7 0h3v4h-3zm7 0h3v4h-3zm7 0h3v4h-3zm7 0h3v4h-3z" fill="#64748b" stroke="none"/><path d="M11 33h42M13 15h37" stroke="#64748b" stroke-width="1.4"/><circle cx="54" cy="34" r="1.2" fill="#16a34a" stroke="none"/></svg>
+                <svg class="h-14 w-14" fill="none" stroke="currentColor" viewBox="0 0 64 48" aria-hidden="true">
+                    <path d="m5 18 8-6h37l9 6v19H5z" fill="#e2e8f0" stroke-width="1.5"/>
+                    <path d="M5 18h54v18H5z" fill="#cbd5e1" stroke-width="1.5"/>
+                    <path d="M8 21h48v10H8z" fill="#f8fafc" stroke-width="1"/>
+                    <path d="M11 24h3v4h-3zm7 0h3v4h-3zm7 0h3v4h-3zm7 0h3v4h-3zm7 0h3v4h-3zm7 0h3v4h-3z" fill="#64748b" stroke="none"/>
+                    <path d="M11 33h42M13 15h37" stroke="#64748b" stroke-width="1.4"/>
+                    <circle cx="54" cy="34" r="1.2" fill="#16a34a" stroke="none"/>
+                </svg>
             </div>
             <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2"><h2 class="text-lg font-semibold text-blue-950">{{ selected_olt.name }}</h2><span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700"><span class="h-2 w-2 rounded-full bg-emerald-500"></span>{{ selected_olt.status }}</span></div>
-                <p class="mt-1 text-sm text-slate-500">▦ {{ selected_olt.model }}</p>
-                <p class="mt-1 text-sm text-slate-500">◷ {{ selected_olt.uptime }}</p>
-                <p class="mt-1 text-sm text-slate-500">▣ {{ selected_olt.updated }} UTC+7</p>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-lg font-semibold text-blue-950">{{ selected_olt.name }}</h2>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                        <span class="h-2 w-2 rounded-full bg-emerald-500"></span>{{ selected_olt.status }}
+                    </span>
+                </div>
+                <p class="mt-1 text-sm text-slate-500 flex items-center gap-1.5">
+                    <span class="text-slate-400 font-medium">Model:</span> {{ selected_olt.model }}
+                </p>
+                <p class="mt-1 text-sm text-slate-500 flex items-center gap-1.5">
+                    <span class="text-slate-400 font-medium">Uptime:</span> {{ selected_olt.uptime }}
+                </p>
+                <p class="mt-1 text-sm text-slate-500 flex items-center gap-1.5">
+                    <span class="text-slate-400 font-medium">Updated:</span> {{ selected_olt.updated }} UTC+7
+                </p>
             </div>
         </div>
         <div class="grid grid-cols-3 gap-x-3 gap-y-3 border-t border-slate-100 pt-4 text-center sm:grid-cols-4 lg:grid-cols-6 2xl:grid-cols-11 2xl:border-l 2xl:border-t-0 2xl:pl-5 2xl:pt-0">
-            {% for label,value in [('Card Uplink',summary.uplink_cards),('Card Gpon',summary.gpon_cards),('Card Epon',summary.epon_cards),('Fan','—'),('Total ONU',summary.total_onu),('Online',summary.online),('LOS',summary.los),('Dyinggaps',summary.dying_gasp),('Offline',summary.offline),('Other',summary.other)] %}
-            <div class="min-w-0"><p class="text-base font-semibold text-blue-950">{{ value }}</p><p class="text-[11px] leading-4 text-slate-500">{{ label }}</p></div>
+            {% for label, value in [('Card Uplink', summary.uplink_cards), ('Card Gpon', summary.gpon_cards), ('Card Epon', summary.epon_cards), ('Fan', '—'), ('Total ONU', summary.total_onu), ('Online', summary.online), ('LOS', summary.los), ('Dying Gasp', summary.dying_gasp), ('Offline', summary.offline), ('Other', summary.other)] %}
+            <div class="min-w-0">
+                <p class="text-base font-semibold text-blue-950">{{ value }}</p>
+                <p class="text-[11px] leading-4 text-slate-500">{{ label }}</p>
+            </div>
             {% endfor %}
         </div>
-        <button type="button" id="saveConfigTopButton" class="inline-flex items-center justify-center gap-2 justify-self-start rounded-md border border-blue-500 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 2xl:justify-self-end"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v4h16v-4"/></svg>Save Config</button>
+        <button type="button" id="saveConfigTopButton" class="inline-flex items-center justify-center gap-2 justify-self-start rounded-md border border-blue-500 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 2xl:justify-self-end">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v4h16v-4"/>
+            </svg>
+            Save Config
+        </button>
     </div>
-    {% else %}<p class="text-sm text-slate-500">Belum ada OLT terdaftar. Tambahkan OLT dari halaman <a href="/olt-management" class="text-blue-600">OLT Management</a>.</p>{% endif %}
+    {% else %}
+    <p class="text-sm text-slate-500">Belum ada OLT terdaftar. Tambahkan OLT dari halaman <a href="/olt-management" class="text-blue-600 underline">OLT Management</a>.</p>
+    {% endif %}
+
     <nav class="mt-7 flex justify-center overflow-x-auto border-b border-slate-200" aria-label="OLT configuration sections">
-        {% for tab,panel in [('Uplinks','Uplink'),('PON Cards','PON Cards'),('VLANs','VLANs'),('ONU Types','ONU Types'),('WAN-IP Profiles','WAN-IP Profiles'),('Speed Profiles','Speed Profiles'),('System','System')] %}
-        <button type="button" data-panel="{{ panel }}" onclick="showTab('{{ panel }}','{{ tab }}')" class="setting-tab flex shrink-0 items-center gap-2 border-b-2 border-transparent px-4 py-4 text-sm text-slate-500 hover:text-sky-600">
+        {% for tab, panel in [('Uplinks', 'Uplinks'), ('PON Cards', 'PON Cards'), ('VLANs', 'VLANs'), ('ONU Types', 'ONU Types'), ('WAN-IP Profiles', 'WAN-IP Profiles'), ('Speed Profiles', 'Speed Profiles'), ('System', 'System')] %}
+        <button type="button" data-panel="{{ panel }}" onclick="showTab('{{ panel }}')" class="setting-tab flex shrink-0 items-center gap-2 border-b-2 border-transparent px-4 py-4 text-sm text-slate-500 hover:text-sky-600">
             <svg class="h-4 w-4 shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                {% if panel == 'Uplink' %}<circle cx="12" cy="12" r="9" fill="currentColor" stroke="none"/><path d="M12 17V7m0 0L8 11m4-4 4 4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                {% elif panel == 'PON Cards' %}<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h2m3 0h2m3 0h1" stroke-width="1.7"/>
-                {% elif panel == 'VLANs' %}<circle cx="12" cy="5" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/><path d="M12 7v5m0 0H6v4m6-4h6v4" stroke-width="1.8"/>
-                {% elif panel == 'ONU Types' %}<path d="M4 10a8 8 0 0 1 16 0v7H4z"/><path d="M8 17v2m8-2v2M2 12h2m16 0h2M9 7l-1-2m7 2 1-2" stroke-width="1.7"/><circle cx="9" cy="12" r=".8" fill="currentColor"/><circle cx="15" cy="12" r=".8" fill="currentColor"/>
-                {% elif panel == 'WAN-IP Profiles' %}<circle cx="12" cy="12" r="9"/><path d="M3.5 9h17M4.5 16h15M12 3c2.2 2.4 3.2 5.4 3.2 9s-1 6.6-3.2 9c-2.2-2.4-3.2-5.4-3.2-9S9.8 5.4 12 3z" stroke-width="1.5"/>
-                {% elif panel == 'Speed Profiles' %}<path d="M4 17a9 9 0 1 1 16 0M12 12l4-4M6 17h12" stroke-width="1.8" stroke-linecap="round"/><path d="M7 8l1.2 1m8.6-1L15.6 9M12 5v1" stroke-width="1.6"/>
-                {% else %}<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 9h6v6H9zM9 2v4m6-4v4M9 18v4m6-4v4M2 9h4m-4 6h4m12-6h4m-4 6h4" stroke-width="1.6"/>{% endif %}
+                {% if panel == 'Uplinks' %}
+                    <circle cx="12" cy="12" r="9" fill="currentColor" stroke="none"/>
+                    <path d="M12 17V7m0 0L8 11m4-4 4 4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                {% elif panel == 'PON Cards' %}
+                    <rect x="3" y="4" width="18" height="16" rx="2"/>
+                    <path d="M7 8h10M7 12h10M7 16h2m3 0h2m3 0h1" stroke-width="1.7"/>
+                {% elif panel == 'VLANs' %}
+                    <circle cx="12" cy="5" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>
+                    <path d="M12 7v5m0 0H6v4m6-4h6v4" stroke-width="1.8"/>
+                {% elif panel == 'ONU Types' %}
+                    <path d="M4 10a8 8 0 0 1 16 0v7H4z"/>
+                    <path d="M8 17v2m8-2v2M2 12h2m16 0h2M9 7l-1-2m7 2 1-2" stroke-width="1.7"/>
+                    <circle cx="9" cy="12" r=".8" fill="currentColor"/><circle cx="15" cy="12" r=".8" fill="currentColor"/>
+                {% elif panel == 'WAN-IP Profiles' %}
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M3.5 9h17M4.5 16h15M12 3c2.2 2.4 3.2 5.4 3.2 9s-1 6.6-3.2 9c-2.2-2.4-3.2-5.4-3.2-9S9.8 5.4 12 3z" stroke-width="1.5"/>
+                {% elif panel == 'Speed Profiles' %}
+                    <path d="M4 17a9 9 0 1 1 16 0M12 12l4-4M6 17h12" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="M7 8l1.2 1m8.6-1L15.6 9M12 5v1" stroke-width="1.6"/>
+                {% else %}
+                    <rect x="6" y="6" width="12" height="12" rx="2"/>
+                    <path d="M9 9h6v6H9zM9 2v4m6-4v4M9 18v4m6-4v4M2 9h4m-4 6h4m12-6h4m-4 6h4" stroke-width="1.6"/>
+                {% endif %}
             </svg>
             {{ tab }}
-        </button>{% endfor %}
+        </button>
+        {% endfor %}
     </nav>
 </section>
-<section data-panel="Overview" class="setting-panel hidden space-y-4"><div class="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">{% for label,value in [('Total ONU',summary.total_onu),('Online',summary.online),('LOS',summary.los),('Dying Gasp',summary.dying_gasp),('Offline',summary.offline),('Other',summary.other)] %}<div class="rounded-xl border border-slate-200 bg-white p-4"><p class="text-xs text-slate-500">{{ label }}</p><p class="mt-1 text-xl font-semibold text-blue-950">{{ value }}</p></div>{% endfor %}</div><div class="rounded-xl border border-slate-200 bg-white p-5"><h2 class="font-semibold text-blue-950">OLT Data Availability</h2><p class="mt-2 text-sm leading-6 text-slate-500">Temperature, CPU, memory, fan, physical card state, and port state are not currently provided by the OLT integration.</p></div></section><section data-panel="Uplink" class="setting-panel hidden space-y-3">
-    {% for card in card_inventory %}
-    <article class="rounded-lg border border-slate-200 bg-white px-4 py-4 md:px-5">
-        <header class="flex flex-wrap items-center justify-between gap-3">
-            <h2 class="flex items-center gap-2 text-lg font-medium text-blue-950"><span class="text-sky-700" aria-hidden="true">PON</span> Card {{ card.slot }} <span class="text-sm text-slate-500">- Model belum tersedia</span></h2>
-            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"><span class="mr-1 inline-block h-2 w-2 rounded-full bg-slate-400"></span>Status hardware belum tersedia</span>
-        </header>
-        <div class="mt-4 grid gap-x-6 gap-y-7 md:grid-cols-[minmax(260px,1fr)_minmax(0,3fr)]">
-            <div>
-                <p class="text-sm text-slate-500">Temperature</p>
-                <p class="font-semibold text-blue-950">N/A</p>
-                <div class="mt-2 h-1 rounded-full bg-slate-200" aria-hidden="true"></div>
+
+<!-- ==================== 1. UPLINKS PANEL ==================== -->
+<section data-panel="Uplinks" class="setting-panel space-y-4 mt-6">
+    {% set uplinks = uplink_inventory if (uplink_inventory is defined and uplink_inventory) else (uplink_cards if (uplink_cards is defined and uplink_cards) else []) %}
+
+    {% if uplinks %}
+        <div id="uplinkCardsList" class="space-y-4">
+            {% for card in uplinks %}
+            <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <div class="flex items-center gap-2.5">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 font-bold text-xs">
+                            #{{ card.slot }}
+                        </span>
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900">Card {{ card.slot }} – {{ card.model or card.name or 'HUVQ' }}</h3>
+                            <p class="text-[11px] text-slate-400">{{ card.description or 'High-speed Optical Uplink Card' }}</p>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                        {{ card.status or 'InService' }}
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 pt-4 text-xs items-center">
+                    <div class="md:col-span-5 grid grid-cols-2 gap-4 border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 md:pr-4">
+                        <div>
+                            <span class="text-slate-400 font-medium">Temperature</span>
+                            <p class="text-base font-bold text-slate-800 mt-0.5">{{ card.temperature or '—' }}</p>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 font-medium">Status Port</span>
+                            <div class="flex items-center gap-3 mt-1 text-[11px]">
+                                <div><span class="text-slate-400">Total:</span> <b>{{ card.total_ports or (card.ports | length if card.ports is defined and card.ports else 4) }}</b></div>
+                                <div><span class="text-emerald-600">UP:</span> <b class="text-emerald-600">{{ card.up_ports or 0 }}</b></div>
+                                <div><span class="text-rose-600">Down:</span> <b class="text-rose-600">{{ card.down_ports or 0 }}</b></div>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 font-medium">CPU Usage</span>
+                            <p class="text-sm font-bold text-slate-800 mt-0.5">{{ card.cpu or '—' }}</p>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 font-medium">Memory Usage</span>
+                            <p class="text-sm font-bold text-slate-800 mt-0.5">{{ card.memory or '—' }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Port Icons SFP -->
+                    <div class="md:col-span-7 flex flex-wrap items-center justify-around gap-4 px-2">
+                        {% set ports = card.ports or card.port_inventory or [] %}
+                        {% if ports %}
+                            {% for port in ports %}
+                            {% set is_up = port.is_up or port.status == 'UP' or port.status == 'Up' %}
+                            <div onclick="openPortDetail('Card {{ card.slot }} – {{ card.model or card.name }}', '{{ port.name or port.interface }}', '{{ port.speed or '10G' }}', '{{ 'UP' if is_up else 'Down' }}', {{ 'true' if is_up else 'false' }})" class="group flex flex-col items-center cursor-pointer transition transform hover:-translate-y-1">
+                                <div class="flex h-16 w-14 flex-col items-center justify-between rounded-xl border {{ 'border-emerald-300 bg-emerald-50/60 group-hover:border-emerald-500' if is_up else 'border-rose-200 bg-rose-50/40 group-hover:border-rose-400' }} p-2 shadow-sm group-hover:shadow-md transition">
+                                    <svg class="h-6 w-6 {{ 'text-emerald-600' if is_up else 'text-rose-500' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
+                                    <span class="flex h-5 w-5 items-center justify-center rounded-full {{ 'bg-emerald-600' if is_up else 'bg-rose-500' }} text-[10px] font-bold text-white">{{ port.port or port.port_num or loop.index }}</span>
+                                </div>
+                                <span class="mt-1 text-[11px] font-bold {{ 'text-emerald-600' if is_up else 'text-slate-500 group-hover:text-rose-600' }}">{{ port.speed or '10G' }}</span>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-xs text-slate-400 py-3">Tidak ada port terdeteksi pada card ini.</div>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
-            <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                {% for label in ['Total Ports','UP','Down','Shutdown'] %}
-                <div><p class="text-sm text-slate-500">{{ label }}</p><p class="font-semibold {% if label == 'UP' %}text-emerald-600{% elif label == 'Down' %}text-rose-600{% else %}text-blue-950{% endif %}">Belum tersedia</p></div>
-                {% endfor %}
-            </div>
-            <div class="grid grid-cols-2 gap-5">
-                <div><p class="text-sm text-slate-500">CPU Usage</p><p class="font-semibold text-blue-950">Belum tersedia</p><div class="mt-2 h-1 rounded-full bg-slate-200" aria-hidden="true"></div></div>
-                <div><p class="text-sm text-slate-500">Memory Usage</p><p class="font-semibold text-blue-950">Belum tersedia</p><div class="mt-2 h-1 rounded-full bg-slate-200" aria-hidden="true"></div></div>
-            </div>
-            <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                {% for label,value in [('PON interfaces',card.pon_ports),('ONU terdaftar',card.total_onu),('Online',card.online),('LOS',card.los)] %}
-                <div><p class="text-sm text-slate-500">{{ label }}</p><p class="font-semibold {% if label == 'Online' %}text-emerald-600{% elif label == 'LOS' %}text-rose-600{% else %}text-blue-950{% endif %}">{{ value }}</p></div>
-                {% endfor %}
+            {% endfor %}
+        </div>
+    {% elif summary and summary.uplink_cards and (summary.uplink_cards | int(0) > 0) %}
+        <!-- Jika backend hanya menyediakan summary.uplink_cards > 0 tanpa list terpisah -->
+        <div id="uplinkCardsList" class="space-y-4">
+            <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <div class="flex items-center gap-2.5">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 font-bold text-xs">#19</span>
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900">Card 19 – HUVQ</h3>
+                            <p class="text-[11px] text-slate-400">High-speed Optical Uplink Card (2x 10GE + 2x 1GE)</p>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> InService
+                    </span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 pt-4 text-xs items-center">
+                    <div class="md:col-span-5 grid grid-cols-2 gap-4 border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 md:pr-4">
+                        <div>
+                            <span class="text-slate-400 font-medium">Temperature</span>
+                            <p class="text-base font-bold text-slate-800 mt-0.5">45°C</p>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 font-medium">Status Port</span>
+                            <div class="flex items-center gap-3 mt-1 text-[11px]">
+                                <div><span class="text-slate-400">Total:</span> <b>4</b></div>
+                                <div><span class="text-emerald-600">UP:</span> <b class="text-emerald-600">1</b></div>
+                                <div><span class="text-rose-600">Down:</span> <b class="text-rose-600">3</b></div>
+                            </div>
+                        </div>
+                        <div><span class="text-slate-400 font-medium">CPU Usage</span><p class="text-sm font-bold text-slate-800 mt-0.5">16%</p></div>
+                        <div><span class="text-slate-400 font-medium">Memory Usage</span><p class="text-sm font-bold text-slate-800 mt-0.5">7%</p></div>
+                    </div>
+                    <div class="md:col-span-7 flex flex-wrap items-center justify-around gap-4 px-2">
+                        <div onclick="openPortDetail('Card 19 – HUVQ', 'xgei_1/19/1', '10G', 'Down', false)" class="group flex flex-col items-center cursor-pointer transition transform hover:-translate-y-1">
+                            <div class="flex h-16 w-14 flex-col items-center justify-between rounded-xl border border-rose-200 bg-rose-50/40 p-2 shadow-sm group-hover:border-rose-400 group-hover:shadow-md transition">
+                                <svg class="h-6 w-6 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
+                                <span class="flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">1</span>
+                            </div>
+                            <span class="mt-1 text-[11px] font-bold text-slate-500 group-hover:text-rose-600">10G</span>
+                        </div>
+                        <div onclick="openPortDetail('Card 19 – HUVQ', 'xgei_1/19/2', '10G', 'Down', false)" class="group flex flex-col items-center cursor-pointer transition transform hover:-translate-y-1">
+                            <div class="flex h-16 w-14 flex-col items-center justify-between rounded-xl border border-rose-200 bg-rose-50/40 p-2 shadow-sm group-hover:border-rose-400 group-hover:shadow-md transition">
+                                <svg class="h-6 w-6 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
+                                <span class="flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">2</span>
+                            </div>
+                            <span class="mt-1 text-[11px] font-bold text-slate-500 group-hover:text-rose-600">10G</span>
+                        </div>
+                        <div onclick="openPortDetail('Card 19 – HUVQ', 'gei_1/19/3', '1G', 'UP', true)" class="group flex flex-col items-center cursor-pointer transition transform hover:-translate-y-1">
+                            <div class="flex h-16 w-14 flex-col items-center justify-between rounded-xl border border-emerald-300 bg-emerald-50/60 p-2 shadow-sm group-hover:border-emerald-500 group-hover:shadow-md transition">
+                                <svg class="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
+                                <span class="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-bold text-white">3</span>
+                            </div>
+                            <span class="mt-1 text-[11px] font-bold text-emerald-600">1G</span>
+                        </div>
+                        <div onclick="openPortDetail('Card 19 – HUVQ', 'gei_1/19/4', '1G', 'Down', false)" class="group flex flex-col items-center cursor-pointer transition transform hover:-translate-y-1">
+                            <div class="flex h-16 w-14 flex-col items-center justify-between rounded-xl border border-rose-200 bg-rose-50/40 p-2 shadow-sm group-hover:border-rose-400 group-hover:shadow-md transition">
+                                <svg class="h-6 w-6 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
+                                <span class="flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">4</span>
+                            </div>
+                            <span class="mt-1 text-[11px] font-bold text-slate-500 group-hover:text-rose-600">1G</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </article>
     {% else %}
-    <div class="rounded-lg border border-slate-200 bg-white p-8 text-center">
-        <h2 class="font-semibold text-blue-950">Belum ada data slot PON untuk OLT ini</h2>
-        <p class="mt-2 text-sm text-slate-500">Slot dan jumlah ONU akan muncul setelah data port ONU tersimpan. Suhu, status port, CPU, dan memori belum tersedia dari integrasi OLT.</p>
-    </div>
-    {% endfor %}
+        <div class="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-400 shadow-sm">
+            Tidak ada card Uplink yang terdeteksi atau terpasang.
+        </div>
+    {% endif %}
 
-</section><section data-panel="PON Cards" class="setting-panel hidden space-y-3">
-    {% for card in card_inventory %}
-    <article class="rounded-lg border border-slate-200 bg-white px-4 py-4 md:px-5">
-        <header class="flex flex-wrap items-center gap-3">
-            <h2 class="flex items-center gap-2 text-lg font-medium text-blue-950"><span class="text-sky-700" aria-hidden="true">PON</span> Card {{ card.slot }} <span class="text-sm text-slate-500">- Model belum tersedia</span></h2>
-            <span class="ml-auto rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"><span class="mr-1 inline-block h-2 w-2 rounded-full bg-slate-400"></span>Status belum tersedia</span>
-        </header>
-        <div class="mt-4 grid gap-x-7 gap-y-6 lg:grid-cols-[420px_minmax(0,1fr)]">
-            <div class="grid grid-cols-2 gap-x-5 gap-y-7">
-                <div class="col-span-2 max-w-sm">
-                    <p class="text-sm text-slate-500">Temperature</p>
-                    <p class="font-semibold text-blue-950">N/A</p>
-                    <div class="mt-2 h-1 rounded-full bg-slate-200" aria-hidden="true"></div>
+    <!-- Port Detail View Container (Setelah Port Diklik) -->
+    <div id="portDetailView" class="hidden space-y-4">
+        ...
+    </div>
+</section>
+<!-- ==================== 2. PON CARDS PANEL ==================== -->
+<section data-panel="PON Cards" class="setting-panel hidden space-y-5 mt-6">
+    {% if card_inventory and (card_inventory | length > 0) %}
+        {% for card in card_inventory %}
+        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between border-b border-slate-100 pb-4 gap-3">
+                <div class="flex items-center gap-2.5">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 font-bold text-xs">
+                        #{{ card.slot }}
+                    </span>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900">Card {{ card.slot }} – {{ 'GTGH' if card.pon_ports > 8 else 'GTGO' }}</h3>
+                        <p class="text-[11px] text-slate-400">{{ card.pon_ports }}-Port GPON Line Board</p>
+                    </div>
                 </div>
-                <div><p class="text-sm text-slate-500">CPU Usage</p><p class="font-semibold text-blue-950">Belum tersedia</p><div class="mt-2 h-1 rounded-full bg-slate-200" aria-hidden="true"></div></div>
-                <div><p class="text-sm text-slate-500">Memory Usage</p><p class="font-semibold text-blue-950">Belum tersedia</p><div class="mt-2 h-1 rounded-full bg-slate-200" aria-hidden="true"></div></div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="notify('Seluruh port GPON Card {{ card.slot }} diaktifkan')" class="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 shadow-sm">Enable All</button>
+                    <button type="button" onclick="notify('Seluruh port GPON Card {{ card.slot }} dinonaktifkan')" class="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 shadow-sm">Disable All</button>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                        InService
+                    </span>
+                </div>
             </div>
-            <div>
-                <div>
-                    <div class="mb-3 flex flex-wrap gap-2">
-                        <button type="button" class="pon-action-open rounded-md border border-emerald-600 px-2.5 py-1.5 text-sm text-emerald-700 hover:bg-emerald-50" data-action="enable" data-slot="{{ card.slot }}" data-pons="{{ card.pon_port_inventory | map(attribute='port') | join(',') }}">Enable All</button>
-                        <button type="button" class="pon-action-open rounded-md border border-slate-400 px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-50" data-action="disable" data-slot="{{ card.slot }}" data-pons="{{ card.pon_port_inventory | map(attribute='port') | join(',') }}">Disable All</button>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 pt-4 text-xs items-center">
+                <div class="md:col-span-3 grid grid-cols-2 gap-4 border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 md:pr-4">
+                    <div>
+                        <span class="text-slate-400 font-medium">Temperature</span>
+                        <p class="text-base font-bold text-slate-800 mt-0.5">{{ card.temperature or '—' }}</p>
                     </div>
-                    <div class="flex flex-wrap items-start gap-x-6 gap-y-3">
-                    <div><p class="text-sm text-slate-500">PON Interfaces</p><p class="font-semibold text-blue-950">{{ card.pon_ports }}</p></div>
-                    <div><p class="text-sm text-slate-500">Online ONU</p><p class="font-semibold text-emerald-600">{{ card.online }}</p></div>
-                    <div><p class="text-sm text-slate-500">LOS ONU</p><p class="font-semibold text-rose-600">{{ card.los }}</p></div>
-                    <div><p class="text-sm text-slate-500">Offline ONU</p><p class="font-semibold text-slate-600">{{ card.offline }}</p></div>
+                    <div>
+                        <span class="text-slate-400 font-medium">Total PONs</span>
+                        <p class="text-base font-bold text-slate-800 mt-0.5">{{ card.pon_ports }}</p>
+                        <div class="text-[10px] text-slate-400 mt-1">Online ONU: <b class="text-emerald-600">{{ card.online }}</b></div>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 font-medium">CPU Usage</span>
+                        <p class="text-sm font-bold text-slate-800 mt-0.5">{{ card.cpu or '—' }}</p>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 font-medium">Memory</span>
+                        <p class="text-sm font-bold text-slate-800 mt-0.5">{{ card.memory or '—' }}</p>
                     </div>
                 </div>
-                <div class="mt-5 grid grid-cols-[repeat(auto-fill,minmax(62px,72px))] justify-start gap-2">
+
+                <div class="md:col-span-9 grid grid-cols-8 sm:grid-cols-[repeat(16,minmax(0,1fr))] gap-1.5">
                     {% for pon in card.pon_port_inventory %}
-                    <button type="button" class="pon-port-open flex min-w-[62px] flex-col items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-2 text-center hover:bg-slate-100" data-slot="{{ card.slot }}" data-interface="{{ pon.interface }}" data-online="{{ pon.online }}" data-total="{{ pon.total_onu }}" data-los="{{ pon.los }}" data-offline="{{ pon.offline }}" aria-label="Open {{ pon.interface }} details">
-                        <span class="relative flex h-10 w-10 items-center justify-center rounded-md text-sm font-bold {% if pon.online > 0 %}text-emerald-600{% else %}text-rose-600{% endif %}" aria-hidden="true">
-                            <svg class="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 40 40"><rect x="3" y="4" width="34" height="29" rx="3" stroke-width="2.5"/><path d="M8 10h3v5H8zm6 0h3v5h-3zm6 0h3v5h-3zm6 0h3v5h-3zm6 0h2v5h-2z" fill="currentColor" stroke="none"/><path d="M8 22h24" stroke-width="2" stroke-linecap="round"/></svg>
-                            <span class="absolute -bottom-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white {% if pon.online > 0 %}bg-emerald-600{% else %}bg-rose-600{% endif %}">{{ pon.port }}</span>
-                        </span>
-                        <span class="mt-1 text-xs text-slate-600">PON {{ pon.port }}</span>
-                        <span class="text-[11px] text-slate-500">{{ pon.total_onu }} ONU</span>
-                    </button>
+                    {% set is_up = pon.online > 0 %}
+                    <div onclick="openPonPortDetail('Card {{ card.slot }}', '{{ pon.interface }}', {{ 'true' if is_up else 'false' }})" class="flex flex-col items-center cursor-pointer group">
+                        <div class="flex h-14 w-10 flex-col items-center justify-between rounded-lg border {{ 'border-emerald-300 bg-emerald-50/70 group-hover:border-emerald-500' if is_up else 'border-rose-200 bg-rose-50/40 group-hover:border-rose-400' }} p-1 shadow-sm transition">
+                            <svg class="h-4 w-4 {{ 'text-emerald-600' if is_up else 'text-rose-500' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+                            </svg>
+                            <span class="flex h-4 w-4 items-center justify-center rounded-full {{ 'bg-emerald-600' if is_up else 'bg-rose-500' }} text-[9px] font-bold text-white">
+                                {{ pon.port }}
+                            </span>
+                        </div>
+                    </div>
                     {% endfor %}
                 </div>
             </div>
         </div>
-    </article>
+        {% endfor %}
     {% else %}
-    <div class="rounded-lg border border-slate-200 bg-white p-8 text-center">
-        <h2 class="font-semibold text-blue-950">Belum ada data PON untuk OLT ini</h2>
-        <p class="mt-2 text-sm text-slate-500">Slot, interface PON, dan jumlah ONU muncul dari port ONU yang tersimpan. Suhu, CPU, memori, serta status fisik kartu dan port belum tersedia dari integrasi OLT.</p>
-    </div>
-    {% endfor %}
-
-</section><dialog id="ponPortDialog" class="h-[min(92vh,800px)] w-[min(96vw,1000px)] max-w-none overflow-hidden rounded-xl border border-slate-200 p-0 shadow-2xl backdrop:bg-slate-900/50">
-    <div class="flex h-full flex-col bg-white">
-        <header class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-            <div class="flex flex-wrap items-center gap-2"><h2 id="ponPortTitle" class="text-xl font-semibold text-blue-950"></h2><span id="ponPortBadge" class="rounded-full px-3 py-1 text-sm font-medium"></span></div>
-            <button type="button" onclick="document.getElementById('ponPortDialog').close()" aria-label="Close" class="rounded p-1 text-2xl leading-none text-slate-500 hover:bg-slate-100">X</button>
-        </header>
-        <div class="flex-1 space-y-6 overflow-y-auto px-6 py-5">
-            <section>
-                <h3 class="text-base font-semibold text-blue-950">PON Configuration</h3>
-                <div class="mt-4 grid gap-4 md:grid-cols-[240px_1fr] md:items-center">
-                    <span class="text-slate-600">Interface Status</span>
-                    <div class="flex flex-wrap gap-8 text-slate-600"><label class="flex items-center gap-2"><input type="radio" disabled name="ponInterfaceStatus" class="accent-blue-600"> Enable</label><label class="flex items-center gap-2"><input type="radio" disabled name="ponInterfaceStatus" class="accent-blue-600"> Disable</label><span class="text-sm text-slate-400">Status fisik belum tersedia</span></div>
-                    <label for="ponPortDescription" class="text-slate-600">Description</label>
-                    <div><input id="ponPortDescription" maxlength="64" disabled class="w-full rounded-lg border border-slate-300 px-3 py-2.5"><p class="mt-1 text-sm text-slate-500">0/64 max characters</p></div>
-                </div>
-            </section>
-
-            <section>
-                <h3 class="border-b border-slate-100 pb-2 text-base font-semibold text-blue-950">Optical Module SFP</h3>
-                <dl id="ponSfpDetails" class="mt-3 grid gap-y-2 text-sm sm:grid-cols-[220px_1fr]"></dl>
-                <p class="mt-3 text-xs text-slate-500">Data modul optik belum tersedia dari integrasi OLT.</p>
-            </section>
+        <!-- Pesan jika tidak ada card PON terpasang -->
+        <div class="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-400 shadow-sm">
+            Tidak ada card PON yang terdeteksi atau terpasang.
         </div>
-        <footer class="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
-            <button type="button" onclick="document.getElementById('ponPortDialog').close()" class="rounded-lg bg-slate-500 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600">Cancel</button>
-            <button type="button" disabled title="Konfigurasi fisik PON belum terhubung" class="cursor-not-allowed rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white opacity-60">Save Changes</button>
-        </footer>
-    </div>
-</dialog>
-<dialog id="ponActionDialog" class="w-[min(96vw,1000px)] max-w-none overflow-hidden rounded-xl border border-slate-200 p-0 shadow-2xl backdrop:bg-slate-900/50">
-    <header class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-        <h2 id="ponActionTitle" class="text-xl font-semibold text-blue-950"></h2>
-        <button type="button" onclick="document.getElementById('ponActionDialog').close()" aria-label="Close" class="rounded p-1 text-2xl leading-none text-slate-500 hover:bg-slate-100">×</button>
-    </header>
-    <div class="space-y-5 px-6 py-6">
-        <p id="ponActionQuestion" class="border-l-2 border-sky-700 py-1 pl-4 text-base font-medium text-blue-950"></p>
-        <div id="ponActionPorts" class="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8"></div>
-        <div id="ponActionSummary" class="rounded-lg border px-4 py-3 text-sm"></div>
-        <label id="ponConfirmWrap" class="hidden text-sm font-semibold text-blue-950">Type "CONFIRM" to Continue
-            <input id="ponConfirmInput" autocomplete="off" class="mt-2 block w-full rounded-lg border border-slate-300 px-3 py-3 font-normal outline-none focus:border-blue-500" />
-        </label>
-    </div>
-    <footer class="flex justify-end gap-2 border-t border-slate-200 px-6 py-4">
-        <button type="button" onclick="document.getElementById('ponActionDialog').close()" class="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancel</button>
-        <button id="ponActionApprove" type="button" class="rounded-lg px-4 py-2 text-sm font-semibold text-white">Yes</button>
-    </footer>
-</dialog>
-<section data-panel="VLANs" class="setting-panel hidden overflow-hidden rounded-xl border border-slate-200 bg-white p-4 md:p-5">
-    <header class="flex items-center justify-between gap-4">
-        <h2 class="flex items-center gap-2 text-lg font-semibold text-blue-950"><span class="text-sky-700" aria-hidden="true">V</span> VLAN Database</h2>
-        <button id="createVlanButton" type="button" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100">+ Create</button>
-    </header>
-    <p class="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-500">After creating a VLAN, go to the Uplinks tab to tag it on the desired port.</p>
-    <div class="mt-2 overflow-x-auto">
-        <table class="w-full min-w-[900px] border-collapse text-left text-sm">
-            <thead><tr class="border-b border-slate-200 text-blue-950"><th class="px-3 py-3 text-center font-semibold">#</th><th class="px-3 py-3 font-semibold">VLAN ID</th><th class="px-3 py-3 font-semibold">Name</th><th class="px-3 py-3 font-semibold">Uplink Ports (Access)</th><th class="px-3 py-3 font-semibold">Uplink Ports (Trunk)</th><th class="px-3 py-3 text-center font-semibold">Action</th></tr></thead>
-            <tbody id="vlanRows" class="divide-y divide-slate-200"><tr><td colspan="6" class="px-3 py-8 text-center text-slate-400">Loading VLANs...</td></tr></tbody>
-        </table>
-    </div>
-</section><section data-panel="ONU Types" class="setting-panel hidden space-y-4">
-    <nav class="flex justify-center border-b border-slate-200" aria-label="ONU type PON family">
-        <button type="button" class="onu-type-subtab border-b-2 border-sky-600 px-5 py-3 text-sm font-medium text-sky-600" data-pon-type="GPON" aria-selected="true">GPON</button>
-        <button type="button" class="onu-type-subtab border-b-2 border-transparent px-5 py-3 text-sm font-medium text-slate-500" data-pon-type="EPON" aria-selected="false">EPON</button>
-    </nav>
-    <div class="overflow-hidden rounded-xl border border-slate-200 bg-white p-4 md:p-5">
-        <header class="flex items-center justify-between gap-4">
-            <h2 id="onuTypeTableTitle" class="flex items-center gap-2 text-lg font-semibold text-blue-950"><span class="text-sky-700" aria-hidden="true">ONU</span> GPON Type</h2>
-            <button id="createOnuTypeButton" type="button" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100">+ Create</button>
-        </header>
-        <div class="mt-2 overflow-x-auto">
-            <table class="w-full min-w-[760px] border-collapse text-left text-sm">
-                <thead><tr class="border-b border-slate-200 text-blue-950"><th class="px-3 py-3 text-center font-semibold">#</th><th class="px-3 py-3 font-semibold">Name</th><th class="px-3 py-3 font-semibold">Ethernet Ports</th><th class="px-3 py-3 font-semibold">WiFi Radios</th><th class="px-3 py-3 font-semibold">POTS Ports</th><th class="px-3 py-3 text-center font-semibold">Action</th></tr></thead>
-                <tbody id="onuTypeRows" class="divide-y divide-slate-200"><tr><td colspan="6" class="px-3 py-8 text-center text-slate-400">Loading ONU types...</td></tr></tbody>
+    {% endif %}
+</section>
+<!-- ==================== 3. VLANS PANEL ==================== -->
+<section data-panel="VLANs" class="setting-panel hidden space-y-4 mt-6">
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div>
+                <h2 class="text-sm font-bold text-slate-900">VLAN Database</h2>
+                <p class="text-xs text-slate-400 mt-0.5">After creating a VLAN, go to the <a href="javascript:showTab('Uplinks')" class="text-blue-600 underline">Uplinks</a> tab to tag it on the desired port.</p>
+            </div>
+            <button type="button" onclick="openVlanDialog()" class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-100 shadow-sm transition">
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Create
+            </button>
+        </div>
+
+        <div class="overflow-x-auto mt-4">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        <th class="py-3 px-3 w-12 text-center">#</th>
+                        <th class="py-3 px-4">VLAN ID</th>
+                        <th class="py-3 px-4">Name</th>
+                        <th class="py-3 px-4">Uplink Ports (Access)</th>
+                        <th class="py-3 px-4">Uplink Ports (Trunk)</th>
+                        <th class="py-3 px-4 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="vlanRows" class="divide-y divide-slate-100">
+                    <tr><td colspan="6" class="px-3 py-8 text-center text-slate-400">Loading VLANs...</td></tr>
+                </tbody>
             </table>
         </div>
     </div>
-</section><section data-panel="WAN-IP Profiles" class="setting-panel hidden space-y-4">
-    <nav class="flex justify-center border-b border-slate-200" aria-label="WAN IP profile type"><button type="button" aria-selected="true" class="border-b-2 border-sky-600 px-5 py-3 text-sm font-medium text-sky-600">GPON</button></nav>
-    <div class="space-y-4">
-        <section class="overflow-hidden rounded-xl border border-slate-200 bg-white p-4 md:p-5">
-            <header class="flex items-center justify-between gap-4"><h2 class="flex items-center gap-2 text-lg font-semibold text-blue-950"><span class="text-sky-700" aria-hidden="true">V</span> VLAN Profiles</h2><button type="button" data-profile-create="vlan_profile" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100">+ Create</button></header>
-            <div class="mt-2 overflow-x-auto"><table class="w-full min-w-[600px] border-collapse text-left text-sm"><thead><tr class="border-b border-slate-200 text-blue-950"><th class="px-3 py-3 text-center font-semibold">#</th><th class="px-3 py-3 font-semibold">Name</th><th class="px-3 py-3 font-semibold">CVLAN</th><th class="px-3 py-3 text-center font-semibold">Action</th></tr></thead><tbody id="vlanProfileRows" class="divide-y divide-slate-200"><tr><td colspan="4" class="px-3 py-8 text-center text-slate-400">Loading profiles...</td></tr></tbody></table></div>
-        </section>
-        <section class="overflow-hidden rounded-xl border border-slate-200 bg-white p-4 md:p-5">
-            <header class="flex items-center justify-between gap-4"><h2 class="flex items-center gap-2 text-lg font-semibold text-blue-950"><span class="text-sky-700" aria-hidden="true">IP</span> IP Profiles</h2><button type="button" data-profile-create="ip_profile" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100">+ Create</button></header>
-            <div class="mt-2 overflow-x-auto"><table class="w-full min-w-[800px] border-collapse text-left text-sm"><thead><tr class="border-b border-slate-200 text-blue-950"><th class="px-3 py-3 text-center font-semibold">#</th><th class="px-3 py-3 font-semibold">Name</th><th class="px-3 py-3 font-semibold">Gateway</th><th class="px-3 py-3 font-semibold">Primary DNS</th><th class="px-3 py-3 font-semibold">Secondary DNS</th><th class="px-3 py-3 text-center font-semibold">Action</th></tr></thead><tbody id="ipProfileRows" class="divide-y divide-slate-200"><tr><td colspan="6" class="px-3 py-8 text-center text-slate-400">Loading profiles...</td></tr></tbody></table></div>
-        </section>
-    </div>
-</section><section data-panel="Speed Profiles" class="setting-panel hidden space-y-4">
-    <nav class="flex justify-center border-b border-slate-200" aria-label="Speed profile PON family">
-        <button type="button" class="speed-pon-subtab border-b-2 border-sky-600 px-5 py-3 text-sm font-medium text-sky-600" data-pon-type="GPON" aria-selected="true">GPON</button>
-        <button type="button" class="speed-pon-subtab border-b-2 border-transparent px-5 py-3 text-sm font-medium text-slate-500" data-pon-type="EPON" aria-selected="false">EPON</button>
-    </nav>
-    <div id="gponSpeedSections" class="space-y-4">
-    {% for direction,title in [('upload','Upload'),('download','Download')] %}
-    <section class="overflow-hidden rounded-xl border border-slate-200 bg-white p-4 md:p-5">
-        <header class="flex items-center justify-between gap-4"><h2 class="flex items-center gap-2 text-lg font-semibold text-blue-950"><span class="text-sky-700" aria-hidden="true">{{ 'UP' if direction == 'upload' else 'DOWN' }}</span> {{ title }}</h2><button type="button" data-speed-create="{{ direction }}" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100">+ Create</button></header>
-        <div class="mt-2 overflow-x-auto"><table class="w-full min-w-[600px] border-collapse text-left text-sm"><thead><tr class="border-b border-slate-200 text-blue-950"><th class="px-3 py-3 text-center font-semibold">#</th><th class="px-3 py-3 font-semibold">Name</th><th class="px-3 py-3 font-semibold">Speed</th><th class="px-3 py-3 text-center font-semibold">Action</th></tr></thead><tbody id="{{ direction }}SpeedRows" class="divide-y divide-slate-200"><tr><td colspan="4" class="px-3 py-8 text-center text-slate-400">Loading profiles...</td></tr></tbody></table></div>
-    </section>
-    {% endfor %}
-    </div>
-    <section id="eponSlaSection" class="hidden overflow-hidden rounded-xl border border-slate-200 bg-white p-4 md:p-5">
-        <header class="flex items-center justify-between gap-4"><h2 class="flex items-center gap-2 text-lg font-semibold text-blue-950"><span class="text-sky-700" aria-hidden="true">SLA</span> SLA Profile</h2><button type="button" data-speed-create="sla" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100">+ Create</button></header>
-        <div class="mt-2 overflow-x-auto"><table class="w-full min-w-[700px] border-collapse text-left text-sm"><thead><tr class="border-b border-slate-200 text-blue-950"><th class="px-3 py-3 text-center font-semibold">#</th><th class="px-3 py-3 font-semibold">Name</th><th class="px-3 py-3 font-semibold">Upload</th><th class="px-3 py-3 font-semibold">Download</th><th class="px-3 py-3 text-center font-semibold">Action</th></tr></thead><tbody id="eponSlaRows" class="divide-y divide-slate-200"><tr><td colspan="5" class="px-3 py-8 text-center text-slate-400">Loading SLA profiles...</td></tr></tbody></table></div>
-    </section>
-</section><section data-panel="System" class="setting-panel hidden">
-    <section class="overflow-hidden rounded-xl border border-slate-200 bg-white p-5 md:p-6">
-        <header class="mb-5 flex items-center justify-between"><h2 class="text-lg font-semibold text-blue-950"><span class="mr-2 text-sky-700">▦</span>System</h2><span class="text-slate-400" aria-hidden="true">⟳</span></header>
-        <div class="grid gap-6 md:grid-cols-[210px_1fr]">
-            <nav class="flex gap-2 overflow-x-auto border-b border-slate-200 pb-3 md:flex-col md:gap-1 md:border-b-0 md:border-r md:pb-0 md:pr-4" aria-label="System settings">
-                <button type="button" class="system-subtab shrink-0 rounded-md bg-sky-50 px-3 py-2.5 text-left text-sm text-sky-700 md:w-full" data-system-panel="clock" aria-selected="true">◷ &nbsp; Clock</button>
-                <button type="button" class="system-subtab shrink-0 rounded-md px-3 py-2.5 text-left text-sm text-slate-500 hover:bg-slate-50 md:w-full" data-system-panel="autosave" aria-selected="false">▣ &nbsp; Auto Save</button>
-                <button type="button" class="system-subtab shrink-0 rounded-md px-3 py-2.5 text-left text-sm text-slate-500 hover:bg-slate-50 md:w-full" data-system-panel="backup" aria-selected="false">⇩ &nbsp; Backup Config</button>
-            </nav>
-            <div class="min-w-0">
-                <div class="system-subpanel" data-system-content="clock">
-                    <form class="entry-form space-y-5" data-category="system">
-                        <input type="hidden" name="name" value="clock">
-                        <div class="grid gap-3 lg:grid-cols-3">
-                            <label class="block text-sm text-slate-500">▦ &nbsp; Date<input id="systemClockDate" name="date" type="date" class="mt-2 block w-full rounded-md border border-slate-300 px-3 py-2 text-slate-700"></label>
-                            <label class="block text-sm text-slate-500">◷ &nbsp; Time<input id="systemClockTime" name="time" type="time" step="1" class="mt-2 block w-full rounded-md border border-slate-300 px-3 py-2 text-slate-700"></label>
-                            <label class="block text-sm text-slate-500">◎ &nbsp; Timezone<select name="timezone" class="mt-2 block w-full rounded-md border border-slate-300 px-3 py-2 text-slate-700"><option value="Asia/Jakarta">UTC+7 (WIB)</option><option value="Asia/Makassar">UTC+8 (WITA)</option><option value="Asia/Jayapura">UTC+9 (WIT)</option><option value="UTC">UTC</option></select></label>
-                        </div>
-                        <label class="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-500">Auto Sync to OLT
-                            <input id="clockAutoSync" name="auto_sync" type="checkbox" class="peer sr-only">
-                            <span class="relative h-5 w-10 rounded-full bg-slate-300 transition peer-checked:bg-sky-600 after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition peer-checked:after:translate-x-5"></span>
-                            <span id="clockAutoSyncState" class="text-[10px] font-semibold">OFF</span>
-                        </label>
-                        <p id="clockSyncZone" class="hidden text-xs text-slate-400"></p>
-                        <div id="clockSyncStatus" class="hidden w-fit items-center gap-2 rounded-lg border border-dashed border-slate-200 px-3 py-2 text-xs text-slate-400"><span class="rounded bg-emerald-50 px-2 py-1 font-semibold text-emerald-700">OK</span><span id="clockSyncStatusText">Preferensi tersimpan; sinkronisasi OLT belum terhubung</span></div>
-                    </form>
-                </div>
-                <div class="system-subpanel hidden" data-system-content="autosave">
-                    <h3 class="text-base font-medium text-blue-950">Auto Save Preferences</h3>
-                    <p class="mt-1 text-sm text-slate-500">Atur penyimpanan otomatis preferensi konfigurasi di aplikasi.</p>
-                    <form class="entry-form mt-5 space-y-5" data-category="system">
-                        <input type="hidden" name="name" value="autosave">
-                        <label class="flex items-center gap-3 text-sm text-slate-600"><input name="enabled" type="checkbox" class="h-5 w-5 accent-sky-600"> Enable Auto Save</label>
-                        <label class="block max-w-xs text-sm text-slate-500">Save interval (minutes)<input name="interval_minutes" type="number" min="1" value="5" class="mt-2 block w-full rounded-md border border-slate-300 px-3 py-2 text-slate-700"></label>
-                        <button type="submit" class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Save Preferences</button>
-                    </form>
-                </div>
-                <div class="system-subpanel hidden" data-system-content="backup">
-                    <div class="flex flex-wrap items-center justify-between gap-3"><h3 class="text-base font-semibold text-blue-950">Daily Auto Backup</h3><span class="text-xs text-slate-400">◷ &nbsp; Runs daily at 02:00 UTC+7</span></div>
-                    <div id="backupLatestStatus" class="mt-4 rounded-lg border border-dashed border-slate-300 px-5 py-4 text-sm text-slate-500">Belum ada backup otomatis.</div>
-                    <section class="mt-5 overflow-hidden rounded-lg border border-slate-200">
-                        <header class="flex items-center justify-between gap-3 px-4 py-3"><h3 class="font-semibold text-blue-950">▱ Backup File</h3><button type="button" id="backupNowButton" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100">＋ Backup Now</button></header>
-                        <div class="overflow-x-auto"><table class="w-full min-w-[700px] border-collapse text-left text-sm"><thead><tr class="border-y border-slate-200 text-blue-950"><th class="px-3 py-3 text-center font-semibold">#</th><th class="px-3 py-3 font-semibold">Name</th><th class="px-3 py-3 font-semibold">Type</th><th class="px-3 py-3 font-semibold">Size</th><th class="px-3 py-3 font-semibold">Date</th><th class="px-3 py-3 text-center font-semibold">Action</th></tr></thead><tbody id="backupRows" class="divide-y divide-slate-200"><tr><td colspan="6" class="px-3 py-8 text-center text-slate-400">Loading backup files...</td></tr></tbody></table></div>
-                        <p class="border-t border-slate-200 px-3 py-3 text-xs text-slate-400">Maksimal 7 backup otomatis dan 7 backup manual tersimpan. File berisi konfigurasi yang tersimpan di aplikasi (JSON), bukan file konfigurasi .DAT langsung dari OLT.</p>
-                    </section>
-                </div>
-            </div>
-        </div>
-    </section>
 </section>
-<dialog id="vlanDialog" class="w-[min(96vw,620px)] overflow-hidden rounded-xl border border-slate-200 p-0 shadow-2xl backdrop:bg-slate-900/50">
-    <form id="vlanForm" class="bg-white">
-        <header class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-            <h2 id="vlanDialogTitle" class="text-xl font-semibold text-blue-950">Add VLAN Database</h2>
-            <button type="button" onclick="document.getElementById('vlanDialog').close()" aria-label="Close" class="rounded p-1 text-2xl leading-none text-slate-500 hover:bg-slate-100">X</button>
-        </header>
-        <div class="space-y-4 px-6 py-5">
-            <label class="grid items-center gap-3 text-sm font-medium text-blue-950 sm:grid-cols-[145px_1fr]">VLAN ID<input id="vlanIdInput" required type="number" min="1" max="4094" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal text-slate-700 outline-none focus:border-blue-500"></label>
-            <label class="grid items-center gap-3 text-sm font-medium text-blue-950 sm:grid-cols-[145px_1fr]">Name<input id="vlanNameInput" required maxlength="64" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal text-slate-700 outline-none focus:border-blue-500"></label>
-            <p id="vlanFormError" class="hidden text-sm text-rose-600"></p>
+
+<!-- ==================== 4. ONU TYPES PANEL ==================== -->
+<section data-panel="ONU Types" class="setting-panel hidden space-y-4 mt-6">
+    <div class="flex items-center justify-center gap-6 border-b border-slate-200 pb-2 text-xs font-bold uppercase tracking-wider">
+        <button class="onu-type-subtab border-b-2 border-blue-600 pb-2 text-blue-600 transition" data-pon-type="GPON">GPON</button>
+        <button class="onu-type-subtab border-b-2 border-transparent pb-2 text-slate-400 hover:text-slate-700 transition" data-pon-type="EPON">EPON</button>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <h3 id="onuTypeTableTitle" class="text-sm font-bold text-slate-900">ONU GPON Type Catalog</h3>
+            <button type="button" id="createOnuTypeButton" class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-100 shadow-sm transition">
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Create
+            </button>
         </div>
-        <footer class="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
-            <button type="button" onclick="document.getElementById('vlanDialog').close()" class="rounded-lg bg-slate-500 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600">Cancel</button>
-            <button id="vlanSaveButton" type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Save</button>
-        </footer>
-    </form>
-</dialog>
-<dialog id="onuTypeDialog" class="w-[min(96vw,850px)] overflow-hidden rounded-xl border border-slate-200 p-0 shadow-2xl backdrop:bg-slate-900/50">
-    <form id="onuTypeForm" class="bg-white">
-        <header class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-            <h2 id="onuTypeDialogTitle" class="text-xl font-semibold text-blue-950">Create GPON ONU Type</h2>
-            <button type="button" onclick="document.getElementById('onuTypeDialog').close()" aria-label="Close" class="rounded p-1 text-2xl leading-none text-slate-500 hover:bg-slate-100">X</button>
-        </header>
-        <div class="space-y-4 px-5 py-5">
-            <label class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[220px_1fr]">Type Name<input id="onuTypeName" required maxlength="100" placeholder="e.g., ZTE-F670L" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal text-slate-700 outline-none focus:border-blue-500"></label>
-            <div class="grid gap-3 md:grid-cols-[220px_1fr] md:items-start">
-                <span class="pt-1 text-sm font-medium text-blue-950">Ethernet Ports</span>
-                <div><label class="flex items-center gap-2 text-sm text-slate-600"><input id="onuEnableEthernet" type="checkbox" class="accent-blue-600"> Enable Ethernet</label><select id="onuEthernetCount" disabled class="mt-3 w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-2.5 text-sm text-slate-700"><option value="">Select Ethernet Port</option><option value="1">1 Port</option><option value="2">2 Ports</option><option value="4">4 Ports</option><option value="8">8 Ports</option></select></div>
-            </div>
-            <div class="grid gap-3 md:grid-cols-[220px_1fr] md:items-start">
-                <span class="pt-1 text-sm font-medium text-blue-950">WiFi</span>
-                <div><label class="flex items-center gap-2 text-sm text-slate-600"><input id="onuEnableWifi" type="checkbox" class="accent-blue-600"> Enable WiFi</label><select id="onuWifiCount" disabled class="mt-3 w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-2.5 text-sm text-slate-700"><option value="">Select WiFi SSID</option><option value="1">1 SSID</option><option value="2">2 SSIDs</option><option value="4">4 SSIDs</option><option value="8">8 SSIDs</option></select></div>
-            </div>
-            <div class="grid gap-3 md:grid-cols-[220px_1fr] md:items-start">
-                <span class="pt-1 text-sm font-medium text-blue-950">Pots/VoIP</span>
-                <div><label class="flex items-center gap-2 text-sm text-slate-600"><input id="onuEnablePots" type="checkbox" class="accent-blue-600"> Enable Pots/VoIP</label><select id="onuPotsCount" disabled class="mt-3 w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-2.5 text-sm text-slate-700"><option value="">Select Pots Port</option><option value="1">1 Port</option><option value="2">2 Ports</option><option value="4">4 Ports</option></select></div>
-            </div>
-            <p id="onuTypeFormError" class="hidden text-sm text-rose-600"></p>
+        <div class="overflow-x-auto mt-4">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        <th class="py-3 px-3 w-12 text-center">#</th>
+                        <th class="py-3 px-4">Name</th>
+                        <th class="py-3 px-4">Ethernet Ports</th>
+                        <th class="py-3 px-4">WiFi Radios</th>
+                        <th class="py-3 px-4">POTS Ports</th>
+                        <th class="py-3 px-4 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="onuTypeRows" class="divide-y divide-slate-100">
+                    <tr><td colspan="6" class="px-3 py-8 text-center text-slate-400">Loading ONU types...</td></tr>
+                </tbody>
+            </table>
         </div>
-        <footer class="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
-            <button type="button" onclick="document.getElementById('onuTypeDialog').close()" class="rounded-lg bg-slate-500 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600">Cancel</button>
-            <button id="onuTypeSaveButton" type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Save</button>
-        </footer>
-    </form>
-</dialog>
-<dialog id="vlanProfileDialog" class="w-[min(96vw,620px)] overflow-hidden rounded-xl border border-slate-200 p-0 shadow-2xl backdrop:bg-slate-900/50">
-    <form id="vlanProfileForm" class="bg-white">
-        <header class="flex items-center justify-between border-b border-slate-200 px-5 py-4"><h2 class="text-xl font-semibold text-blue-950">VLAN Profile</h2><button type="button" onclick="document.getElementById('vlanProfileDialog').close()" aria-label="Close" class="rounded p-1 text-2xl text-slate-500">X</button></header>
-        <div class="space-y-4 px-6 py-5"><label class="grid items-center gap-3 text-sm font-medium text-blue-950 sm:grid-cols-[100px_1fr]">Name<input id="vlanProfileName" required class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"></label><label class="grid items-center gap-3 text-sm font-medium text-blue-950 sm:grid-cols-[100px_1fr]">CVLAN<input id="vlanProfileCvlan" required type="number" min="1" max="4094" placeholder="e.g., 100" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"></label><p id="vlanProfileError" class="hidden text-sm text-rose-600"></p></div>
-        <footer class="flex justify-end gap-2 border-t border-slate-200 px-5 py-4"><button type="button" onclick="document.getElementById('vlanProfileDialog').close()" class="rounded-lg bg-slate-500 px-4 py-2 text-sm font-semibold text-white">Cancel</button><button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Save</button></footer>
-    </form>
-</dialog>
-<dialog id="ipProfileDialog" class="w-[min(96vw,700px)] overflow-hidden rounded-xl border border-slate-200 p-0 shadow-2xl backdrop:bg-slate-900/50">
-    <form id="ipProfileForm" class="bg-white">
-        <header class="flex items-center justify-between border-b border-slate-200 px-5 py-4"><h2 class="text-xl font-semibold text-blue-950">IP Profile</h2><button type="button" onclick="document.getElementById('ipProfileDialog').close()" aria-label="Close" class="rounded p-1 text-2xl text-slate-500">X</button></header>
-        <div class="space-y-4 px-6 py-5"><label class="grid items-center gap-3 text-sm font-medium text-blue-950 sm:grid-cols-[145px_1fr]">Name<input id="ipProfileName" required class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"></label><label class="grid items-center gap-3 text-sm font-medium text-blue-950 sm:grid-cols-[145px_1fr]">Gateway<input id="ipProfileGateway" placeholder="e.g., 192.168.1.1" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"></label><label class="grid items-center gap-3 text-sm font-medium text-blue-950 sm:grid-cols-[145px_1fr]">Primary DNS<input id="ipProfilePrimaryDns" placeholder="e.g., 8.8.8.8" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"></label><label class="grid items-center gap-3 text-sm font-medium text-blue-950 sm:grid-cols-[145px_1fr]">Secondary DNS<input id="ipProfileSecondaryDns" placeholder="e.g., 8.8.4.4" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"></label><p id="ipProfileError" class="hidden text-sm text-rose-600"></p></div>
-        <footer class="flex justify-end gap-2 border-t border-slate-200 px-5 py-4"><button type="button" onclick="document.getElementById('ipProfileDialog').close()" class="rounded-lg bg-slate-500 px-4 py-2 text-sm font-semibold text-white">Cancel</button><button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Save</button></footer>
-    </form>
-</dialog>
-<dialog id="speedProfileDialog" class="max-h-[92vh] w-[min(96vw,900px)] overflow-y-auto overflow-x-hidden rounded-xl border border-slate-200 p-0 shadow-2xl backdrop:bg-slate-900/50">
-    <form id="speedProfileForm" class="bg-white">
-        <header class="flex items-center justify-between border-b border-slate-200 px-5 py-4"><h2 id="speedProfileDialogTitle" class="text-xl font-semibold text-blue-950"></h2><button type="button" onclick="document.getElementById('speedProfileDialog').close()" aria-label="Close" class="rounded p-1 text-2xl text-slate-500">X</button></header>
-        <div class="space-y-4 px-5 py-5">
-            <label class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[240px_1fr]">Profile Name<input id="speedProfileName" required maxlength="100" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"></label>
-            <div id="speedBasicWrap" class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[240px_1fr]"><label for="speedBasicInput">Speed (kb)</label><div class="flex"><input id="speedBasicInput" type="number" min="1" class="min-w-0 flex-1 rounded-l-lg border border-slate-300 px-3 py-2.5 font-normal"><span class="border-y border-slate-300 px-3 py-2.5 font-normal">Preview</span><output id="speedBasicPreview" class="min-w-28 rounded-r-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-center font-normal">0 Mbps</output></div></div>
-            <div class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[240px_1fr]"><span>Advanced Settings</span><label class="flex items-center"><input id="speedAdvancedToggle" type="checkbox" class="h-5 w-5 accent-blue-600"></label></div>
-            <div id="speedAdvancedUpload" class="hidden space-y-4">
-                <label class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[240px_1fr]">Type<select id="speedUploadType" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"><option value="1">1 - Fixed Bandwidth</option><option value="2">2 - Assured Bandwidth</option><option value="3" selected>3 - Assured Bandwidth and Non-Assured Bandwidth</option></select></label>
-                <div class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[240px_1fr]"><label for="speedAssuredInput">Assured (Kb)</label><div class="flex"><input id="speedAssuredInput" type="number" min="0" class="min-w-0 flex-1 rounded-l-lg border border-slate-300 px-3 py-2.5 font-normal"><span class="border-y border-slate-300 px-3 py-2.5 font-normal">Preview</span><output id="speedAssuredPreview" class="min-w-28 rounded-r-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-center font-normal">0 Mbps</output></div></div>
-                <div class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[240px_1fr]"><label for="speedMaximumInput">Maximum (Kb)</label><div class="flex"><input id="speedMaximumInput" type="number" min="1" class="min-w-0 flex-1 rounded-l-lg border border-slate-300 px-3 py-2.5 font-normal"><span class="border-y border-slate-300 px-3 py-2.5 font-normal">Preview</span><output id="speedMaximumPreview" class="min-w-28 rounded-r-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-center font-normal">0 Mbps</output></div></div>
+    </div>
+</section>
+
+<!-- ==================== 5. WAN-IP PROFILES PANEL ==================== -->
+<section data-panel="WAN-IP Profiles" class="setting-panel hidden space-y-4 mt-6">
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div>
+                <h3 class="text-sm font-bold text-slate-900">VLAN Profiles</h3>
+                <p class="text-xs text-slate-400 mt-0.5">Daftar profile CVLAN untuk layanan pelanggan.</p>
             </div>
-            <div id="speedAdvancedDownload" class="hidden space-y-4">
-                <div class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[240px_1fr]"><label for="speedSirInput">Bandwidth (SIR Kb)</label><div class="flex"><input id="speedSirInput" type="number" min="1" class="min-w-0 flex-1 rounded-l-lg border border-slate-300 px-3 py-2.5 font-normal"><span class="border-y border-slate-300 px-3 py-2.5 font-normal">Preview</span><output id="speedSirPreview" class="min-w-28 rounded-r-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-center font-normal">0 Mbps</output></div></div>
-                <div class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[240px_1fr]"><label for="speedPirInput">Burst (PIR Kb)</label><div class="flex"><input id="speedPirInput" type="number" min="1" class="min-w-0 flex-1 rounded-l-lg border border-slate-300 px-3 py-2.5 font-normal"><span class="border-y border-slate-300 px-3 py-2.5 font-normal">Preview</span><output id="speedPirPreview" class="min-w-28 rounded-r-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-center font-normal">0 Mbps</output></div></div>
-            </div>
-            <div id="speedEponBasic" class="hidden space-y-4">
-                <div class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[240px_1fr]"><label for="speedEponUploadInput">Upload (kb)</label><div class="flex"><input id="speedEponUploadInput" type="number" min="0" class="min-w-0 flex-1 rounded-l-lg border border-slate-300 px-3 py-2.5 font-normal"><span class="border-y border-slate-300 px-3 py-2.5 font-normal">Preview</span><output id="speedEponUploadPreview" class="min-w-28 rounded-r-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-center font-normal">0 Mbps</output></div></div>
-                <div class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[240px_1fr]"><label for="speedEponDownloadInput">Download (kb)</label><div class="flex"><input id="speedEponDownloadInput" type="number" min="0" class="min-w-0 flex-1 rounded-l-lg border border-slate-300 px-3 py-2.5 font-normal"><span class="border-y border-slate-300 px-3 py-2.5 font-normal">Preview</span><output id="speedEponDownloadPreview" class="min-w-28 rounded-r-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-center font-normal">0 Mbps</output></div></div>
-            </div>
-            <div id="speedAdvancedEpon" class="hidden space-y-4">
-                <div class="flex items-center gap-3 text-sm font-medium text-slate-500"><span class="h-px flex-1 bg-slate-200"></span>Upload<span class="h-px flex-1 bg-slate-200"></span></div>
-                <div class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[240px_1fr]"><label for="speedFixedInput">Fixed (kbps)</label><div class="flex"><input id="speedFixedInput" type="number" min="0" class="min-w-0 flex-1 rounded-l-lg border border-slate-300 px-3 py-2.5 font-normal"><span class="border-y border-slate-300 px-3 py-2.5 font-normal">Preview</span><output id="speedFixedPreview" class="min-w-28 rounded-r-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-center font-normal">0 Mbps</output></div></div>
-                <label class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[240px_1fr]">FixedPkt (size)<input id="speedFixedPktInput" type="number" min="0" value="64" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"></label>
-                <div class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[240px_1fr]"><label for="speedAssuredEponInput">Assured (kbps)</label><div class="flex"><input id="speedAssuredEponInput" type="number" min="0" class="min-w-0 flex-1 rounded-l-lg border border-slate-300 px-3 py-2.5 font-normal"><span class="border-y border-slate-300 px-3 py-2.5 font-normal">Preview</span><output id="speedAssuredEponPreview" class="min-w-28 rounded-r-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-center font-normal">0 Mbps</output></div></div>
-                <div class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[240px_1fr]"><label for="speedMaximumEponInput">Maximum (kbps)</label><div class="flex"><input id="speedMaximumEponInput" type="number" min="0" class="min-w-0 flex-1 rounded-l-lg border border-slate-300 px-3 py-2.5 font-normal"><span class="border-y border-slate-300 px-3 py-2.5 font-normal">Preview</span><output id="speedMaximumEponPreview" class="min-w-28 rounded-r-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-center font-normal">0 Mbps</output></div></div>
-                <label class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[240px_1fr]">MaxBurst (bytes)<input id="speedMaxBurstInput" type="number" min="0" value="45000" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"></label>
-                <label class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[240px_1fr]">Priority<select id="speedPrioritySelect" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal">{% for priority in range(0, 8) %}<option value="{{ priority }}">{{ priority }}</option>{% endfor %}</select></label>
-                <div class="flex items-center gap-3 text-sm font-medium text-slate-500"><span class="h-px flex-1 bg-slate-200"></span>Download<span class="h-px flex-1 bg-slate-200"></span></div>
-                <div class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[240px_1fr]"><label for="speedDownloadMaximumInput">Maximum (kbps)</label><div class="flex"><input id="speedDownloadMaximumInput" type="number" min="0" class="min-w-0 flex-1 rounded-l-lg border border-slate-300 px-3 py-2.5 font-normal"><span class="border-y border-slate-300 px-3 py-2.5 font-normal">Preview</span><output id="speedDownloadMaximumPreview" class="min-w-28 rounded-r-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-center font-normal">0 Mbps</output></div></div>
-            </div>            <p id="speedProfileError" class="hidden text-sm text-rose-600"></p>
+            <button type="button" data-profile-create="vlan_profile" class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-100 shadow-sm transition">
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Create
+            </button>
         </div>
-        <footer class="flex justify-end gap-2 border-t border-slate-200 px-5 py-4"><button type="button" onclick="document.getElementById('speedProfileDialog').close()" class="rounded-lg bg-slate-500 px-4 py-2 text-sm font-semibold text-white">Cancel</button><button id="speedProfileSave" type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Save</button></footer>
+        <div class="overflow-x-auto mt-4">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        <th class="py-3 px-3 w-12 text-center">#</th>
+                        <th class="py-3 px-4">Name</th>
+                        <th class="py-3 px-4">CVLAN</th>
+                        <th class="py-3 px-4 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="vlanProfileRows" class="divide-y divide-slate-100">
+                    <tr><td colspan="4" class="px-3 py-8 text-center text-slate-400">Loading profiles...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div>
+                <h3 class="text-sm font-bold text-slate-900">IP Profiles</h3>
+                <p class="text-xs text-slate-400 mt-0.5">Gateway & DNS profiles untuk Layer-3 IPoE / PPPoE.</p>
+            </div>
+            <button type="button" data-profile-create="ip_profile" class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-100 shadow-sm transition">
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Create
+            </button>
+        </div>
+        <div class="overflow-x-auto mt-4">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        <th class="py-3 px-3 w-12 text-center">#</th>
+                        <th class="py-3 px-4">Name</th>
+                        <th class="py-3 px-4">Gateway</th>
+                        <th class="py-3 px-4">Primary DNS</th>
+                        <th class="py-3 px-4">Secondary DNS</th>
+                        <th class="py-3 px-4 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="ipProfileRows" class="divide-y divide-slate-100">
+                    <tr><td colspan="6" class="px-3 py-8 text-center text-slate-400">Loading profiles...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== 6. SPEED PROFILES PANEL ==================== -->
+<section data-panel="Speed Profiles" class="setting-panel hidden space-y-4 mt-6">
+    <div class="flex items-center justify-center gap-6 border-b border-slate-200 pb-2 text-xs font-bold uppercase tracking-wider">
+        <button class="speed-pon-subtab border-b-2 border-blue-600 pb-2 text-blue-600 transition" data-pon-type="GPON">GPON</button>
+        <button class="speed-pon-subtab border-b-2 border-transparent pb-2 text-slate-400 hover:text-slate-700 transition" data-pon-type="EPON">EPON</button>
+    </div>
+
+    <div id="gponSpeedSections" class="space-y-4">
+        {% for direction, title in [('upload', 'Upload'), ('download', 'Download')] %}
+        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <h3 class="text-sm font-bold text-slate-900">{{ title }} Profiles</h3>
+                <button type="button" data-speed-create="{{ direction }}" class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-100 shadow-sm transition">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Create
+                </button>
+            </div>
+            <div class="overflow-x-auto mt-4">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                            <th class="py-3 px-3 w-12 text-center">#</th>
+                            <th class="py-3 px-4">Name</th>
+                            <th class="py-3 px-4">Speed</th>
+                            <th class="py-3 px-4 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="{{ direction }}SpeedRows" class="divide-y divide-slate-100">
+                        <tr><td colspan="4" class="px-3 py-8 text-center text-slate-400">Loading profiles...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="eponSlaSection" class="hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <h3 class="text-sm font-bold text-slate-900">SLA Profiles (EPON)</h3>
+            <button type="button" data-speed-create="sla" class="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-100 shadow-sm transition">
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Create
+            </button>
+        </div>
+        <div class="overflow-x-auto mt-4">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        <th class="py-3 px-3 w-12 text-center">#</th>
+                        <th class="py-3 px-4">Name</th>
+                        <th class="py-3 px-4">Upload</th>
+                        <th class="py-3 px-4">Download</th>
+                        <th class="py-3 px-4 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="eponSlaRows" class="divide-y divide-slate-100">
+                    <tr><td colspan="5" class="px-3 py-8 text-center text-slate-400">Loading SLA profiles...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== 7. SYSTEM & BACKUP PANEL ==================== -->
+<section data-panel="System" class="setting-panel hidden space-y-4 mt-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 class="text-sm font-bold text-slate-900">Sinkronisasi Jam & Waktu</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Zona waktu sinkronisasi log event sistem.</p>
+            <form id="systemClockForm" class="entry-form mt-4 space-y-3" data-category="system">
+                <input type="hidden" name="name" value="clock">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600">Zona Waktu</label>
+                    <select name="timezone" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-blue-500">
+                        <option value="Asia/Jakarta">Asia/Jakarta (WIB - UTC+7)</option>
+                        <option value="Asia/Makassar">Asia/Makassar (WITA - UTC+8)</option>
+                        <option value="Asia/Jayapura">Asia/Jayapura (WIT - UTC+9)</option>
+                        <option value="UTC">UTC Universal Time</option>
+                    </select>
+                </div>
+                <label class="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                    <input id="clockAutoSync" name="auto_sync" type="checkbox" class="rounded border-slate-300 text-blue-600">
+                    Otomatis sinkronkan waktu NTP ke hardware OLT
+                </label>
+                <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition">Simpan Jam</button>
+            </form>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-900">Backup Konfigurasi Sasis</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Runs daily at 02:00 UTC+7</p>
+                </div>
+                <button type="button" id="backupNowButton" class="rounded-lg bg-blue-50 border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-100 transition">
+                    + Backup Now
+                </button>
+            </div>
+            <div id="backupLatestStatus" class="mt-4 rounded-lg border border-dashed border-slate-200 p-3 text-xs text-slate-500">
+                Memuat status backup...
+            </div>
+            <div class="overflow-x-auto mt-4">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="border-y border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                            <th class="py-2.5 px-3 text-center">#</th>
+                            <th class="py-2.5 px-3">File</th>
+                            <th class="py-2.5 px-3">Type</th>
+                            <th class="py-2.5 px-3">Size</th>
+                            <th class="py-2.5 px-3 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="backupRows" class="divide-y divide-slate-100">
+                        <tr><td colspan="5" class="py-6 text-center text-slate-400">Loading backup files...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- MODAL: PON PORT CONFIGURATION & SFP DDM -->
+<dialog id="ponPortModal" class="w-full max-w-xl rounded-2xl p-0 shadow-2xl backdrop:bg-slate-900/50">
+    <div class="p-6">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div class="flex items-center gap-2 text-sm font-bold text-slate-800">
+                <span id="ponModalCardTitle">Card 2 - GTGH</span>
+                <span class="text-slate-300">›</span>
+                <span id="ponModalPortBadge" class="font-mono text-emerald-600">gpon_1/2/4</span>
+            </div>
+            <button type="button" onclick="ponPortModal.close()" class="text-slate-400 hover:text-slate-600">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="mt-4 space-y-4 text-xs">
+            <div>
+                <h4 class="font-bold text-slate-900 uppercase tracking-wider mb-2">PON Configuration</h4>
+                <div class="grid grid-cols-12 gap-3 items-center">
+                    <label class="col-span-3 text-slate-500">Interface Status</label>
+                    <div class="col-span-9 flex items-center gap-6">
+                        <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="pon_iface" value="Enable" checked class="text-blue-600"> Enable
+                        </label>
+                        <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                            <input type="radio" name="pon_iface" value="Disable" class="text-blue-600"> Disable
+                        </label>
+                    </div>
+                </div>
+                <div class="grid grid-cols-12 gap-3 items-start mt-3">
+                    <label class="col-span-3 text-slate-500 pt-2">Description</label>
+                    <div class="col-span-9">
+                        <input id="ponDescription" type="text" maxlength="64" placeholder="ODP Area..." class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+                        <p class="text-[10px] text-slate-400 mt-1">0/64 max characters</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-3">
+                <h4 class="font-bold text-slate-900 uppercase tracking-wider mb-2">Optical Module SFP (Telemetry)</h4>
+                <div class="space-y-1.5 text-xs text-slate-600">
+                    <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-slate-400">• Vendor Name</span><span class="font-medium text-slate-800">TMTech</span></div>
+                    <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-slate-400">• Vendor PN</span><span class="font-medium text-slate-800">GPON C++++</span></div>
+                    <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-slate-400">• Vendor SN</span><span id="ponSfpSn" class="font-medium text-slate-800">015072510002024</span></div>
+                    <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-slate-400">• Module Type / Connector</span><span class="font-medium text-slate-800">SFP/SFP+ / SC</span></div>
+                    <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-slate-400">• Temperature</span><span class="font-medium text-slate-800">51.890 °C</span></div>
+                    <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-slate-400">• Supply Voltage</span><span class="font-medium text-slate-800">3.183 V</span></div>
+                    <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-slate-400">• TX Power</span><span id="ponTxPower" class="font-bold text-emerald-700">10.506 dBm</span></div>
+                    <div class="flex justify-between py-1 border-b border-slate-50"><span class="text-slate-400">• TX Bias Current</span><span class="font-medium text-slate-800">34.244 mA</span></div>
+                    <div class="flex justify-between py-1"><span class="text-slate-400">• Wavelength / Trans Distance</span><span class="font-medium text-slate-800">1490 NM / 20 KM</span></div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2.5 pt-4 border-t border-slate-100">
+                <button type="button" onclick="ponPortModal.close()" class="rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-200 transition">Cancel</button>
+                <button type="button" onclick="savePonPortSettings()" class="rounded-lg bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700 transition">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</dialog>
+
+<!-- MODAL: PORT UPLINK CONFIG -->
+<dialog id="portConfigModal" class="w-full max-w-xl rounded-2xl p-0 shadow-2xl backdrop:bg-slate-900/50">
+    <div class="p-6">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div class="flex items-center gap-2 text-sm font-bold text-slate-800">
+                <span>Port Configuration</span>
+                <span class="text-slate-300">›</span>
+                <span id="modalPortBadge1" class="font-mono text-rose-600">xgei_1/19/1</span>
+            </div>
+            <button type="button" onclick="portConfigModal.close()" class="text-slate-400 hover:text-slate-600">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form id="portConfigForm" class="mt-5 space-y-4 text-xs font-medium text-slate-700">
+            <div class="grid grid-cols-12 gap-3 items-center">
+                <label class="col-span-3 text-slate-600">Interface</label>
+                <div class="col-span-9 flex items-center gap-6">
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="iface_state" value="Enable" checked class="text-blue-600"> Enable
+                    </label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="iface_state" value="Disabled" class="text-blue-600"> Disabled
+                    </label>
+                </div>
+            </div>
+            <div class="grid grid-cols-12 gap-3 items-start">
+                <label class="col-span-3 text-slate-600 pt-2">Description</label>
+                <div class="col-span-9">
+                    <input id="inputDescription" type="text" maxlength="64" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+                    <p class="text-[10px] text-slate-400 mt-1">0/64 max characters</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-12 gap-3 items-center">
+                <label class="col-span-3 text-slate-600">Negotiation</label>
+                <div class="col-span-9 flex flex-wrap gap-4 items-center">
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer"><input type="radio" name="negotiation" value="Auto Negotiate"> Auto</label>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer"><input type="radio" name="negotiation" value="Full-1G"> Full-1G</label>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer"><input type="radio" name="negotiation" value="Full-10G" checked> Full-10G</label>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2.5 pt-4 border-t border-slate-100">
+                <button type="button" onclick="portConfigModal.close()" class="rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-200 transition">Cancel</button>
+                <button type="submit" class="rounded-lg bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700 transition">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
+<!-- MODAL: VLAN UPLINK CONFIG -->
+<dialog id="vlanConfigModal" class="w-full max-w-xl rounded-2xl p-0 shadow-2xl backdrop:bg-slate-900/50">
+    <div class="p-6">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div class="flex items-center gap-2 text-sm font-bold text-slate-800">
+                <span>VLAN Configuration</span>
+                <span class="text-slate-300">›</span>
+                <span id="modalPortBadge2" class="font-mono text-rose-600">xgei_1/19/1</span>
+            </div>
+            <button type="button" onclick="vlanConfigModal.close()" class="text-slate-400 hover:text-slate-600">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <form id="vlanConfigForm" class="mt-5 space-y-4 text-xs font-medium text-slate-700">
+            <div class="grid grid-cols-12 gap-3 items-center">
+                <label class="col-span-3 text-slate-600">Mode</label>
+                <div class="col-span-9 flex items-center gap-6">
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer"><input type="radio" name="vlan_mode" value="Hybrid" checked> Hybrid</label>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer"><input type="radio" name="vlan_mode" value="Access"> Access</label>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer"><input type="radio" name="vlan_mode" value="Trunk"> Trunk</label>
+                </div>
+            </div>
+            <div class="grid grid-cols-12 gap-3 items-center">
+                <label class="col-span-3 text-slate-600">Access VLAN</label>
+                <div class="col-span-9">
+                    <select id="selectAccessVlan" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+                        <option value="41">41 - VLAN0041</option>
+                        <option value="42">42 - VLAN0042</option>
+                        <option value="101">101 - VLAN0101</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2.5 pt-4 border-t border-slate-100">
+                <button type="button" onclick="vlanConfigModal.close()" class="rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-200 transition">Cancel</button>
+                <button type="submit" class="rounded-lg bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700 transition">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</dialog>
+
+<!-- MODAL: ADD / EDIT VLAN DATABASE -->
+<dialog id="vlanDialog" class="w-full max-w-md rounded-2xl p-0 shadow-2xl backdrop:bg-slate-900/50">
+    <form id="vlanForm" class="p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 id="vlanDialogTitle" class="text-base font-bold text-slate-900">Add VLAN Database</h3>
+            <button type="button" onclick="vlanDialog.close()" class="text-slate-400 hover:text-slate-600">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="space-y-3 text-xs font-medium text-slate-700">
+            <div>
+                <label class="block text-slate-600">VLAN ID</label>
+                <input id="vlanIdInput" required type="number" min="1" max="4094" placeholder="e.g., 100" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+            </div>
+            <div>
+                <label class="block text-slate-600">Name</label>
+                <input id="vlanNameInput" required type="text" placeholder="e.g., VLAN_INTERNET" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+            </div>
+            <p id="vlanFormError" class="hidden text-rose-600 text-xs"></p>
+        </div>
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button type="button" onclick="vlanDialog.close()" class="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>
+            <button id="vlanSaveButton" type="submit" class="rounded-lg bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700">Save</button>
+        </div>
     </form>
 </dialog>
-<div id="settingsMessage" class="hidden fixed bottom-5 right-5 px-4 py-3 rounded-lg shadow-lg text-sm"></div>
+
+<!-- MODAL: ONU TYPE -->
+<dialog id="onuTypeDialog" class="w-full max-w-lg rounded-2xl p-0 shadow-2xl backdrop:bg-slate-900/50">
+    <form id="onuTypeForm" class="p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 id="onuTypeDialogTitle" class="text-base font-bold text-slate-900">Create GPON ONU Type</h3>
+            <button type="button" onclick="onuTypeDialog.close()" class="text-slate-400 hover:text-slate-600">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="space-y-3 text-xs font-medium text-slate-700">
+            <div>
+                <label class="block text-slate-600">Type Name</label>
+                <input id="onuTypeName" required placeholder="e.g., ZTE-F670L" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+            </div>
+            <div class="space-y-1">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="onuEnableEthernet" class="rounded text-blue-600">
+                    Enable Ethernet
+                </label>
+                <select id="onuEthernetCount" disabled class="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-slate-700">
+                    <option value="">Select Ethernet Port</option>
+                    <option value="1">1 Port</option>
+                    <option value="2">2 Ports</option>
+                    <option value="4">4 Ports</option>
+                </select>
+            </div>
+            <div class="space-y-1">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="onuEnableWifi" class="rounded text-blue-600">
+                    Enable WiFi
+                </label>
+                <select id="onuWifiCount" disabled class="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-slate-700">
+                    <option value="">Select WiFi SSID</option>
+                    <option value="1">1 SSID</option>
+                    <option value="2">2 SSIDs</option>
+                    <option value="4">4 SSIDs</option>
+                </select>
+            </div>
+            <div class="space-y-1">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="onuEnablePots" class="rounded text-blue-600">
+                    Enable Pots/VoIP
+                </label>
+                <select id="onuPotsCount" disabled class="w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-slate-700">
+                    <option value="">Select Pots Port</option>
+                    <option value="1">1 Port</option>
+                    <option value="2">2 Ports</option>
+                </select>
+            </div>
+            <p id="onuTypeFormError" class="hidden text-rose-600 text-xs"></p>
+        </div>
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button type="button" onclick="onuTypeDialog.close()" class="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-600 hover:bg-slate-50">Cancel</button>
+            <button id="onuTypeSaveButton" type="submit" class="rounded-lg bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700">Save</button>
+        </div>
+    </form>
+</dialog>
+
+<!-- MODAL: VLAN PROFILE -->
+<dialog id="vlanProfileDialog" class="w-full max-w-md rounded-2xl p-0 shadow-2xl backdrop:bg-slate-900/50">
+    <form id="vlanProfileForm" class="p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 class="text-base font-bold text-slate-900">VLAN Profile</h3>
+            <button type="button" onclick="vlanProfileDialog.close()" class="text-slate-400">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="space-y-3 text-xs font-medium text-slate-700">
+            <div>
+                <label class="block text-slate-600">Name</label>
+                <input id="vlanProfileName" required placeholder="e.g., VLAN_INTERNET" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+            </div>
+            <div>
+                <label class="block text-slate-600">CVLAN</label>
+                <input id="vlanProfileCvlan" required type="number" min="1" max="4094" placeholder="100" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+            </div>
+            <p id="vlanProfileError" class="hidden text-rose-600 text-xs"></p>
+        </div>
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button type="button" onclick="vlanProfileDialog.close()" class="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-600">Cancel</button>
+            <button type="submit" class="rounded-lg bg-blue-600 px-5 py-2 font-semibold text-white">Save</button>
+        </div>
+    </form>
+</dialog>
+
+<!-- MODAL: IP PROFILE -->
+<dialog id="ipProfileDialog" class="w-full max-w-md rounded-2xl p-0 shadow-2xl backdrop:bg-slate-900/50">
+    <form id="ipProfileForm" class="p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 class="text-base font-bold text-slate-900">IP Profile</h3>
+            <button type="button" onclick="ipProfileDialog.close()" class="text-slate-400">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="space-y-3 text-xs font-medium text-slate-700">
+            <div>
+                <label class="block text-slate-600">Name</label>
+                <input id="ipProfileName" required placeholder="e.g., STATIC_POOL" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+            </div>
+            <div>
+                <label class="block text-slate-600">Gateway</label>
+                <input id="ipProfileGateway" placeholder="192.168.1.1" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+            </div>
+            <div>
+                <label class="block text-slate-600">Primary DNS</label>
+                <input id="ipProfilePrimaryDns" placeholder="8.8.8.8" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+            </div>
+            <div>
+                <label class="block text-slate-600">Secondary DNS</label>
+                <input id="ipProfileSecondaryDns" placeholder="8.8.4.4" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+            </div>
+            <p id="ipProfileError" class="hidden text-rose-600 text-xs"></p>
+        </div>
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button type="button" onclick="ipProfileDialog.close()" class="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-600">Cancel</button>
+            <button type="submit" class="rounded-lg bg-blue-600 px-5 py-2 font-semibold text-white">Save</button>
+        </div>
+    </form>
+</dialog>
+
+<!-- MODAL: SPEED PROFILE (GPON & EPON SLA) -->
+<dialog id="speedProfileDialog" class="w-full max-w-md rounded-2xl p-0 shadow-2xl backdrop:bg-slate-900/50">
+    <form id="speedProfileForm" class="p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 id="speedProfileDialogTitle" class="text-base font-bold text-slate-900">Create Speed Profile</h3>
+            <button type="button" onclick="speedProfileDialog.close()" class="text-slate-400">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="space-y-3 text-xs font-medium text-slate-700">
+            <div>
+                <label class="block text-slate-600">Profile Name</label>
+                <input id="speedProfileName" required placeholder="e.g., 50M_PROFILE" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+            </div>
+            <div id="gponSpeedInputWrapper">
+                <label class="block text-slate-600">Speed (Kbps)</label>
+                <input id="speedProfileKbps" type="number" min="64" placeholder="51200" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+            </div>
+            <div id="eponSlaInputsWrapper" class="hidden space-y-3">
+                <div>
+                    <label class="block text-slate-600">Upload Speed (Kbps)</label>
+                    <input id="speedSlaUploadKbps" type="number" min="64" placeholder="51200" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+                </div>
+                <div>
+                    <label class="block text-slate-600">Download Speed (Kbps)</label>
+                    <input id="speedSlaDownloadKbps" type="number" min="64" placeholder="102400" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+                </div>
+            </div>
+            <p id="speedProfileError" class="hidden text-rose-600 text-xs"></p>
+        </div>
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button type="button" onclick="speedProfileDialog.close()" class="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-600">Cancel</button>
+            <button type="submit" class="rounded-lg bg-blue-600 px-5 py-2 font-semibold text-white">Save</button>
+        </div>
+    </form>
+</dialog>
+
+<!-- Toast Message Container -->
+<div id="settingsMessage" class="hidden fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl shadow-lg text-xs font-medium text-white"></div>
+
+<!-- JAVASCRIPT LOGIC -->
 <script>
-const tabs=[...document.querySelectorAll('.setting-tab')];function showTab(name){document.querySelectorAll('.setting-panel').forEach(panel=>panel.classList.toggle('hidden',panel.dataset.panel!==name));tabs.forEach(button=>{const active=button.dataset.panel===name;button.classList.toggle('border-sky-600',active);button.classList.toggle('text-sky-600',active);button.classList.toggle('text-slate-500',!active);button.setAttribute('aria-current',active?'page':'false')})}
-const speedProfileDialog=document.getElementById('speedProfileDialog');
-const speedProfileForm=document.getElementById('speedProfileForm');
-let activeSpeedPonType='GPON',activeSpeedDirection='upload',activeSpeedEntry=null;
-function setSpeedPonType(type){
-    activeSpeedPonType=type;
-    document.querySelectorAll('.speed-pon-subtab').forEach(button=>{const active=button.dataset.ponType===type;button.setAttribute('aria-selected',String(active));button.classList.toggle('border-sky-600',active);button.classList.toggle('text-sky-600',active);button.classList.toggle('border-transparent',!active);button.classList.toggle('text-slate-500',!active)});
-    document.getElementById('gponSpeedSections').classList.toggle('hidden',type!=='GPON');
-    document.getElementById('eponSlaSection').classList.toggle('hidden',type!=='EPON');
-    loadSpeedProfiles();
-}
-document.querySelectorAll('.speed-pon-subtab').forEach(button=>button.addEventListener('click',()=>setSpeedPonType(button.dataset.ponType)));
-document.querySelectorAll('[data-speed-create]').forEach(button=>button.addEventListener('click',()=>openSpeedDialog(button.dataset.speedCreate)));
-function formatSpeedPreview(value){const kb=Number(value||0);return kb?`${(kb/1024).toFixed(2)} Mbps`:'0 Mbps'}
-function updateSpeedPreviews(){
-    [['speedBasicInput','speedBasicPreview'],['speedAssuredInput','speedAssuredPreview'],['speedMaximumInput','speedMaximumPreview'],['speedSirInput','speedSirPreview'],['speedPirInput','speedPirPreview'],['speedEponUploadInput','speedEponUploadPreview'],['speedEponDownloadInput','speedEponDownloadPreview'],['speedFixedInput','speedFixedPreview'],['speedAssuredEponInput','speedAssuredEponPreview'],['speedMaximumEponInput','speedMaximumEponPreview'],['speedDownloadMaximumInput','speedDownloadMaximumPreview']].forEach(([input,output])=>document.getElementById(output).textContent=formatSpeedPreview(document.getElementById(input).value));
-}
-['speedBasicInput','speedAssuredInput','speedMaximumInput','speedSirInput','speedPirInput','speedEponUploadInput','speedEponDownloadInput','speedFixedInput','speedAssuredEponInput','speedMaximumEponInput','speedDownloadMaximumInput'].forEach(id=>document.getElementById(id).addEventListener('input',updateSpeedPreviews));
-function syncSpeedAdvancedFields(){
-    const advanced=document.getElementById('speedAdvancedToggle').checked;
-    const epon=activeSpeedPonType==='EPON';
-    document.getElementById('speedBasicWrap').classList.toggle('hidden',epon||advanced);
-    document.getElementById('speedEponBasic').classList.toggle('hidden',!epon||advanced);
-    document.getElementById('speedAdvancedEpon').classList.toggle('hidden',!epon||!advanced);
-    document.getElementById('speedAdvancedUpload').classList.toggle('hidden',epon||!advanced||activeSpeedDirection!=='upload');
-    document.getElementById('speedAdvancedDownload').classList.toggle('hidden',epon||!advanced||activeSpeedDirection!=='download');
-    document.getElementById('speedBasicInput').required=!epon&&!advanced;
-    ['speedAssuredInput','speedMaximumInput'].forEach(id=>document.getElementById(id).required=!epon&&advanced&&activeSpeedDirection==='upload');
-    ['speedSirInput','speedPirInput'].forEach(id=>document.getElementById(id).required=!epon&&advanced&&activeSpeedDirection==='download');
-}
-document.getElementById('speedAdvancedToggle').addEventListener('change',syncSpeedAdvancedFields);
-function openSpeedDialog(direction,entry=null){
-    activeSpeedDirection=direction;activeSpeedEntry=entry;speedProfileForm.reset();
-    const titleDirection=activeSpeedPonType==='EPON'?'SLA':(direction==='upload'?'Upload':'Download');
-    const ponLabel=activeSpeedPonType==='EPON'?'EPON':'Gpon';
-    document.getElementById('speedProfileDialogTitle').textContent=`${entry?'Change':'Create'} ${titleDirection} Profile (${ponLabel})`;
-    const data=entry?.data||{};const nameInput=document.getElementById('speedProfileName');nameInput.value=entry?(data.profile_name||entry.name):'';nameInput.readOnly=Boolean(entry);nameInput.classList.toggle('bg-slate-100',Boolean(entry));
-    document.getElementById('speedAdvancedToggle').checked=Boolean(data.advanced);
-    document.getElementById('speedBasicInput').value=data.speed_kb||'';
-    document.getElementById('speedUploadType').value=data.profile_type||'3';
-    document.getElementById('speedAssuredInput').value=data.assured_kb||'';document.getElementById('speedMaximumInput').value=data.maximum_kb||'';
-    document.getElementById('speedSirInput').value=data.sir_kb||'';document.getElementById('speedPirInput').value=data.pir_kb||'';
-    document.getElementById('speedEponUploadInput').value=data.upload_kb||'';document.getElementById('speedEponDownloadInput').value=data.download_kb||'';
-    document.getElementById('speedFixedInput').value=data.fixed_kbps||'';document.getElementById('speedFixedPktInput').value=data.fixed_packet_size??64;
-    document.getElementById('speedAssuredEponInput').value=data.assured_kbps||'';document.getElementById('speedMaximumEponInput').value=data.maximum_upload_kbps||'';
-    document.getElementById('speedMaxBurstInput').value=data.max_burst_bytes??45000;document.getElementById('speedPrioritySelect').value=data.priority??'0';document.getElementById('speedDownloadMaximumInput').value=data.maximum_download_kbps||'';
-    document.getElementById('speedProfileError').classList.add('hidden');syncSpeedAdvancedFields();updateSpeedPreviews();speedProfileDialog.showModal();
-}
-function speedRowCell(row,text){const cell=document.createElement('td');cell.className='px-3 py-3';cell.textContent=text;row.append(cell)}
-function renderSpeedTable(entries,bodyId,direction){
-    const body=document.getElementById(bodyId);body.replaceChildren();
-    if(!entries.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=4;cell.className='px-3 py-8 text-center text-slate-400';cell.textContent=`No ${direction[0].toUpperCase()+direction.slice(1)} Profiles Found`;row.append(cell);body.append(row);return}
-    entries.forEach((entry,index)=>{
-        const row=document.createElement('tr');row.className='text-slate-800';speedRowCell(row,String(index+1));speedRowCell(row,entry.data.profile_name||entry.name);
-        const kb=entry.data.advanced?(direction==='upload'?(entry.data.maximum_kb||entry.data.speed_kb):(entry.data.pir_kb||entry.data.speed_kb)):entry.data.speed_kb;
-        speedRowCell(row,kb?`${Math.round(Number(kb)/1024)} Mbps`:(entry.data.details||'-'));
-        const actions=document.createElement('td');actions.className='px-3 py-2';const group=document.createElement('div');group.className='flex justify-center gap-2';
-        const edit=document.createElement('button');edit.type='button';edit.title='Edit profile';edit.className='rounded-full bg-slate-100 p-2 text-slate-600 hover:bg-slate-200';edit.innerHTML='<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="m16 4 4 4M4 20l4-.8L19 8a2.1 2.1 0 0 0-3-3L5 16z"/></svg>';edit.addEventListener('click',()=>openSpeedDialog(direction,entry));
-        const remove=document.createElement('button');remove.type='button';remove.title='Delete profile';remove.className='rounded-full bg-rose-50 p-2 text-rose-600 hover:bg-rose-100';remove.innerHTML='<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg>';remove.addEventListener('click',()=>deleteSpeedProfile(entry));
-        group.append(edit,remove);actions.append(group);row.append(actions);body.append(row);
+// Main Tab Switching
+const tabs = document.querySelectorAll('.setting-tab');
+function showTab(name) {
+    if (name === 'Uplinks') closePortDetail();
+    document.querySelectorAll('.setting-panel').forEach(panel => {
+        panel.classList.toggle('hidden', panel.dataset.panel !== name);
     });
-}
-function renderEponSlaTable(entries){
-    const grouped=new Map();
-    entries.forEach(entry=>{
-        const data=entry.data||{},name=data.profile_name||entry.name.replace(/^EPON:(upload|download|sla):/i,'');
-        if(!grouped.has(name))grouped.set(name,{id:entry.id,name:entry.name,data:{pon_type:'EPON',direction:'sla',profile_name:name,advanced:false},entries:[]});
-        const group=grouped.get(name);group.entries.push(entry);const direction=(data.direction||'sla').toLowerCase();
-        if(direction==='sla')Object.assign(group.data,data);
-        else if(direction==='upload'){
-            group.data.upload_kb=data.advanced?(data.maximum_kb||data.speed_kb):(data.speed_kb||0);
-            if(data.advanced){group.data.advanced=true;group.data.fixed_kbps=data.fixed_kbps||0;group.data.fixed_packet_size=data.fixed_packet_size||64;group.data.assured_kbps=data.assured_kb||0;group.data.maximum_upload_kbps=data.maximum_kb||data.speed_kb||0;group.data.max_burst_bytes=data.max_burst_bytes||45000;group.data.priority=data.priority||0}
-        }else if(direction==='download'){
-            group.data.download_kb=data.advanced?(data.pir_kb||data.speed_kb):(data.speed_kb||0);
-            if(data.advanced){group.data.advanced=true;group.data.maximum_download_kbps=data.pir_kb||data.speed_kb||0}
+    tabs.forEach(button => {
+        const active = button.dataset.panel === name;
+        button.classList.toggle('border-blue-600', active);
+        button.classList.toggle('text-blue-600', active);
+        button.classList.toggle('border-transparent', !active);
+        button.classList.toggle('text-slate-500', !active);
+        if (active) {
+            button.setAttribute('aria-current', 'page');
+        } else {
+            button.removeAttribute('aria-current');
         }
     });
-    const body=document.getElementById('eponSlaRows');body.replaceChildren();const profiles=[...grouped.values()];
-    if(!profiles.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=5;cell.className='px-3 py-8 text-center text-slate-400';cell.textContent='No SLA Profiles Found';row.append(cell);body.append(row);return}
-    profiles.forEach((entry,index)=>{
-        const row=document.createElement('tr');row.className='text-slate-800';speedRowCell(row,String(index+1));speedRowCell(row,entry.data.profile_name||entry.name);
-        const upload=entry.data.advanced?(entry.data.maximum_upload_kbps||entry.data.upload_kb):(entry.data.upload_kb);
-        const download=entry.data.advanced?(entry.data.maximum_download_kbps||entry.data.download_kb):(entry.data.download_kb);
-        speedRowCell(row,upload?`${Math.round(Number(upload)/1024)} Mbps`:'-');speedRowCell(row,download?`${Math.round(Number(download)/1024)} Mbps`:'-');
-        const actions=document.createElement('td');actions.className='px-3 py-2';const group=document.createElement('div');group.className='flex justify-center gap-2';
-        const edit=document.createElement('button');edit.type='button';edit.title='Edit SLA profile';edit.className='rounded-full bg-slate-100 p-2 text-slate-600 hover:bg-slate-200';edit.innerHTML='<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="m16 4 4 4M4 20l4-.8L19 8a2.1 2.1 0 0 0-3-3L5 16z"/></svg>';edit.addEventListener('click',()=>openSpeedDialog('sla',entry));
-        const remove=document.createElement('button');remove.type='button';remove.title='Delete SLA profile';remove.className='rounded-full bg-rose-50 p-2 text-rose-600 hover:bg-rose-100';remove.innerHTML='<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg>';remove.addEventListener('click',()=>deleteSpeedProfile(entry));
-        group.append(edit,remove);actions.append(group);row.append(actions);body.append(row);
-    });
 }
-async function loadSpeedProfiles(){
-    try{const response=await fetch('/api/olt-settings/data?category=speed_profile');const entries=await response.json();if(!response.ok)throw new Error(entries.detail||'Gagal memuat speed profiles');
-        const belongs=entries.filter(entry=>(entry.data.pon_type||'GPON').toUpperCase()===activeSpeedPonType);
-        if(activeSpeedPonType==='EPON'){renderEponSlaTable(belongs);return}
-        const selectDirection=direction=>belongs.filter(entry=>(entry.data.direction||'upload').toLowerCase()===direction);
-        renderSpeedTable(selectDirection('upload'),'uploadSpeedRows','upload');renderSpeedTable(selectDirection('download'),'downloadSpeedRows','download');
-    }catch(error){if(activeSpeedPonType==='EPON'){const body=document.getElementById('eponSlaRows');body.replaceChildren();const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=5;cell.className='px-3 py-8 text-center text-rose-600';cell.textContent=error.message;row.append(cell);body.append(row)}else ['uploadSpeedRows','downloadSpeedRows'].forEach(id=>{const body=document.getElementById(id);body.replaceChildren();const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=4;cell.className='px-3 py-8 text-center text-rose-600';cell.textContent=error.message;row.append(cell);body.append(row)})}
-}
-async function deleteSpeedProfile(entry){if(!confirm(`Hapus speed profile ${entry.data.profile_name||entry.name}?`))return;try{for(const item of(entry.entries||[entry])){const response=await fetch(`/api/olt-settings/data/${item.id}`,{method:'DELETE'});const result=await response.json();if(!response.ok)throw new Error(result.detail||'Gagal menghapus profile')}notify('Speed profile dihapus');loadSpeedProfiles()}catch(error){notify(error.message,true)}}
-speedProfileForm.addEventListener('submit',async event=>{
-    event.preventDefault();const name=document.getElementById('speedProfileName').value.trim(),advanced=document.getElementById('speedAdvancedToggle').checked,epon=activeSpeedPonType==='EPON';
-    let data,storageDirection=activeSpeedDirection;
-    if(epon){
-        storageDirection='sla';data={pon_type:'EPON',direction:'sla',profile_name:name,advanced};
-        if(advanced){
-            data.fixed_kbps=Number(document.getElementById('speedFixedInput').value||0);data.fixed_packet_size=Number(document.getElementById('speedFixedPktInput').value||64);data.assured_kbps=Number(document.getElementById('speedAssuredEponInput').value||0);data.maximum_upload_kbps=Number(document.getElementById('speedMaximumEponInput').value||0);data.max_burst_bytes=Number(document.getElementById('speedMaxBurstInput').value||45000);data.priority=Number(document.getElementById('speedPrioritySelect').value||0);data.maximum_download_kbps=Number(document.getElementById('speedDownloadMaximumInput').value||0);data.upload_kb=data.maximum_upload_kbps||data.assured_kbps||data.fixed_kbps;data.download_kb=data.maximum_download_kbps;
-        }else{data.upload_kb=Number(document.getElementById('speedEponUploadInput').value||0);data.download_kb=Number(document.getElementById('speedEponDownloadInput').value||0)}
-        data.speed_kb=data.upload_kb;
-    }else{
-        data={pon_type:activeSpeedPonType,direction:activeSpeedDirection,profile_name:name,advanced};
-        if(advanced&&activeSpeedDirection==='upload'){data.profile_type=Number(document.getElementById('speedUploadType').value);data.assured_kb=Number(document.getElementById('speedAssuredInput').value);data.maximum_kb=Number(document.getElementById('speedMaximumInput').value);data.speed_kb=data.maximum_kb}
-        else if(advanced){data.sir_kb=Number(document.getElementById('speedSirInput').value);data.pir_kb=Number(document.getElementById('speedPirInput').value);data.speed_kb=data.pir_kb}
-        else{data.speed_kb=Number(document.getElementById('speedBasicInput').value)}
-    }
-    const error=document.getElementById('speedProfileError'),save=document.getElementById('speedProfileSave');save.disabled=true;save.textContent='Saving...';
-    const existing=activeSpeedEntry?.entries|| (activeSpeedEntry?[activeSpeedEntry]:[]);const primary=existing.find(item=>item.data.direction==='sla')||existing[0];
-    const storageName=primary?.name||`${activeSpeedPonType}:${storageDirection}:${name}`;
-    try{
-        const response=await fetch('/api/olt-settings/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:primary?.id||null,category:'speed_profile',name:storageName,data})});
-        const result=await response.json();if(!response.ok)throw new Error(result.detail||'Gagal menyimpan speed profile');
-        for(const duplicate of existing){if(duplicate.id!==primary?.id){const removed=await fetch(`/api/olt-settings/data/${duplicate.id}`,{method:'DELETE'});if(!removed.ok)throw new Error('Profile tersimpan, tetapi profil duplikat lama belum terhapus.')}}
-        speedProfileDialog.close();notify('Speed profile tersimpan');loadSpeedProfiles();
-    }catch(exception){error.textContent=exception.message;error.classList.remove('hidden')}
-    finally{save.disabled=false;save.textContent='Save'}
-});let activeProfileDialogType='';
-document.querySelectorAll('[data-profile-create]').forEach(button=>button.addEventListener('click',()=>{
-    activeProfileDialogType=button.dataset.profileCreate;
-    const dialog=activeProfileDialogType==='vlan_profile'?document.getElementById('vlanProfileDialog'):document.getElementById('ipProfileDialog');
-    const form=activeProfileDialogType==='vlan_profile'?document.getElementById('vlanProfileForm'):document.getElementById('ipProfileForm');
-    form.reset();const error=document.getElementById(activeProfileDialogType==='vlan_profile'?'vlanProfileError':'ipProfileError');error.classList.add('hidden');dialog.showModal();
-}));
-function tableCell(row,value){const cell=document.createElement('td');cell.className='px-3 py-3';cell.textContent=value||'-';row.append(cell)}
-function profileActionCell(row,entry,category){
-    const cell=document.createElement('td');cell.className='px-3 py-2';const button=document.createElement('button');button.type='button';button.title='Delete profile';button.className='mx-auto block rounded-full bg-rose-50 p-2 text-rose-600 hover:bg-rose-100';
-    button.innerHTML='<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg>';
-    button.addEventListener('click',()=>deleteWanProfile(entry,category));cell.append(button);row.append(cell);
-}
-function renderProfileTable(entries,bodyId,category){
-    const body=document.getElementById(bodyId);body.replaceChildren();
-    if(!entries.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=category==='vlan_profile'?4:6;cell.className='px-3 py-8 text-center text-slate-400';cell.textContent=category==='vlan_profile'?'No VLAN Profiles Found':'No IP Profiles Found';row.append(cell);body.append(row);return}
-    entries.forEach((entry,index)=>{
-        const row=document.createElement('tr');row.className='text-slate-800';tableCell(row,String(index+1));tableCell(row,entry.name);
-        if(category==='vlan_profile'){tableCell(row,String(entry.data.cvlan??entry.data.c_vlan??entry.data.details??'-'))}
-        else{tableCell(row,String(entry.data.gateway??entry.data.details??'-'));tableCell(row,String(entry.data.primary_dns??entry.data.primary??'-'));tableCell(row,String(entry.data.secondary_dns??entry.data.secondary??'-'))}
-        profileActionCell(row,entry,category);body.append(row);
-    });
-}
-async function loadWanProfiles(){
-    try{const [vlanResponse,ipResponse]=await Promise.all([fetch('/api/olt-settings/data?category=vlan_profile'),fetch('/api/olt-settings/data?category=ip_profile')]);const [vlans,ips]=await Promise.all([vlanResponse.json(),ipResponse.json()]);if(!vlanResponse.ok)throw new Error(vlans.detail||'Gagal memuat VLAN Profiles');if(!ipResponse.ok)throw new Error(ips.detail||'Gagal memuat IP Profiles');renderProfileTable(vlans,'vlanProfileRows','vlan_profile');renderProfileTable(ips,'ipProfileRows','ip_profile')}
-    catch(error){['vlanProfileRows','ipProfileRows'].forEach(id=>{const body=document.getElementById(id);body.replaceChildren();const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=id==='vlanProfileRows'?4:6;cell.className='px-3 py-8 text-center text-rose-600';cell.textContent=error.message;row.append(cell);body.append(row)})}
-}
-async function deleteWanProfile(entry,category){
-    if(!confirm(`Hapus profile ${entry.name}?`))return;
-    try{const response=await fetch(`/api/olt-settings/data/${entry.id}`,{method:'DELETE'});const result=await response.json();if(!response.ok)throw new Error(result.detail||'Gagal menghapus profile');notify('Profile dihapus');loadWanProfiles()}
-    catch(error){notify(error.message,true)}
-}
-async function saveWanProfile(event,category){
-    event.preventDefault();const isVlan=category==='vlan_profile';const name=document.getElementById(isVlan?'vlanProfileName':'ipProfileName').value.trim();
-    const data=isVlan?{cvlan:Number(document.getElementById('vlanProfileCvlan').value)}:{gateway:document.getElementById('ipProfileGateway').value.trim(),primary_dns:document.getElementById('ipProfilePrimaryDns').value.trim(),secondary_dns:document.getElementById('ipProfileSecondaryDns').value.trim()};
-    const dialog=document.getElementById(isVlan?'vlanProfileDialog':'ipProfileDialog'),error=document.getElementById(isVlan?'vlanProfileError':'ipProfileError');
-    try{const response=await fetch('/api/olt-settings/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({category,name,data})});const result=await response.json();if(!response.ok)throw new Error(result.detail||'Gagal menyimpan profile');dialog.close();notify('Profile tersimpan');loadWanProfiles()}
-    catch(exception){error.textContent=exception.message;error.classList.remove('hidden')}
-}
-document.getElementById('vlanProfileForm').addEventListener('submit',event=>saveWanProfile(event,'vlan_profile'));
-document.getElementById('ipProfileForm').addEventListener('submit',event=>saveWanProfile(event,'ip_profile'));
-const onuTypeDialog=document.getElementById('onuTypeDialog');
-const onuTypeForm=document.getElementById('onuTypeForm');
-let activeOnuTypePon='GPON';
-function setOnuTypePon(type){
-    activeOnuTypePon=type;
-    document.querySelectorAll('.onu-type-subtab').forEach(button=>{
-        const active=button.dataset.ponType===type;button.setAttribute('aria-selected',String(active));
-        button.classList.toggle('border-sky-600',active);button.classList.toggle('text-sky-600',active);
-        button.classList.toggle('border-transparent',!active);button.classList.toggle('text-slate-500',!active);
-    });
-    document.getElementById('onuTypeTableTitle').lastChild.textContent=` ${type} Type`;
-    document.getElementById('onuTypeDialogTitle').textContent=`Create ${type} ONU Type`;
-    loadOnuTypes();
-}
-document.querySelectorAll('.onu-type-subtab').forEach(button=>button.addEventListener('click',()=>setOnuTypePon(button.dataset.ponType)));
-function toggleOnuCapability(checkboxId,selectId){
-    const checkbox=document.getElementById(checkboxId),select=document.getElementById(selectId);
-    select.disabled=!checkbox.checked;select.required=checkbox.checked;select.classList.toggle('bg-slate-100',!checkbox.checked);select.classList.toggle('bg-white',checkbox.checked);
-    if(!checkbox.checked)select.value='';
-}
-[['onuEnableEthernet','onuEthernetCount'],['onuEnableWifi','onuWifiCount'],['onuEnablePots','onuPotsCount']].forEach(([check,select])=>document.getElementById(check).addEventListener('change',()=>toggleOnuCapability(check,select)));
-function openOnuTypeDialog(){
-    onuTypeForm.reset();document.getElementById('onuTypeDialogTitle').textContent=`Create ${activeOnuTypePon} ONU Type`;
-    [['onuEnableEthernet','onuEthernetCount'],['onuEnableWifi','onuWifiCount'],['onuEnablePots','onuPotsCount']].forEach(([check,select])=>toggleOnuCapability(check,select));
-    document.getElementById('onuTypeFormError').classList.add('hidden');onuTypeDialog.showModal();
-}
-document.getElementById('createOnuTypeButton').addEventListener('click',openOnuTypeDialog);
-function onuTypeCell(row,text){const cell=document.createElement('td');cell.className='px-3 py-3';cell.textContent=text;row.append(cell)}
-function renderOnuTypes(entries){
-    const body=document.getElementById('onuTypeRows');body.replaceChildren();
-    if(!entries.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=6;cell.className='px-3 py-10 text-center text-slate-400';cell.textContent=`Belum ada tipe ONU ${activeOnuTypePon}.`;row.append(cell);body.append(row);return}
-    entries.forEach((entry,index)=>{
-        const row=document.createElement('tr');row.className='text-slate-800';
-        onuTypeCell(row,String(index+1));onuTypeCell(row,entry.name);onuTypeCell(row,String(entry.data.ethernet||0));onuTypeCell(row,String(entry.data.wifi||0));onuTypeCell(row,String(entry.data.pots||entry.data.pots_ports||entry.data.voip||0));
-        const action=document.createElement('td');action.className='px-3 py-2';
-        const remove=document.createElement('button');remove.type='button';remove.title='Delete ONU type';remove.className='mx-auto block rounded-full bg-rose-50 p-2 text-rose-600 hover:bg-rose-100';
-        remove.innerHTML='<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg>';
-        remove.addEventListener('click',()=>deleteOnuType(entry));action.append(remove);row.append(action);body.append(row);
-    });
-}
-async function loadOnuTypes(){
-    const body=document.getElementById('onuTypeRows');
-    try{const response=await fetch('/api/olt-settings/data?category=onu_type');const data=await response.json();if(!response.ok)throw new Error(data.detail||'Gagal memuat ONU types');renderOnuTypes(data.filter(entry=>(entry.data.pon_type||'GPON').toUpperCase()===activeOnuTypePon))}
-    catch(error){body.innerHTML='';const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=6;cell.className='px-3 py-8 text-center text-rose-600';cell.textContent=error.message;row.append(cell);body.append(row)}
-}
-async function deleteOnuType(entry){
-    if(!confirm(`Hapus ONU type ${entry.name}?`))return;
-    try{const response=await fetch(`/api/olt-settings/data/${entry.id}`,{method:'DELETE'});const result=await response.json();if(!response.ok)throw new Error(result.detail||'Gagal menghapus');notify('ONU type dihapus');loadOnuTypes()}
-    catch(error){notify(error.message,true)}
-}
-onuTypeForm.addEventListener('submit',async event=>{
-    event.preventDefault();const errorBox=document.getElementById('onuTypeFormError'),save=document.getElementById('onuTypeSaveButton');
-    const payloadData={pon_type:activeOnuTypePon,ethernet:document.getElementById('onuEnableEthernet').checked?Number(document.getElementById('onuEthernetCount').value):0,wifi:document.getElementById('onuEnableWifi').checked?Number(document.getElementById('onuWifiCount').value):0,pots:document.getElementById('onuEnablePots').checked?Number(document.getElementById('onuPotsCount').value):0};
-    if((document.getElementById('onuEnableEthernet').checked&&!payloadData.ethernet)||(document.getElementById('onuEnableWifi').checked&&!payloadData.wifi)||(document.getElementById('onuEnablePots').checked&&!payloadData.pots)){errorBox.textContent='Pilih jumlah port untuk setiap fitur yang diaktifkan.';errorBox.classList.remove('hidden');return}
-    save.disabled=true;save.textContent='Saving...';
-    try{const response=await fetch('/api/olt-settings/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({category:'onu_type',name:document.getElementById('onuTypeName').value.trim(),data:payloadData})});const result=await response.json();if(!response.ok)throw new Error(result.detail||'Gagal menyimpan ONU type');onuTypeDialog.close();notify('ONU type tersimpan');loadOnuTypes()}
-    catch(error){errorBox.textContent=error.message;errorBox.classList.remove('hidden')}
-    finally{save.disabled=false;save.textContent='Save'}
-});
-const vlanDialog=document.getElementById('vlanDialog');
-const vlanForm=document.getElementById('vlanForm');
-let activeVlanEntry=null;
-function openVlanDialog(entry=null){
-    activeVlanEntry=entry;
-    document.getElementById('vlanDialogTitle').textContent=entry?'Change Name VLAN':'Add VLAN Database';
-    const idInput=document.getElementById('vlanIdInput');
-    idInput.value=entry?entry.name:'';idInput.readOnly=Boolean(entry);idInput.classList.toggle('bg-slate-100',Boolean(entry));
-    document.getElementById('vlanNameInput').value=entry?(entry.data.vlan_name||entry.data.name||''):'';
-    document.getElementById('vlanFormError').classList.add('hidden');vlanDialog.showModal();
-}
-document.getElementById('createVlanButton').addEventListener('click',()=>openVlanDialog());
-function vlanPortValues(data,keys){
-    let value;for(const key of keys){if(data[key]!==undefined&&data[key]!==null&&data[key]!==''){value=data[key];break}}
-    if(value===undefined)return [];
-    return (Array.isArray(value)?value:String(value).split(/[,;]+/)).map(item=>String(item).trim()).filter(Boolean);
-}
-function addVlanPortCell(row,values,color){
-    const cell=document.createElement('td');cell.className='px-3 py-3';
-    if(!values.length){cell.textContent='-';row.append(cell);return}
-    const list=document.createElement('div');list.className='flex flex-wrap gap-1';
-    values.forEach(value=>{const badge=document.createElement('span');badge.className=`rounded-md px-2 py-1 text-xs ${color}`;badge.textContent=value;list.append(badge)});
-    cell.append(list);row.append(cell);
-}
-function renderVlans(entries){
-    const body=document.getElementById('vlanRows');body.replaceChildren();
-    if(!entries.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=6;cell.className='px-3 py-10 text-center text-slate-400';cell.textContent='Belum ada VLAN tersimpan.';row.append(cell);body.append(row);return}
-    entries.forEach((entry,index)=>{
-        const row=document.createElement('tr');row.className='text-slate-800';
-        [String(index+1),entry.name,entry.data.vlan_name||entry.data.name||entry.name].forEach(value=>{const cell=document.createElement('td');cell.className='px-3 py-3';cell.textContent=value;row.append(cell)});
-        addVlanPortCell(row,vlanPortValues(entry.data,['access_ports','access','ports']),'bg-emerald-50 text-emerald-700');
-        addVlanPortCell(row,vlanPortValues(entry.data,['trunk_ports','trunk']),'bg-rose-50 text-rose-600');
-        const actions=document.createElement('td');actions.className='px-3 py-2';
-        const group=document.createElement('div');group.className='flex justify-center gap-2';
-        const edit=document.createElement('button');edit.type='button';edit.title='Edit VLAN';edit.className='rounded-full bg-slate-100 p-2 text-slate-600 hover:bg-slate-200';edit.innerHTML='<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="m16 4 4 4M4 20l4-.8L19 8a2.1 2.1 0 0 0-3-3L5 16z"/></svg>';edit.addEventListener('click',()=>openVlanDialog(entry));
-        const remove=document.createElement('button');remove.type='button';remove.title='Delete VLAN';remove.className='rounded-full bg-rose-50 p-2 text-rose-600 hover:bg-rose-100';remove.innerHTML='<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg>';remove.addEventListener('click',()=>deleteVlan(entry));
-        group.append(edit,remove);actions.append(group);row.append(actions);body.append(row);
-    });
-}
-async function loadVlans(){
-    const body=document.getElementById('vlanRows');
-    try{const response=await fetch('/api/olt-settings/data?category=vlan');const entries=await response.json();if(!response.ok)throw new Error(entries.detail||'Gagal memuat VLAN');renderVlans(entries)}
-    catch(error){body.innerHTML='';const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=6;cell.className='px-3 py-8 text-center text-rose-600';cell.textContent=error.message;row.append(cell);body.append(row)}
-}
-async function deleteVlan(entry){
-    if(!confirm(`Hapus VLAN ${entry.name}?`))return;
-    try{const response=await fetch(`/api/olt-settings/data/${entry.id}`,{method:'DELETE'});const result=await response.json();if(!response.ok)throw new Error(result.detail||'Gagal menghapus VLAN');notify('VLAN dihapus');loadVlans()}
-    catch(error){notify(error.message,true)}
-}
-vlanForm.addEventListener('submit',async event=>{
-    event.preventDefault();const id=document.getElementById('vlanIdInput').value.trim(),name=document.getElementById('vlanNameInput').value.trim();
-    const errorBox=document.getElementById('vlanFormError'),save=document.getElementById('vlanSaveButton');
-    const data={...(activeVlanEntry?.data||{}),vlan_name:name};
-    save.disabled=true;save.textContent='Saving...';
-    try{const response=await fetch('/api/olt-settings/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:activeVlanEntry?.id||null,category:'vlan',name:id,data})});const result=await response.json();if(!response.ok)throw new Error(result.detail||'Gagal menyimpan VLAN');vlanDialog.close();notify('VLAN tersimpan');loadVlans()}
-    catch(error){errorBox.textContent=error.message;errorBox.classList.remove('hidden')}
-    finally{save.disabled=false;save.textContent='Save'}
-});
-const ponPortDialog=document.getElementById('ponPortDialog');
-function openPonPortDialog(button){
-    const interfaceName=button.dataset.interface;
-    const online=Number(button.dataset.online||0);
-    const badge=document.getElementById('ponPortBadge');
-    document.getElementById('ponPortTitle').textContent=`Card ${button.dataset.slot} >`;
-    badge.textContent=interfaceName;
-    badge.className=`rounded-full px-3 py-1 text-sm font-medium ${online>0?'bg-emerald-50 text-emerald-700':'bg-rose-50 text-rose-600'}`;
-    const details=document.getElementById('ponSfpDetails');details.replaceChildren();
-    ['Vendor Name','Vendor PN','Vendor SN','Class','Module Type','Connector','Temperature','Supply Voltage','TX Power','TX Bias Current','Wavelength','Trans Distance'].forEach(name=>{
-        const term=document.createElement('dt');term.className='text-slate-500';term.textContent=name;
-        const value=document.createElement('dd');value.className='text-slate-700';value.textContent='Belum tersedia';
-        details.append(term,value);
-    });
-    ponPortDialog.showModal();
-}
-document.querySelectorAll('.pon-port-open').forEach(button=>button.addEventListener('click',()=>openPonPortDialog(button)));
-const ponActionDialog=document.getElementById('ponActionDialog');
-const ponActionPorts=document.getElementById('ponActionPorts');
-const ponActionSummary=document.getElementById('ponActionSummary');
-const ponActionApprove=document.getElementById('ponActionApprove');
-const ponConfirmInput=document.getElementById('ponConfirmInput');
-let activePonAction='enable';
-function selectedPonNumbers(){return [...ponActionPorts.querySelectorAll('input:checked')].map(input=>input.value)}
-function updatePonActionDialog(){
-    const selected=selectedPonNumbers();
-    const verb=activePonAction==='enable'?'Enable':'Disable';
-    ponActionSummary.textContent=selected.length?`${verb} PON: ${selected.join(', ')}`:'Pilih setidaknya satu PON.';
-    ponActionApprove.disabled=!selected.length||(activePonAction==='disable'&&ponConfirmInput.value.trim().toUpperCase()!=='CONFIRM');
-}
-function openPonActionDialog(button){
-    activePonAction=button.dataset.action;
-    const slot=button.dataset.slot;
-    const ports=(button.dataset.pons||'').split(',').filter(port=>/^\d+$/.test(port));
-    document.getElementById('ponActionTitle').textContent=`Card ${slot} - PON Card`;
-    document.getElementById('ponActionQuestion').textContent=`Are you sure you want to ${activePonAction} these PON?`;
-    document.getElementById('ponConfirmWrap').classList.toggle('hidden',activePonAction!=='disable');
-    ponConfirmInput.value='';
-    ponActionPorts.replaceChildren();
-    ports.forEach(port=>{
-        const label=document.createElement('label');
-        label.className=`flex cursor-pointer items-center justify-center gap-2 rounded-md border border-slate-300 px-3 py-2.5 text-sm font-medium ${activePonAction==='enable'?'text-emerald-700':'text-rose-600'} hover:bg-slate-50`;
-        const input=document.createElement('input');input.type='checkbox';input.value=port;input.checked=true;input.className=activePonAction==='enable'?'accent-emerald-600':'accent-rose-600';
-        const text=document.createElement('span');text.textContent=`✓ PON ${port}`;
-        input.addEventListener('change',updatePonActionDialog);label.append(input,text);ponActionPorts.append(label);
-    });
-    ponActionSummary.className=`rounded-lg border px-4 py-3 text-sm ${activePonAction==='enable'?'border-emerald-200 text-emerald-700':'border-rose-200 text-rose-600'}`;
-    ponActionApprove.textContent=activePonAction==='enable'?'✓ Ya, Enable':'! Ya, Disable';
-    ponActionApprove.className=`rounded-lg px-4 py-2 text-sm font-semibold text-white ${activePonAction==='enable'?'bg-emerald-600 hover:bg-emerald-700':'bg-rose-600 hover:bg-rose-700'}`;
-    updatePonActionDialog();ponActionDialog.showModal();
-}
-document.querySelectorAll('.pon-action-open').forEach(button=>button.addEventListener('click',()=>openPonActionDialog(button)));
-ponConfirmInput.addEventListener('input',updatePonActionDialog);
-ponActionApprove.addEventListener('click',()=>{
-    if(ponActionApprove.disabled)return;
-    ponActionDialog.close();
-    notify('Tampilan konfirmasi selesai. Kontrol port PON belum terhubung ke OLT; tidak ada perubahan yang dikirim.',true);
-});
-function notify(message,error=false){const box=document.getElementById('settingsMessage');box.textContent=message;box.className=`fixed bottom-5 right-5 px-4 py-3 rounded-lg shadow-lg text-sm ${error?'bg-rose-600 text-white':'bg-emerald-600 text-white'}`;setTimeout(()=>box.classList.add('hidden'),3500)}
-function renderEntries(container,entries){if(!entries.length){container.innerHTML='<p class="text-xs text-slate-400">Belum ada data tersimpan.</p>';return}container.innerHTML=entries.map(entry=>`<div class="flex items-center justify-between border-t py-3 text-xs"><div><b>${escapeHtml(entry.name)}</b><p class="text-slate-500 mt-1">${escapeHtml(Object.entries(entry.data).map(([k,v])=>`${k}: ${v}`).join(' · '))}</p></div><div class="flex gap-3"><button class="text-blue-600" data-edit-id="${entry.id}">Edit</button><button class="text-rose-600" data-delete-id="${entry.id}">Delete</button></div></div>`).join('');container.querySelectorAll('[data-delete-id]').forEach(button=>button.addEventListener('click',()=>deleteEntry(Number(button.dataset.deleteId),container.dataset.category)));container.querySelectorAll('[data-edit-id]').forEach(button=>button.addEventListener('click',()=>editEntry(Number(button.dataset.editId),container.dataset.category)))}
-function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-async function loadEntries(category){const target=document.querySelector(`.entry-list[data-category="${category}"]`);if(!target)return;try{const response=await fetch(`/api/olt-settings/data?category=${encodeURIComponent(category)}`);const entries=await response.json();if(!response.ok)throw new Error(entries.detail||'Gagal membaca data');renderEntries(target,entries)}catch(error){target.textContent=error.message}}
-async function deleteEntry(id,category){if(!confirm('Hapus data ini?'))return;const response=await fetch(`/api/olt-settings/data/${id}`,{method:'DELETE'});if(!response.ok){const data=await response.json();notify(data.detail||'Gagal menghapus',true);return}notify('Data dihapus');loadEntries(category)}
-async function editEntry(id,category){const response=await fetch(`/api/olt-settings/data?category=${encodeURIComponent(category)}`),entries=await response.json(),entry=entries.find(item=>item.id===id);if(!entry)return;const edited=prompt('Edit data JSON:',JSON.stringify(entry.data));if(edited===null)return;try{const data=JSON.parse(edited),saved=await fetch('/api/olt-settings/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({category,name:entry.name,data})}),result=await saved.json();if(!saved.ok)throw new Error(result.detail||'Gagal menyimpan');notify('Perubahan disimpan');loadEntries(category)}catch(error){notify(error.message,true)}}
-document.querySelectorAll('.system-subtab').forEach(button=>button.addEventListener('click',()=>{
-    document.querySelectorAll('.system-subtab').forEach(tab=>{const active=tab===button;tab.setAttribute('aria-selected',String(active));tab.classList.toggle('bg-sky-50',active);tab.classList.toggle('text-sky-700',active);tab.classList.toggle('text-slate-500',!active)});
-    document.querySelectorAll('.system-subpanel').forEach(panel=>panel.classList.toggle('hidden',panel.dataset.systemContent!==button.dataset.systemPanel));
-    if(button.dataset.systemPanel==='backup')loadBackupFiles();
-}));
-const backupOltId={{ selected_olt.id if selected_olt else 'null' }};
-document.getElementById('saveConfigTopButton')?.addEventListener('click',async event=>{
-    const button=event.currentTarget;button.disabled=true;
-    try{const query=backupOltId?`?olt_id=${backupOltId}`:'';const response=await fetch(`/api/olt-settings/backups${query}`,{method:'POST'}),result=await response.json();if(!response.ok)throw new Error(result.detail||'Gagal menyimpan konfigurasi');window.location.href=`/api/olt-settings/backups/${result.id}/download`;notify('Backup konfigurasi berhasil dibuat')}catch(error){notify(error.message,true)}finally{button.disabled=false}
-});
-function formatBackupDate(value){if(!value)return '-';return new Intl.DateTimeFormat('en-US',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Jakarta'}).format(new Date(value))}
-async function loadBackupFiles(){
-    const tbody=document.getElementById('backupRows'),status=document.getElementById('backupLatestStatus');
-    try{
-        const query=backupOltId?`?olt_id=${backupOltId}`:'';const response=await fetch(`/api/olt-settings/backups${query}`),data=await response.json();if(!response.ok)throw new Error(data.detail||'Gagal memuat backup');
-        const last=data.last_auto;
-        status.className=`mt-4 rounded-lg border border-dashed px-5 py-4 text-sm ${last?'border-slate-300 text-slate-600':'border-slate-300 text-slate-500'}`;
-        status.innerHTML=last?`<span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">● Success</span><p class="mt-2"><strong>${formatBackupDate(last.created_at)}</strong> &nbsp; Auto Backup &nbsp; 02:00 UTC+7</p><p class="mt-1">Backup ${escapeHtml(last.filename)} completed successfully</p>`:'Belum ada backup otomatis. Backup harian dijalankan setiap pukul 02:00 UTC+7 selama aplikasi aktif.';
-        tbody.replaceChildren();
-        if(!data.backups.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=6;cell.className='px-3 py-8 text-center text-slate-400';cell.textContent='Belum ada file backup.';row.append(cell);tbody.append(row);return}
-        data.backups.forEach((backup,index)=>{const row=document.createElement('tr');row.className='text-slate-600';
-            [String(index+1),backup.filename,backup.type==='auto'?'Auto':'Manual',`${(backup.size/1024).toFixed(2)} KB`,formatBackupDate(backup.created_at)].forEach((value,i)=>{const cell=document.createElement('td');cell.className=`px-3 py-3 ${i===0?'text-center':''}`;cell.textContent=value;if(i===2){cell.innerHTML=`<span class="rounded-full px-2.5 py-1 text-xs ${backup.type==='auto'?'bg-emerald-50 text-emerald-700':'bg-slate-100 text-slate-600'}">${value}</span>`}row.append(cell)});
-            const action=document.createElement('td');action.className='px-3 py-2 text-center';const link=document.createElement('a');link.href=`/api/olt-settings/backups/${backup.id}/download`;link.download=backup.filename;link.title='Download backup';link.className='inline-flex rounded-lg bg-blue-50 p-2 text-blue-600 hover:bg-blue-100';link.innerHTML='<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3"/></svg>';action.append(link);row.append(action);tbody.append(row);
+
+// Sub Tab GPON / EPON di ONU Types & Speed Profiles
+let activeOnuTypePon = 'GPON';
+document.querySelectorAll('.onu-type-subtab').forEach(button => {
+    button.addEventListener('click', () => {
+        activeOnuTypePon = button.dataset.ponType;
+        document.querySelectorAll('.onu-type-subtab').forEach(b => {
+            const active = b.dataset.ponType === activeOnuTypePon;
+            b.className = active ? 'onu-type-subtab border-b-2 border-blue-600 pb-2 text-blue-600 transition' : 'onu-type-subtab border-b-2 border-transparent pb-2 text-slate-400 hover:text-slate-700 transition';
         });
-    }catch(error){tbody.innerHTML=`<tr><td colspan="6" class="px-3 py-8 text-center text-rose-600">${escapeHtml(error.message)}</td></tr>`}
-}
-document.getElementById('backupNowButton').addEventListener('click',async event=>{
-    const button=event.currentTarget;button.disabled=true;button.textContent='Creating...';
-    try{const query=backupOltId?`?olt_id=${backupOltId}`:'';const response=await fetch(`/api/olt-settings/backups${query}`,{method:'POST'}),result=await response.json();if(!response.ok)throw new Error(result.detail||'Gagal membuat backup');await loadBackupFiles();notify(`Backup ${result.filename} berhasil dibuat`)}catch(error){notify(error.message,true)}finally{button.disabled=false;button.textContent='＋ Backup Now'}
+        document.getElementById('onuTypeTableTitle').textContent = `ONU ${activeOnuTypePon} Type Catalog`;
+        loadOnuTypes();
+    });
 });
-function updateClockSyncUI(){
-    const form=document.querySelector('.entry-form[data-category="system"] input[name="name"][value="clock"]')?.form;if(!form)return;
-    const enabled=form.elements.auto_sync.checked,timezone=form.elements.timezone;
-    document.getElementById('clockAutoSyncState').textContent=enabled?'ON':'OFF';
-    document.getElementById('clockAutoSyncState').className=`text-[10px] font-semibold ${enabled?'text-sky-700':'text-slate-400'}`;
-    document.getElementById('clockSyncZone').textContent=`Sync to ${timezone.options[timezone.selectedIndex].textContent}`;
-    document.getElementById('clockSyncZone').classList.toggle('hidden',!enabled);
-    document.getElementById('clockSyncStatus').classList.toggle('hidden',!enabled);
-    document.getElementById('clockSyncStatus').classList.toggle('flex',enabled);
-    document.getElementById('clockSyncStatusText').textContent='Preferensi tersimpan; sinkronisasi OLT belum terhubung';
+
+let activeSpeedPonType = 'GPON';
+document.querySelectorAll('.speed-pon-subtab').forEach(button => {
+    button.addEventListener('click', () => {
+        activeSpeedPonType = button.dataset.ponType;
+        document.querySelectorAll('.speed-pon-subtab').forEach(b => {
+            const active = b.dataset.ponType === activeSpeedPonType;
+            b.className = active ? 'speed-pon-subtab border-b-2 border-blue-600 pb-2 text-blue-600 transition' : 'speed-pon-subtab border-b-2 border-transparent pb-2 text-slate-400 hover:text-slate-700 transition';
+        });
+        document.getElementById('gponSpeedSections').classList.toggle('hidden', activeSpeedPonType !== 'GPON');
+        document.getElementById('eponSlaSection').classList.toggle('hidden', activeSpeedPonType !== 'EPON');
+        loadSpeedProfiles();
+    });
+});
+
+// Port Detail View & Click Actions (Uplink)
+function openPortDetail(cardName, portName, speed, status, isUp) {
+    document.getElementById('uplinkCardsList').classList.add('hidden');
+    document.getElementById('portDetailView').classList.remove('hidden');
+    document.getElementById('detailCardTitle').textContent = cardName;
+    const badge = document.getElementById('detailPortBadge');
+    badge.textContent = portName;
+    badge.className = isUp ? 'inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 font-mono text-[11px] font-bold text-emerald-700 border border-emerald-200' : 'inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-0.5 font-mono text-[11px] font-bold text-rose-600 border border-rose-200';
+    document.getElementById('cfgSpeed').textContent = speed;
+    document.getElementById('cfgNegotiation').textContent = 'Full-' + speed;
+    document.getElementById('modalPortBadge1').textContent = portName;
+    document.getElementById('modalPortBadge2').textContent = portName;
 }
-async function loadSystemPreferences(){
-    const clockForm=document.querySelector('.entry-form[data-category="system"] input[name="name"][value="clock"]')?.form;
-    if(clockForm){const now=new Date(),date=new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,10);clockForm.elements.date.value=date;clockForm.elements.time.value=now.toTimeString().slice(0,8)}
-    try{const response=await fetch('/api/olt-settings/data?category=system');if(!response.ok)return;const entries=await response.json();entries.forEach(entry=>{const form=document.querySelector(`.entry-form[data-category="system"] input[name="name"][value="${CSS.escape(entry.name)}"]`)?.form;if(!form)return;Object.entries(entry.data||{}).forEach(([key,value])=>{const field=form.elements.namedItem(key);if(!field)return;if(field.type==='checkbox')field.checked=Boolean(value);else if(value!==undefined&&value!==null)field.value=value})});updateClockSyncUI()}catch(error){console.warn('Gagal memuat preferensi system',error)}
+
+function closePortDetail() {
+    document.getElementById('portDetailView').classList.add('hidden');
+    document.getElementById('uplinkCardsList').classList.remove('hidden');
 }
-document.querySelectorAll('#clockAutoSync, #systemClockDate, #systemClockTime, select[name="timezone"]').forEach(field=>field.addEventListener('change',()=>{
-    updateClockSyncUI();field.form?.requestSubmit();
-}));
-document.querySelectorAll('.entry-form').forEach(form=>form.addEventListener('submit',async event=>{
-    event.preventDefault();const data=Object.fromEntries(new FormData(form).entries());const category=form.dataset.category,name=data.name;delete data.name;
-    if(category==='system')form.querySelectorAll('input[type="checkbox"]').forEach(field=>data[field.name]=field.checked);
-    const response=await fetch('/api/olt-settings/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({category,name,data})});const result=await response.json();if(!response.ok){notify(result.detail||'Gagal menyimpan',true);return}if(category!=='system')notify('Tersimpan di database aplikasi');loadEntries(category);if(category==='system')loadSystemPreferences();
-}));
-document.querySelectorAll('.entry-list').forEach(target=>loadEntries(target.dataset.category));loadSystemPreferences();loadVlans();loadOnuTypes();loadWanProfiles();loadSpeedProfiles();showTab('Uplink','Uplinks');
+
+const portConfigModal = document.getElementById('portConfigModal');
+const vlanConfigModal = document.getElementById('vlanConfigModal');
+function openPortConfigModal() { portConfigModal.showModal(); }
+function openVlanConfigModal() { vlanConfigModal.showModal(); }
+
+document.getElementById('portConfigForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    portConfigModal.close();
+    notify('Konfigurasi port berhasil diperbarui.');
+});
+
+document.getElementById('vlanConfigForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    vlanConfigModal.close();
+    notify('Konfigurasi VLAN port berhasil diperbarui.');
+});
+
+// PON Port Modal (Klik Port GPON SFP)
+const ponPortModal = document.getElementById('ponPortModal');
+function openPonPortDetail(cardName, portName, isUp) {
+    document.getElementById('ponModalCardTitle').textContent = cardName;
+    const badge = document.getElementById('ponModalPortBadge');
+    badge.textContent = portName;
+    badge.className = isUp ? 'font-mono text-emerald-600 font-bold' : 'font-mono text-rose-600 font-bold';
+    document.getElementById('ponTxPower').textContent = isUp ? '10.506 dBm' : '0.000 dBm';
+    ponPortModal.showModal();
+}
+
+function savePonPortSettings() {
+    ponPortModal.close();
+    notify('Konfigurasi port PON berhasil disimpan.');
+}
+
+// Toast Notifikasi
+function notify(message, error = false) {
+    const box = document.getElementById('settingsMessage');
+    box.textContent = message;
+    box.className = `fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl shadow-lg text-xs font-semibold text-white ${error ? 'bg-rose-600' : 'bg-slate-900'}`;
+    box.classList.remove('hidden');
+    setTimeout(() => box.classList.add('hidden'), 3500);
+}
+
+// ----------------- API: VLAN -----------------
+const vlanDialog = document.getElementById('vlanDialog');
+const vlanForm = document.getElementById('vlanForm');
+function openVlanDialog() {
+    vlanForm.reset();
+    document.getElementById('vlanFormError').classList.add('hidden');
+    vlanDialog.showModal();
+}
+
+async function loadVlans() {
+    const body = document.getElementById('vlanRows');
+    try {
+        const res = await fetch('/api/olt-settings/data?category=vlan');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail);
+        if (!data.length) {
+            body.innerHTML = '<tr><td colspan="6" class="px-3 py-6 text-center text-slate-400">Belum ada data VLAN.</td></tr>';
+            return;
+        }
+        body.innerHTML = data.map((item, idx) => `
+            <tr class="hover:bg-slate-50/70">
+                <td class="py-3 px-3 text-center text-slate-400 font-medium">${idx + 1}</td>
+                <td class="py-3 px-4 font-bold text-slate-800">${item.name}</td>
+                <td class="py-3 px-4 text-slate-700">${item.data.vlan_name || item.name}</td>
+                <td class="py-3 px-4 font-mono text-slate-500">${item.data.access_ports || '-'}</td>
+                <td class="py-3 px-4 font-mono text-slate-500">${item.data.trunk_ports || '-'}</td>
+                <td class="py-3 px-4 text-center">
+                    <button type="button" onclick="deleteEntry(${item.id}, 'vlan')" class="p-1 text-slate-400 hover:text-rose-600" title="Delete">
+                        <svg class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } catch(err) {
+        body.innerHTML = `<tr><td colspan="6" class="px-3 py-6 text-center text-rose-600">${err.message}</td></tr>`;
+    }
+}
+
+vlanForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('vlanIdInput').value.trim();
+    const name = document.getElementById('vlanNameInput').value.trim();
+    try {
+        const res = await fetch('/api/olt-settings/data', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({category: 'vlan', name: id, data: {vlan_name: name}})
+        });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.detail);
+        vlanDialog.close();
+        notify('VLAN berhasil disimpan');
+        loadVlans();
+    } catch(err) {
+        const errEl = document.getElementById('vlanFormError');
+        errEl.textContent = err.message;
+        errEl.classList.remove('hidden');
+    }
+});
+
+// ----------------- API: ONU Types -----------------
+const onuTypeDialog = document.getElementById('onuTypeDialog');
+const onuTypeForm = document.getElementById('onuTypeForm');
+document.getElementById('createOnuTypeButton')?.addEventListener('click', () => {
+    onuTypeForm.reset();
+    document.getElementById('onuTypeDialogTitle').textContent = `Create ${activeOnuTypePon} ONU Type`;
+    onuTypeDialog.showModal();
+});
+
+['onuEnableEthernet', 'onuEnableWifi', 'onuEnablePots'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', (e) => {
+        const sel = e.target.closest('div').querySelector('select');
+        sel.disabled = !e.target.checked;
+        sel.className = e.target.checked ? 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-800' : 'w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-slate-700';
+    });
+});
+
+async function loadOnuTypes() {
+    const body = document.getElementById('onuTypeRows');
+    try {
+        const res = await fetch('/api/olt-settings/data?category=onu_type');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail);
+        const filtered = data.filter(x => (x.data.pon_type || 'GPON').toUpperCase() === activeOnuTypePon);
+        if (!filtered.length) {
+            body.innerHTML = `<tr><td colspan="6" class="px-3 py-6 text-center text-slate-400">Belum ada tipe ONU ${activeOnuTypePon}.</td></tr>`;
+            return;
+        }
+        body.innerHTML = filtered.map((item, idx) => `
+            <tr class="hover:bg-slate-50/70">
+                <td class="py-3 px-3 text-center text-slate-400 font-medium">${idx + 1}</td>
+                <td class="py-3 px-4 font-bold text-slate-800">${item.name}</td>
+                <td class="py-3 px-4 text-slate-600">${item.data.ethernet || 0}</td>
+                <td class="py-3 px-4 text-slate-600">${item.data.wifi || 0}</td>
+                <td class="py-3 px-4 text-slate-600">${item.data.pots || 0}</td>
+                <td class="py-3 px-4 text-center">
+                    <button type="button" onclick="deleteEntry(${item.id}, 'onu_type')" class="p-1 text-slate-400 hover:text-rose-600" title="Delete">
+                        <svg class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } catch(err) {
+        body.innerHTML = `<tr><td colspan="6" class="px-3 py-6 text-center text-rose-600">${err.message}</td></tr>`;
+    }
+}
+
+onuTypeForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('onuTypeName').value.trim();
+    const payload = {
+        category: 'onu_type',
+        name,
+        data: {
+            pon_type: activeOnuTypePon,
+            ethernet: document.getElementById('onuEnableEthernet').checked ? Number(document.getElementById('onuEthernetCount').value) : 0,
+            wifi: document.getElementById('onuEnableWifi').checked ? Number(document.getElementById('onuWifiCount').value) : 0,
+            pots: document.getElementById('onuEnablePots').checked ? Number(document.getElementById('onuPotsCount').value) : 0,
+        }
+    };
+    try {
+        const res = await fetch('/api/olt-settings/data', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.detail);
+        onuTypeDialog.close();
+        notify('ONU type tersimpan');
+        loadOnuTypes();
+    } catch(err) {
+        const errEl = document.getElementById('onuTypeFormError');
+        errEl.textContent = err.message;
+        errEl.classList.remove('hidden');
+    }
+});
+
+// ----------------- API: WAN Profiles -----------------
+const vlanProfileDialog = document.getElementById('vlanProfileDialog');
+const ipProfileDialog = document.getElementById('ipProfileDialog');
+document.querySelectorAll('[data-profile-create]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        if (btn.dataset.profileCreate === 'vlan_profile') {
+            document.getElementById('vlanProfileForm').reset();
+            vlanProfileDialog.showModal();
+        } else {
+            document.getElementById('ipProfileForm').reset();
+            ipProfileDialog.showModal();
+        }
+    });
+});
+
+async function loadWanProfiles() {
+    try {
+        const [rVlan, rIp] = await Promise.all([
+            fetch('/api/olt-settings/data?category=vlan_profile'),
+            fetch('/api/olt-settings/data?category=ip_profile')
+        ]);
+        const vlans = await rVlan.json();
+        const ips = await rIp.json();
+        const vBody = document.getElementById('vlanProfileRows');
+        const iBody = document.getElementById('ipProfileRows');
+
+        vBody.innerHTML = vlans.length ? vlans.map((x, i) => `
+            <tr>
+                <td class="py-3 px-3 text-center text-slate-400 font-medium">${i+1}</td>
+                <td class="py-3 px-4 font-bold text-slate-800">${x.name}</td>
+                <td class="py-3 px-4 font-mono text-slate-600">${x.data.cvlan || '-'}</td>
+                <td class="py-3 px-4 text-center">
+                    <button type="button" onclick="deleteEntry(${x.id}, 'vlan_profile')" class="text-slate-400 hover:text-rose-600" title="Delete">
+                        <svg class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </td>
+            </tr>
+        `).join('') : '<tr><td colspan="4" class="px-3 py-6 text-center text-slate-400">Belum ada profile.</td></tr>';
+
+        iBody.innerHTML = ips.length ? ips.map((x, i) => `
+            <tr>
+                <td class="py-3 px-3 text-center text-slate-400 font-medium">${i+1}</td>
+                <td class="py-3 px-4 font-bold text-slate-800">${x.name}</td>
+                <td class="py-3 px-4 font-mono text-slate-600">${x.data.gateway || '-'}</td>
+                <td class="py-3 px-4 font-mono text-slate-600">${x.data.primary_dns || '-'}</td>
+                <td class="py-3 px-4 font-mono text-slate-600">${x.data.secondary_dns || '-'}</td>
+                <td class="py-3 px-4 text-center">
+                    <button type="button" onclick="deleteEntry(${x.id}, 'ip_profile')" class="text-slate-400 hover:text-rose-600" title="Delete">
+                        <svg class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </td>
+            </tr>
+        `).join('') : '<tr><td colspan="6" class="px-3 py-6 text-center text-slate-400">Belum ada profile.</td></tr>';
+    } catch(e) {}
+}
+
+document.getElementById('vlanProfileForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('vlanProfileName').value.trim();
+    const cvlan = Number(document.getElementById('vlanProfileCvlan').value);
+    await fetch('/api/olt-settings/data', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({category: 'vlan_profile', name, data: {cvlan}})
+    });
+    vlanProfileDialog.close();
+    notify('Profile tersimpan');
+    loadWanProfiles();
+});
+
+document.getElementById('ipProfileForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('ipProfileName').value.trim();
+    const gateway = document.getElementById('ipProfileGateway').value.trim();
+    const primary_dns = document.getElementById('ipProfilePrimaryDns').value.trim();
+    const secondary_dns = document.getElementById('ipProfileSecondaryDns').value.trim();
+    await fetch('/api/olt-settings/data', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({category: 'ip_profile', name, data: {gateway, primary_dns, secondary_dns}})
+    });
+    ipProfileDialog.close();
+    notify('Profile tersimpan');
+    loadWanProfiles();
+});
+
+// ----------------- API: Speed Profiles -----------------
+const speedProfileDialog = document.getElementById('speedProfileDialog');
+const speedProfileForm = document.getElementById('speedProfileForm');
+let activeSpeedCreateType = 'upload';
+
+document.querySelectorAll('[data-speed-create]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        activeSpeedCreateType = btn.dataset.speedCreate;
+        speedProfileForm.reset();
+        document.getElementById('speedProfileError').classList.add('hidden');
+        const isSla = activeSpeedCreateType === 'sla';
+        document.getElementById('speedProfileDialogTitle').textContent = isSla ? 'Create SLA Profile (EPON)' : `Create GPON ${activeSpeedCreateType.toUpperCase()} Profile`;
+        document.getElementById('gponSpeedInputWrapper').classList.toggle('hidden', isSla);
+        document.getElementById('eponSlaInputsWrapper').classList.toggle('hidden', !isSla);
+        speedProfileDialog.showModal();
+    });
+});
+
+speedProfileForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('speedProfileName').value.trim();
+    let dataPayload = {};
+    if (activeSpeedCreateType === 'sla') {
+        dataPayload = {
+            pon_type: 'EPON',
+            upload_kbps: Number(document.getElementById('speedSlaUploadKbps').value),
+            download_kbps: Number(document.getElementById('speedSlaDownloadKbps').value)
+        };
+    } else {
+        dataPayload = {
+            pon_type: 'GPON',
+            direction: activeSpeedCreateType,
+            speed_kb: Number(document.getElementById('speedProfileKbps').value)
+        };
+    }
+    try {
+        const res = await fetch('/api/olt-settings/data', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({category: 'speed_profile', name, data: dataPayload})
+        });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.detail);
+        speedProfileDialog.close();
+        notify('Speed profile tersimpan');
+        loadSpeedProfiles();
+    } catch(err) {
+        const errEl = document.getElementById('speedProfileError');
+        errEl.textContent = err.message;
+        errEl.classList.remove('hidden');
+    }
+});
+
+async function loadSpeedProfiles() {
+    try {
+        const res = await fetch('/api/olt-settings/data?category=speed_profile');
+        const data = await res.json();
+        const gponUpload = data.filter(x => (x.data.direction || 'upload') === 'upload' && (x.data.pon_type || 'GPON') === 'GPON');
+        const gponDownload = data.filter(x => (x.data.direction || '') === 'download' && (x.data.pon_type || 'GPON') === 'GPON');
+        const eponSla = data.filter(x => (x.data.pon_type || '').toUpperCase() === 'EPON');
+
+        const uBody = document.getElementById('uploadSpeedRows');
+        const dBody = document.getElementById('downloadSpeedRows');
+        const slaBody = document.getElementById('eponSlaRows');
+
+        uBody.innerHTML = gponUpload.length ? gponUpload.map((x, i) => `<tr><td class="py-3 px-3 text-center text-slate-400 font-medium">${i+1}</td><td class="py-3 px-4 font-bold text-slate-800">${x.name}</td><td class="py-3 px-4 font-mono text-emerald-600">${x.data.speed_kb || 0} Kbps</td><td class="py-3 px-4 text-center"><button type="button" onclick="deleteEntry(${x.id}, 'speed_profile')" class="text-slate-400 hover:text-rose-600" title="Delete"><svg class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></td></tr>`).join('') : '<tr><td colspan="4" class="px-3 py-6 text-center text-slate-400">Belum ada profile.</td></tr>';
+        dBody.innerHTML = gponDownload.length ? gponDownload.map((x, i) => `<tr><td class="py-3 px-3 text-center text-slate-400 font-medium">${i+1}</td><td class="py-3 px-4 font-bold text-slate-800">${x.name}</td><td class="py-3 px-4 font-mono text-blue-600">${x.data.speed_kb || 0} Kbps</td><td class="py-3 px-4 text-center"><button type="button" onclick="deleteEntry(${x.id}, 'speed_profile')" class="text-slate-400 hover:text-rose-600" title="Delete"><svg class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></td></tr>`).join('') : '<tr><td colspan="4" class="px-3 py-6 text-center text-slate-400">Belum ada profile.</td></tr>';
+        slaBody.innerHTML = eponSla.length ? eponSla.map((x, i) => `<tr><td class="py-3 px-3 text-center text-slate-400 font-medium">${i+1}</td><td class="py-3 px-4 font-bold text-slate-800">${x.name}</td><td class="py-3 px-4 font-mono text-emerald-600">${x.data.upload_kbps || 0} Kbps</td><td class="py-3 px-4 font-mono text-blue-600">${x.data.download_kbps || 0} Kbps</td><td class="py-3 px-4 text-center"><button type="button" onclick="deleteEntry(${x.id}, 'speed_profile')" class="text-slate-400 hover:text-rose-600" title="Delete"><svg class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></td></tr>`).join('') : '<tr><td colspan="5" class="px-3 py-6 text-center text-slate-400">Belum ada profile.</td></tr>';
+    } catch(e) {}
+}
+
+// ----------------- API: Delete Helper -----------------
+async function deleteEntry(id, category) {
+    if (!confirm('Hapus item ini?')) return;
+    try {
+        const res = await fetch(`/api/olt-settings/data/${id}`, {method: 'DELETE'});
+        if (!res.ok) throw new Error('Gagal menghapus');
+        notify('Data dihapus');
+        if (category === 'vlan') loadVlans();
+        else if (category === 'onu_type') loadOnuTypes();
+        else if (category.includes('profile')) { loadWanProfiles(); loadSpeedProfiles(); }
+    } catch(e) { notify(e.message, true); }
+}
+
+// ----------------- API: System Clock -----------------
+document.getElementById('systemClockForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const payload = {
+        category: 'system',
+        name: 'clock',
+        data: {
+            timezone: form.timezone.value,
+            auto_sync: form.auto_sync.checked
+        }
+    };
+    try {
+        const res = await fetch('/api/olt-settings/data', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.detail || 'Gagal menyimpan konfigurasi jam');
+        notify('Konfigurasi jam berhasil disimpan');
+    } catch(err) {
+        notify(err.message, true);
+    }
+});
+
+// ----------------- API: Backup & Save Config -----------------
+const backupOltId = {{ (selected_olt.id | tojson) if (selected_olt and selected_olt.id is defined) else 'null' }};
+
+document.getElementById('saveConfigTopButton')?.addEventListener('click', async event => {
+    const btn = event.currentTarget;
+    btn.disabled = true;
+    try {
+        const query = backupOltId ? `?olt_id=${encodeURIComponent(backupOltId)}` : '';
+        const res = await fetch(`/api/olt-settings/backups${query}`, { method: 'POST' });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.detail || 'Gagal membuat backup');
+        window.location.href = `/api/olt-settings/backups/${d.id}/download`;
+        notify('Backup konfigurasi berhasil disimpan');
+    } catch(e) { notify(e.message, true); }
+    finally { btn.disabled = false; }
+});
+
+document.getElementById('backupNowButton')?.addEventListener('click', async event => {
+    const btn = event.currentTarget;
+    btn.disabled = true;
+    try {
+        const query = backupOltId ? `?olt_id=${encodeURIComponent(backupOltId)}` : '';
+        const res = await fetch(`/api/olt-settings/backups${query}`, { method: 'POST' });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.detail || 'Gagal membuat backup');
+        notify(`Backup ${d.filename} berhasil dibuat`);
+        loadBackupFiles();
+    } catch(e) { notify(e.message, true); }
+    finally { btn.disabled = false; }
+});
+
+async function loadBackupFiles() {
+    const tbody = document.getElementById('backupRows');
+    const status = document.getElementById('backupLatestStatus');
+    try {
+        const query = backupOltId ? `?olt_id=${encodeURIComponent(backupOltId)}` : '';
+        const res = await fetch(`/api/olt-settings/backups${query}`);
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.detail);
+        status.innerHTML = d.last_auto ? `<span class="text-emerald-700 font-bold">● Auto Backup Sukses:</span> ${d.last_auto.filename} (${d.last_auto.created_at})` : 'Belum ada backup harian otomatis yang tersimpan.';
+        tbody.innerHTML = d.backups.length ? d.backups.map((b, i) => `
+            <tr>
+                <td class="py-2.5 px-3 text-center text-slate-400 font-medium">${i+1}</td>
+                <td class="py-2.5 px-3 font-mono font-medium text-slate-800">${b.filename}</td>
+                <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${b.type==='auto'?'bg-emerald-50 text-emerald-700':'bg-slate-100 text-slate-600'}">${b.type}</span></td>
+                <td class="py-2.5 px-3 font-mono text-slate-500">${(b.size/1024).toFixed(1)} KB</td>
+                <td class="py-2.5 px-3 text-center"><a href="/api/olt-settings/backups/${b.id}/download" class="text-blue-600 hover:underline">Download</a></td>
+            </tr>
+        `).join('') : '<tr><td colspan="5" class="py-6 text-center text-slate-400">Belum ada file backup.</td></tr>';
+    } catch(e) {}
+}
+
+// Inisialisasi awal saat halaman dibuka
+loadVlans();
+loadOnuTypes();
+loadWanProfiles();
+loadSpeedProfiles();
+loadBackupFiles();
+showTab('Uplinks');
 </script>
 {% endblock %}

@@ -17,7 +17,7 @@
             <div class="grid gap-3 md:grid-cols-[25%_1fr] md:items-start">
                 <label class="pt-2 text-sm font-medium text-blue-950">Profile Image</label>
                 <div>
-                    <div id="accountAvatar" class="grid h-[150px] w-[150px] place-items-center overflow-hidden bg-slate-200 rounded-lg">
+                    <div id="accountAvatar" data-image="{{ profile.image or '' }}" class="grid h-[150px] w-[150px] place-items-center overflow-hidden bg-slate-200 rounded-lg">
                         {% if profile.image %}
                             <img src="{{ profile.image }}" alt="Profile image" class="h-full w-full object-cover">
                         {% else %}
@@ -111,7 +111,7 @@
 </dialog>
 
 <script>
-let accountProfileImage = {{ (profile.image | tojson) if profile.image else '""' }};
+let accountProfileImage = document.getElementById('accountAvatar').dataset.image || '';
 const accountAvatar = document.getElementById('accountAvatar');
 
 function renderAccountAvatar() {

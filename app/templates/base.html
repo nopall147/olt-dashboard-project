@@ -32,30 +32,34 @@
     <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shrink-0">
         <div class="topbar-inner px-6 h-16 flex items-center justify-between">
             <!-- LEFT: LOGO & SEARCH -->
-            <div class="topbar-left flex items-center space-x-6">
-                <button type="button" id="mobileNavToggle" class="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 xl:hidden" aria-label="Buka navigasi" aria-expanded="false">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                </button>
-                <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center">
-                        C
-                    </div>
-                    <span class="text-xl font-bold tracking-tight text-blue-900">
-                        CONFIG
-                    </span>
-                </div>
+<div class="topbar-left flex items-center space-x-6">
+    <button type="button" id="mobileNavToggle" class="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 xl:hidden" aria-label="Buka navigasi" aria-expanded="false">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    
+    <!-- LOGO GAMBAR & TEKS NSC CONFIG -->
+    <a href="/" class="flex items-center space-x-2.5 shrink-0">
+        <img 
+            src="/static/img/agak gelap.png" 
+            alt="NSC CONFIG Logo" 
+            class="h-8 w-auto object-contain"
+        >
+        <span class="text-lg font-bold tracking-tight text-slate-900">
+            NSC CONFIG
+        </span>
+    </a>
 
-                <div class="topbar-search relative">
-                    <input
-                        type="text"
-                        placeholder="Search ONU"
-                        class="w-72 pl-9 pr-4 py-1.5 text-xs bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                    >
-                    <svg class="w-4 h-4 absolute left-3 top-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                </div>
-            </div>
+    <div class="topbar-search relative">
+        <input
+            type="text"
+            placeholder="Search ONU"
+            class="w-72 pl-9 pr-4 py-1.5 text-xs bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+        >
+        <svg class="w-4 h-4 absolute left-3 top-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+    </div>
+</div>
 
             <!-- RIGHT: NOTIFIKASI & CART & PROFIL -->
             <div class="topbar-right flex items-center gap-3">

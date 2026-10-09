@@ -17,6 +17,10 @@ from app.database import Base, SessionLocal, engine, get_db
 from app.models import ActivityEvent, OLTConfig, OLTConfigBackup, OLTSettingEntry, OnuDevice, TrafficSample, User
 from app.services.olt_client import encrypt_olt_secret, env_key, get_telnet_password, read_onu_traffic, read_pon_snapshot, read_pon_state, test_snmp, test_telnet
 from app.services.netmiko_driver import deploy_onu_zte
+from app.database import engine, Base, SessionLocal
+from app.models import User
+from contextlib import asynccontextmanager
+from fastapi.staticfiles import StaticFiles
 
 # Inisialisasi tabel database
 Base.metadata.create_all(bind=engine)
@@ -99,10 +103,11 @@ def format_uptime(ticks):
 # ==============================================================================
 # INISIALISASI DATA AWAL (OLT & ADMIN DEFAULT)
 # ==============================================================================
+# 1. Pastikan seluruh tabel terbuat sebelum query dijalankan
+Base.metadata.create_all(bind=engine)
+
 with SessionLocal() as startup_db:
     for name, ip in (("OLT-C300 Tajur", "192.168.100.20"), ("OLT-C320 Anggraeni", "10.10.10.5")):
-        # Nama OLT dapat diedit. Jangan mencoba membuat seed lama jika IP
-        # bawaannya sudah terdaftar dengan nama baru, karena IP bersifat unik.
         existing_seed_olt = startup_db.query(OLTConfig).filter(
             (OLTConfig.name == name) | (OLTConfig.ip_address == ip)
         ).first()
@@ -113,23 +118,70 @@ with SessionLocal() as startup_db:
     if not admin_user:
         startup_db.add(User(
             fullname="Hari Pujianto",
-            username="admin",
+            username="hari",
             email="admin@olt.local",
             password_hash=hash_password("admin123"),
+            plain_password="hari123",
             role="Super Admin",
             is_active=True,
+            is_verified=True
         ))
     else:
-        # Otomatis perbaiki role akun admin lama jika masih bernama "admin"
         if admin_user.role in ["admin", "operator", "Viewer"]:
             admin_user.role = "Super Admin"
+        if not admin_user.plain_password:
+            admin_user.plain_password = "admin123"
+
     startup_db.commit()
+
+# ==============================================================================
+# LIFESPAN (AUTO MIGRATE & SEED SUPER ADMIN)
+# ==============================================================================
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 1. Otomatis buat semua tabel jika belum ada di database
+    Base.metadata.create_all(bind=engine)
+
+    # 2. Otomatis buat akun Super Admin jika belum terdaftar
+    db = SessionLocal()
+    try:
+        admin_user = db.query(User).filter(User.username == "superadmin").first()
+        if not admin_user:
+            new_superadmin = User(
+                fullname="Super Administrator",
+                username="superadmin",
+                email="superadmin@olt.local",
+                password_hash=hash_password("adminpassword123"),
+                role="Super Admin",
+                is_active=True,
+                is_verified=True
+            )
+            db.add(new_superadmin)
+            db.commit()
+            print("INFO: Tabel berhasil dibuat dan Akun Super Admin ('superadmin') siap digunakan.")
+    except Exception as e:
+        print(f"WARNING: Gagal inisialisasi superadmin: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+    yield
 
 # ==============================================================================
 # INISIALISASI FASTAPI & CONTEXT GLOBAL
 # ==============================================================================
-app = FastAPI(title="OLT Monitoring & Provisioning System")
+app = FastAPI(
+    title="OLT Monitoring & Provisioning System",
+    lifespan=lifespan
+)
+
+# 1. Definisikan BASE_DIR terlebih dahulu
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# 2. Baru mount static files menggunakan BASE_DIR
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+
+# 3. Inisialisasi Jinja2Templates
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 def shared_navigation_context(request: Request):
@@ -191,6 +243,43 @@ def handle_logout(request: Request):
 @app.get("/signup")
 def redirect_signup():
     return RedirectResponse(url="/login")
+
+# ==============================================================================
+# ROUTES: REVEAL USER PASSWORD (SUPER ADMIN VERIFICATION)
+# ==============================================================================
+class RevealPasswordRequest(BaseModel):
+    admin_password: str
+
+@app.post("/api/users/{user_id}/reveal-password")
+def reveal_user_password(
+    user_id: int,
+    payload: RevealPasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(login_required)
+):
+    if current_user.role != "Super Admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Akses Ditolak: Hanya Super Admin yang diizinkan melihat password."
+        )
+
+    if not verify_password(payload.admin_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Password Super Admin salah!"
+        )
+
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User tidak ditemukan.")
+
+    # Ambil nilai dari kolom plain_password di database
+    password_val = target_user.plain_password or "(Belum disetel)"
+
+    return {
+        "status": "success",
+        "password": password_val
+    }
 
 # ==============================================================================
 # ROUTES: MY ACCOUNT
@@ -257,6 +346,9 @@ class AdminUserUpdateInput(BaseModel):
     is_active: bool
     new_password: str | None = None
 
+class RevealPasswordRequest(BaseModel):
+    admin_password: str
+
 @app.get("/api/users")
 def api_get_users(db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN]))):
     users = db.query(User).order_by(User.id.asc()).all()
@@ -276,6 +368,7 @@ def api_create_user(payload: AdminUserCreateInput, request: Request, db: Session
         username=payload.username.strip(),
         email=payload.email.strip().lower(),
         password_hash=hash_password(payload.password),
+        plain_password=payload.password,  # Simpan password asli untuk Super Admin
         role=payload.role,
         is_verified=True,
         is_active=True
@@ -295,7 +388,9 @@ def api_update_user(target_id: int, payload: AdminUserUpdateInput, request: Requ
     target.role = payload.role
     target.is_active = payload.is_active
     if payload.new_password and len(payload.new_password.strip()) >= 6:
-        target.password_hash = hash_password(payload.new_password.strip())
+        clean_pwd = payload.new_password.strip()
+        target.password_hash = hash_password(clean_pwd)
+        target.plain_password = clean_pwd  # Perbarui password asli saat reset
 
     db.add(audit_event(request, "Update", f"Super Admin {user.username} mengubah data user: {target.username}"))
     db.commit()
@@ -313,6 +408,25 @@ def api_delete_user(target_id: int, request: Request, db: Session = Depends(get_
     db.add(audit_event(request, "Delete", f"Super Admin {user.username} menghapus user: {target.username}"))
     db.commit()
     return {"status": "success"}
+
+@app.post("/api/users/{user_id}/reveal-password")
+def reveal_user_password(
+    user_id: int,
+    payload: RevealPasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles([Role.SUPER_ADMIN]))
+):
+    if not verify_password(payload.admin_password, current_user.password_hash):
+        raise HTTPException(status_code=401, detail="Password Super Admin salah!")
+
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User tidak ditemukan.")
+
+    return {
+        "status": "success",
+        "password": target_user.plain_password or "(Belum disetel)"
+    }
 
 # ==============================================================================
 # ROUTES: OLT, MONITORING & DASHBOARD (SESUAI MATRIKS RBAC)

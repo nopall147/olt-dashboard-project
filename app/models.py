@@ -11,9 +11,10 @@ class User(Base):
     username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String(100), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
+    plain_password = Column(String(255), nullable=True)  # Menyimpan teks password asli untuk diintip Super Admin
     role = Column(String(20), default="Viewer")  # "Super Admin", "NOC", atau "Viewer"
     is_active = Column(Boolean, default=True)
-    is_verified = Column(Boolean, default=False)  # <--- TAMBAHKAN BARIS INI
+    is_verified = Column(Boolean, default=False)
     image = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -44,7 +45,6 @@ class ActivityEvent(Base):
     user_agent = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
-
 class OLTConfig(Base):
     __tablename__ = "olt_configs"
 
@@ -65,7 +65,6 @@ class OLTConfig(Base):
     uptime_ticks = Column(BigInteger, nullable=True)
     last_sync = Column(DateTime(timezone=True), nullable=True)
 
-
 class TrafficSample(Base):
     __tablename__ = "traffic_samples"
 
@@ -75,7 +74,6 @@ class TrafficSample(Base):
     upload_bps = Column(Float, nullable=False)
     sampled_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
-
 class OLTSettingEntry(Base):
     __tablename__ = "olt_setting_entries"
 
@@ -84,6 +82,7 @@ class OLTSettingEntry(Base):
     name = Column(String(120), nullable=False)
     data_json = Column(Text, nullable=False, default="{}")
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
 class OLTConfigBackup(Base):
     __tablename__ = "olt_config_backups"
 
@@ -93,4 +92,3 @@ class OLTConfigBackup(Base):
     backup_type = Column(String(20), nullable=False, default="manual")  # "manual" atau "auto"
     content_json = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-

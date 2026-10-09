@@ -55,7 +55,7 @@
             </div></div>
             <p id="profileMessage" class="hidden text-sm text-rose-600"></p>
         </div>
-        <footer class="flex justify-end gap-2 border-t border-slate-200 px-5 py-4"><button type="button" id="cancelTr069Dialog" class="rounded-lg bg-slate-500 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600">× Close</button><button id="saveTr069Profile" type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">⇩ Submit</button></footer>
+        <footer class="flex justify-end gap-2 border-t border-slate-200 px-5 py-4"><button type="button" id="cancelTr069Dialog" class="rounded-lg bg-slate-500 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600">× Close</button><button id="saveTr069Profile" type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Save</button></footer>
     </form>
 </dialog>
 
@@ -79,8 +79,10 @@ document.querySelectorAll('.delete-profile-btn').forEach(button=>button.addEvent
 form.addEventListener('submit',async event=>{
     event.preventDefault();const id=document.getElementById('profileId').value,name=document.getElementById('profileName').value.trim(),tagged=document.querySelector('input[name="vlanMode"]:checked').value==='tag';
     const data={acs_url:document.getElementById('acsUrl').value.trim(),username:document.getElementById('acsUsername').value.trim(),password:document.getElementById('acsPassword').value,vlan:tagged?document.getElementById('profileVlan').value:'',vlan_tag:tagged,default_olts:selectedDefaultOlts(),apply_default:selectedDefaultOlts().length>0};data.default_olt=data.default_olts[0]||'';
-    try{const response=await fetch('/api/olt-settings/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id?Number(id):null,category:'tr069_profile',name,data})}),result=await response.json();if(!response.ok)throw new Error(result.detail||'Gagal menyimpan profil');location.reload()}
-    catch(error){message.textContent=error.message;message.className='text-sm text-rose-600'}
+    const saveButton=document.getElementById('saveTr069Profile');saveButton.disabled=true;saveButton.textContent='Saving...';
+    try{const response=await fetch('/api/olt-settings/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id?Number(id):null,category:'tr069_profile',name,data})});let result={};try{result=await response.json()}catch{}if(!response.ok)throw new Error(result.detail||'Gagal menyimpan profil');if(result.status!=='success'||!result.id)throw new Error('Server belum mengonfirmasi penyimpanan.');location.reload()}
+    catch(error){message.textContent=error.message;message.className='text-sm text-rose-600';message.classList.remove('hidden')}
+    finally{saveButton.disabled=false;saveButton.textContent='Save'}
 });
 </script>
 {% endblock %}  

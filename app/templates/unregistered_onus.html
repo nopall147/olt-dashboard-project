@@ -24,23 +24,23 @@
         </nav>
     </header>
 
-    <section class="min-h-[calc(100vh-14rem)] rounded-lg border border-slate-100 bg-white p-5 shadow-sm md:p-6">
+    <section class="min-h-0 rounded-lg border border-slate-100 bg-white p-4 shadow-sm sm:p-5 md:p-6 lg:min-h-[calc(100vh-14rem)]">
         <header class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
             <h2 class="text-xl font-medium text-blue-950">Unregistered ONU Management</h2>
-            <div class="flex items-center gap-2">
-                <button type="button" onclick="location.reload()" class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="location.reload()" class="inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
                     <span aria-hidden="true">↻</span> Refresh
                 </button>
-                <button id="openPreRegister" type="button" class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                <button id="openPreRegister" type="button" class="inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
                     <span aria-hidden="true">＋</span> Pre-Register ONU
                 </button>
             </div>
         </header>
 
-        <div class="grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-4 border-b border-slate-200 px-2 py-4 text-xs font-semibold uppercase tracking-wide text-blue-950 md:grid-cols-[48px_minmax(0,1fr)_180px_150px]">
-            <span>#</span><span>ONU Information</span><span class="hidden md:block">OLT / PON</span><span class="text-right">Action</span>
+        <div class="grid grid-cols-[32px_minmax(0,1fr)_auto] items-center gap-3 border-b border-slate-200 px-2 py-4 text-xs font-semibold uppercase tracking-wide text-blue-950 xl:grid-cols-[48px_minmax(0,1fr)_180px_150px] xl:gap-4">
+            <span>#</span><span class="min-w-0">ONU Information</span><span class="hidden xl:block">OLT / PON</span><span class="text-right">Action</span>
         </div>
-        <div class="flex min-h-[42vh] flex-col items-center justify-center px-4 py-10 text-center">
+        <div class="flex min-h-[260px] flex-col items-center justify-center px-4 py-8 text-center sm:min-h-[32vh] sm:py-10">
             <div class="flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-500" aria-hidden="true">
                 <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="6" rx="2" stroke-width="1.8"/><rect x="3" y="13" width="18" height="6" rx="2" stroke-width="1.8"/><path d="M8 8h.01M8 16h.01" stroke-width="2.5" stroke-linecap="round"/></svg>
             </div>
@@ -51,15 +51,15 @@
 </div>
 
 <section id="preRegisterPage" class="hidden rounded-xl border border-slate-200 bg-white p-5 md:p-7">
-    <header class="mb-7 flex items-center justify-between border-b border-slate-200 pb-5">
+    <header class="mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-5">
         <div class="flex items-center gap-3">
             <button id="backToUnconfigured" type="button" aria-label="Back" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100">←</button>
             <h1 id="pageTitle" class="text-xl font-medium text-slate-900">Pre-Register</h1>
         </div>
-        <button id="saveConfig" form="preRegisterForm" type="submit" class="hidden rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">▣ Save Config</button>
+        <button id="saveConfig" type="button" class="hidden rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">▣ Save Config</button>
     </header>
 
-    <form id="preRegisterForm" class="space-y-7">
+    <form id="preRegisterForm" class="space-y-7" novalidate>
         <section class="grid gap-5 border-b border-slate-200 pb-7 md:grid-cols-[220px_1fr]">
             <div class="border-l-2 border-blue-600 pl-3"><h2 class="text-sm font-semibold uppercase tracking-wide text-slate-800">OLT</h2><p class="mt-1 text-xs text-slate-500">Select target device &amp; PON</p></div>
             <div class="space-y-5">
@@ -196,12 +196,23 @@
 
             <section id="tr069Section" class="grid gap-5 md:grid-cols-[220px_1fr]">
                 <div class="border-l-2 border-blue-600 pl-3"><h3 class="text-sm font-semibold uppercase tracking-wide text-slate-800">TR069 Profile</h3><p class="mt-1 text-xs text-slate-500">Optional</p></div>
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center"><label class="flex items-center gap-2 text-sm"><input id="tr069Toggle" type="checkbox" class="accent-blue-600"> Use TR069</label><select id="tr069Select" disabled class="w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-2.5 text-sm sm:max-w-xl"><option value="DEFAULT">Select Profile</option><option value="DEFAULT">Default TR-069</option><option value="Residential 100M">Residential 100M</option></select><a href="/tr069-profiles" class="inline-flex h-12 w-14 shrink-0 items-center justify-center rounded-lg border border-slate-300 text-lg text-blue-600 hover:bg-blue-50" title="Manage TR-069 profiles" aria-label="Go to TR-069 profiles">＋</a></div>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center"><label class="flex items-center gap-2 text-sm"><input id="tr069Toggle" type="checkbox" class="accent-blue-600"> Use TR069</label><select id="tr069Select" disabled class="w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-2.5 text-sm sm:max-w-xl"><option value="DEFAULT">Select Profile</option><option value="DEFAULT">Default TR-069</option><option value="Residential 100M">Residential 100M</option></select><button id="openTr069QuickAdd" type="button" class="inline-flex h-12 w-14 shrink-0 items-center justify-center rounded-lg border border-slate-300 text-lg text-blue-600 hover:bg-blue-50" title="Tambah TR069 Profile" aria-label="Tambah TR069 Profile">＋</button></div>
             </section>
             <div id="saveMessage" class="hidden rounded-lg border px-4 py-3 text-sm"></div>
         </div>
     </form>
 </section>
+
+<dialog id="saveFeedbackDialog" class="w-[min(92vw,480px)] rounded-2xl border border-slate-200 p-0 shadow-2xl backdrop:bg-slate-950/50">
+    <div class="bg-white p-6">
+        <div class="flex items-start gap-4">
+            <div id="saveFeedbackIcon" class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-rose-100 text-xl font-bold text-rose-600" aria-hidden="true">!</div>
+            <div class="min-w-0 flex-1"><h2 id="saveFeedbackTitle" class="text-lg font-semibold text-slate-900">Tidak dapat menyimpan</h2><p id="saveFeedbackText" class="mt-2 whitespace-pre-line break-words text-sm leading-6 text-slate-600"></p></div>
+            <button type="button" id="closeSaveFeedback" class="-mr-2 -mt-2 rounded-lg p-2 text-xl leading-none text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Tutup">×</button>
+        </div>
+        <div class="mt-6 flex justify-end"><button type="button" id="confirmSaveFeedback" class="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700">Mengerti</button></div>
+    </div>
+</dialog>
 
 <script>
 const unconfiguredPage = document.getElementById('unconfiguredPage');
@@ -209,6 +220,15 @@ const preRegisterPage = document.getElementById('preRegisterPage');
 const configSections = document.getElementById('configSections');
 const saveButton = document.getElementById('saveConfig');
 const form = document.getElementById('preRegisterForm');
+saveButton.addEventListener('click', () => form.requestSubmit());
+const saveFeedbackDialog = document.getElementById('saveFeedbackDialog');
+function showSaveFeedback(text, title = 'Tidak dapat menyimpan') {
+    document.getElementById('saveFeedbackTitle').textContent = title;
+    document.getElementById('saveFeedbackText').textContent = text;
+    saveFeedbackDialog.showModal();
+}
+document.getElementById('closeSaveFeedback').addEventListener('click', () => saveFeedbackDialog.close());
+document.getElementById('confirmSaveFeedback').addEventListener('click', () => saveFeedbackDialog.close());
 const selectedPonType = () => document.querySelector('input[name="ponType"]:checked')?.value || '';
 
 document.getElementById('openPreRegister').addEventListener('click', () => {
@@ -363,6 +383,24 @@ document.getElementById('onuIdCustom').addEventListener('click', () => {
 });
 document.getElementById('customId').addEventListener('input', event => document.getElementById('formOnuId').value = event.target.value);
 document.getElementById('tr069Toggle').addEventListener('change', event => document.getElementById('tr069Select').disabled = !event.target.checked);
+document.getElementById('openTr069QuickAdd').addEventListener('click', () => document.getElementById('quickAddTr069')?.click());
+async function loadTr069Profiles(selectProfile = '') {
+    const select = document.getElementById('tr069Select');
+    try {
+        const response = await fetch('/api/olt-settings/data?category=tr069_profile');
+        if (!response.ok) throw new Error('Gagal memuat TR069 Profile');
+        const profiles = await response.json();
+        select.replaceChildren(new Option('Select Profile', 'DEFAULT'), new Option('Default TR-069', 'DEFAULT'));
+        profiles.forEach(profile => select.add(new Option(profile.name, profile.name)));
+        if (selectProfile) {
+            select.value = selectProfile;
+            document.getElementById('tr069Toggle').checked = true;
+            select.disabled = false;
+        }
+    } catch (error) { console.error(error); }
+}
+loadTr069Profiles();
+window.addEventListener('tr069-profile-saved', event => loadTr069Profiles(event.detail?.name || ''));
 document.querySelectorAll('.iptv-port-button').forEach(button => button.addEventListener('click', () => {
     const selected = button.classList.toggle('is-selected');
     button.setAttribute('aria-pressed', selected ? 'true' : 'false');
@@ -481,6 +519,16 @@ refreshVlanRemoveButtons();
 
 form.addEventListener('submit', async event => {
     event.preventDefault();
+    const visibleInvalid = [...form.querySelectorAll('input, select, textarea')].find(control =>
+        !control.disabled && control.required && !control.checkValidity() && control.getClientRects().length > 0
+    );
+    if (visibleInvalid) {
+        const label = visibleInvalid.labels?.[0]?.textContent?.trim() || visibleInvalid.getAttribute('aria-label') || visibleInvalid.name || 'Field';
+        const errorText = `${label}: ${visibleInvalid.validationMessage}`;
+        showSaveFeedback(errorText, 'Periksa data ONU');
+        visibleInvalid.focus();
+        return;
+    }
     const type = selectedPonType();
     const serial = document.getElementById('serialInput').value.trim();
     const name = document.getElementById('customerName').value.trim();
@@ -506,10 +554,14 @@ form.addEventListener('submit', async event => {
     const bridgeVlans = [...document.querySelectorAll('.gpon-bridge-vlan')].map(select => select.value).filter(Boolean);
     const missingLocation = !document.getElementById('formSlot').value || !document.getElementById('formPort').value || (type === 'GPON' && !document.getElementById('cardSelect').value);
     if (!serial || !name || missingLocation) {
-        message.textContent = type === 'GPON'
+        const errorText = type === 'GPON'
             ? 'Lengkapi OLT, Card, Serial Number, dan Name terlebih dahulu.'
             : 'Lengkapi OLT, Serial Number, dan Name terlebih dahulu.';
-        message.className = 'rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800'; return;
+        message.textContent = errorText;
+        message.className = 'rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800';
+        message.classList.remove('hidden');
+        showSaveFeedback(errorText, 'Periksa data ONU');
+        return;
     }
     const data = {
         olt_ip: document.getElementById('formOltIp').value,
@@ -526,12 +578,20 @@ form.addEventListener('submit', async event => {
     };
     saveButton.disabled = true; saveButton.textContent = 'Saving…';
     try {
-        const response = await fetch('/api/v1/register-onu/demo', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
-        const result = await response.json(); if (!response.ok) throw new Error(result.detail || 'Unable to save configuration.');
+        const response = await fetch('/api/v1/register-onu', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+        let result = {};
+        try { result = await response.json(); } catch {}
+        if (!response.ok) {
+            const detail = Array.isArray(result.detail)
+                ? result.detail.map(item => `${(item.loc || []).filter(part => part !== 'body').join('.')}: ${item.msg}`).join('\n')
+                : result.detail;
+            throw new Error(detail || `Gagal menyimpan konfigurasi (HTTP ${response.status}).`);
+        }
         message.textContent = result.message; message.className = 'rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800'; message.classList.remove('hidden');
         setTimeout(() => { window.location.href = '/all-onus'; }, 900);
     } catch (error) {
         message.textContent = error.message; message.className = 'rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800'; message.classList.remove('hidden');
+        showSaveFeedback(error.message, 'Gagal menyimpan konfigurasi');
     } finally { saveButton.disabled = false; saveButton.textContent = '▣ Save Config'; }
 });
 </script>

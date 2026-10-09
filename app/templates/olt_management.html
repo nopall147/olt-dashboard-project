@@ -117,7 +117,7 @@
         <footer class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 bg-white px-6 py-4">
             <button type="button" onclick="oltDialog.close()" class="rounded-lg bg-slate-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600">× Close</button>
             <button id="testConnectionButton" type="button" onclick="testOltConnection()" class="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">◉ Test Connection</button>
-            <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">⇩ Submit</button>
+            <button id="saveOltButton" type="submit" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">⇩ Submit</button>
         </footer>
     </form>
 </dialog>
@@ -189,6 +189,7 @@ document.querySelectorAll('.sync-olt-btn').forEach(btn => {
 document.getElementById('oltForm').addEventListener('submit', async e => {
     e.preventDefault();
     const message = document.getElementById('connectionMessage');
+    const saveButton = document.getElementById('saveOltButton');
     const payload = {
         id: activeOltId,
         name: document.getElementById('oltName').value,
@@ -201,18 +202,34 @@ document.getElementById('oltForm').addEventListener('submit', async e => {
         telnet_password: document.getElementById('telnetPassword').value,
         telnet_port: Number(document.getElementById('telnetPort').value)
     };
+    saveButton.disabled = true;
+    saveButton.textContent = 'Saving...';
+    message.textContent = 'Menyimpan perubahan OLT...';
+    message.className = 'rounded-lg bg-blue-50 p-3 text-xs text-blue-700';
     try {
         const response = await fetch('/api/olts', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(payload)
         });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.detail || 'Gagal menyimpan');
+        let result = {};
+        try { result = await response.json(); } catch {}
+        if (!response.ok) {
+            const detail = Array.isArray(result.detail)
+                ? result.detail.map(item => `${(item.loc || []).filter(part => part !== 'body').join('.')}: ${item.msg}`).join('; ')
+                : result.detail;
+            throw new Error(detail || `Gagal menyimpan perubahan (HTTP ${response.status}).`);
+        }
+        if (result.status !== 'success' || !result.id) throw new Error('Server belum mengonfirmasi penyimpanan OLT.');
+        message.textContent = 'Perubahan OLT berhasil disimpan.';
+        message.className = 'rounded-lg bg-emerald-50 p-3 text-xs text-emerald-700';
         location.reload();
     } catch (error) {
         message.textContent = error.message;
         message.className = 'rounded-lg bg-rose-50 p-3 text-xs text-rose-700';
+    } finally {
+        saveButton.disabled = false;
+        saveButton.textContent = '⇩ Submit';
     }
 });
 

@@ -8,6 +8,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
+        @media (max-width: 1279px) {
+            body .app-layout { overflow: visible; }
+            #appSidebar { display: none; position: fixed; inset: 4rem auto 0 0; z-index: 60; width: min(18rem, 86vw); box-shadow: 0 12px 28px rgba(15, 23, 42, .18); }
+            #appSidebar.mobile-open { display: block; }
+            body .app-main { width: 100%; min-width: 0; overflow-x: hidden; padding: 1rem; }
+            header .topbar-inner { gap: .5rem; padding-left: .75rem; padding-right: .75rem; }
+            header .topbar-left { min-width: 0; gap: .5rem; }
+            header .topbar-left > :not([hidden]) ~ :not([hidden]) { margin-left: 0; }
+            header .topbar-search, header .profile-name { display: none; }
+            header .topbar-right { gap: .25rem; }
+            .app-main > * { min-width: 0; }
+        }
+        @media (min-width: 768px) and (max-width: 1279px) {
+            #appSidebar { position: static; inset: auto; width: 18rem; flex: 0 0 18rem; box-shadow: none; }
+        }
     </style>
 </head>
 <body class="h-full flex flex-col font-sans text-slate-800 bg-[#f4f6f9]">
@@ -15,9 +30,12 @@
     <!-- TOP NAVIGATION BAR (LENGKAP DENGAN SEARCH & CART) -->
     <!-- ========================================================= -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shrink-0">
-        <div class="px-6 h-16 flex items-center justify-between">
+        <div class="topbar-inner px-6 h-16 flex items-center justify-between">
             <!-- LEFT: LOGO & SEARCH -->
-            <div class="flex items-center space-x-6">
+            <div class="topbar-left flex items-center space-x-6">
+                <button type="button" id="mobileNavToggle" class="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 xl:hidden" aria-label="Buka navigasi" aria-expanded="false">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
                 <div class="flex items-center space-x-2">
                     <div class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center">
                         C
@@ -27,7 +45,7 @@
                     </span>
                 </div>
 
-                <div class="relative">
+                <div class="topbar-search relative">
                     <input
                         type="text"
                         placeholder="Search ONU"
@@ -40,7 +58,7 @@
             </div>
 
             <!-- RIGHT: NOTIFIKASI & CART & PROFIL -->
-            <div class="flex items-center gap-3">
+            <div class="topbar-right flex items-center gap-3">
                 <!-- DyingGasp -->
                 <a href="/all-onus?status=DyingGasp" title="ONU DyingGasp" class="relative p-2 rounded-lg text-amber-600 hover:bg-amber-50" aria-label="ONU DyingGasp">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v10m6.36-6.36a9 9 0 1 1-12.72 0"/></svg>
@@ -68,7 +86,7 @@
                                 {{ account_profile.full_name[:1]|upper }}{{ account_profile.full_name.split(' ')[-1][:1]|upper }}
                             </span>
                         {% endif %}
-                        <span class="text-left">
+                        <span class="profile-name text-left">
                             <span class="block text-xs text-slate-700 font-semibold">{{ account_profile.full_name }}</span>
                             <span class="block text-[10px] text-slate-400 font-mono">{{ account_profile.role }}</span>
                         </span>
@@ -87,9 +105,9 @@
     <!-- ========================================================= -->
     <!-- MAIN LAYOUT -->
     <!-- ========================================================= -->
-    <div class="flex-1 flex overflow-hidden">
+    <div class="app-layout flex-1 flex overflow-hidden">
         <!-- SIDEBAR -->
-        <aside class="w-72 bg-white border-r border-slate-200 p-4 space-y-6 shrink-0 overflow-y-auto">
+        <aside id="appSidebar" class="w-72 bg-white border-r border-slate-200 p-4 space-y-6 shrink-0 overflow-y-auto">
             {% set role = account_profile.role %}
             <nav class="space-y-1">
                 <!-- 1. DASHBOARD (Semua Role) -->
@@ -125,7 +143,10 @@
                     <svg class="ml-auto h-4 w-4 transition-transform" data-chevron="template" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
                 </button>
                 <div id="templateSubmenu" class="space-y-1 pb-1 pl-10 {% if request.url.path != '/tr069-profiles' %}hidden{% endif %}">
-                    <a href="/tr069-profiles" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/tr069-profiles' %}text-sky-600{% endif %}"><span class="text-slate-400">○</span><span>TR069 Profile</span></a>
+                    <div class="flex items-center gap-1">
+                        <a href="/tr069-profiles" class="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/tr069-profiles' %}text-sky-600{% endif %}"><span class="text-slate-400">○</span><span>TR069 Profile</span></a>
+                        {% if role in ['Super Admin', 'NOC'] %}<button type="button" id="quickAddTr069" class="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-lg font-semibold text-blue-600 hover:bg-blue-50" title="Tambah TR069 Profile" aria-label="Tambah TR069 Profile">+</button>{% endif %}
+                    </div>
                 </div>
 
                 <!-- 4. TRAFFIC GRAPHS (Semua Role) -->
@@ -176,10 +197,28 @@
         </aside>
 
         <!-- CONTENT -->
-        <main class="flex-1 p-8 space-y-6 overflow-y-auto">
+        <main class="app-main flex-1 min-w-0 p-8 space-y-6 overflow-y-auto">
             {% block content %}{% endblock %}
         </main>
     </div>
+
+    {% if role in ['Super Admin', 'NOC'] %}
+    <dialog id="quickTr069Dialog" class="w-[min(94vw,640px)] rounded-xl border border-slate-200 p-0 shadow-2xl backdrop:bg-slate-900/50">
+        <form id="quickTr069Form" class="bg-white">
+            <header class="flex items-center justify-between border-b border-slate-200 px-5 py-4"><h2 class="text-lg font-semibold text-blue-950">Add TR069 Profile</h2><button type="button" id="quickTr069Close" class="rounded p-1 text-2xl leading-none text-slate-500 hover:bg-slate-100" aria-label="Tutup">×</button></header>
+            <div class="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-5">
+                <label class="block text-sm font-medium text-blue-950">Profile Name<input id="quickTr069Name" required maxlength="120" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" placeholder="e.g. ACS-SVR-MAIN"></label>
+                <label class="block text-sm font-medium text-blue-950">ACS URL<input id="quickTr069Url" type="url" required class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" placeholder="http://acs.example.com:7547"></label>
+                <label class="block text-sm font-medium text-blue-950">Username<input id="quickTr069Username" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"></label>
+                <label class="block text-sm font-medium text-blue-950">Password<input id="quickTr069Password" type="password" autocomplete="new-password" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"></label>
+                <fieldset><legend class="mb-2 text-sm font-medium text-blue-950">VLAN</legend><div class="flex gap-5 text-sm text-slate-600"><label class="flex items-center gap-2"><input type="radio" name="quickVlanMode" value="tag" checked>Tag</label><label class="flex items-center gap-2"><input type="radio" name="quickVlanMode" value="untag">Untag</label></div><input id="quickTr069Vlan" type="number" min="1" max="4094" required class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5" placeholder="VLAN ID"></fieldset>
+                <fieldset><legend class="mb-2 text-sm font-medium text-blue-950">Default OLT <span class="font-normal text-slate-400">(optional)</span></legend><div id="quickTr069Olts" class="space-y-2 text-sm text-slate-600">Memuat daftar OLT...</div></fieldset>
+                <p id="quickTr069Message" class="hidden text-sm text-rose-600" role="alert"></p>
+            </div>
+            <footer class="flex justify-end gap-2 border-t border-slate-200 px-5 py-4"><button type="button" id="quickTr069Cancel" class="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700">Cancel</button><button id="quickTr069Save" type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Save</button></footer>
+        </form>
+    </dialog>
+    {% endif %}
 
     <!-- SCRIPT JAVASCRIPT GLOBAL -->
     <script>
@@ -199,6 +238,89 @@
         }
         bindSidebarGroup('onuMenuToggle', 'onuSubmenu', 'onu');
         bindSidebarGroup('templateMenuToggle', 'templateSubmenu', 'template');
+
+        const mobileNavToggle = document.getElementById('mobileNavToggle');
+        const appSidebar = document.getElementById('appSidebar');
+        function setMobileNav(open) {
+            if (!mobileNavToggle || !appSidebar) return;
+            appSidebar.classList.toggle('mobile-open', open);
+            mobileNavToggle.setAttribute('aria-expanded', String(open));
+            mobileNavToggle.setAttribute('aria-label', open ? 'Tutup navigasi' : 'Buka navigasi');
+            try { sessionStorage.setItem('olt-sidebar-open', String(open)); } catch (_) {}
+        }
+        mobileNavToggle?.addEventListener('click', () => setMobileNav(mobileNavToggle.getAttribute('aria-expanded') !== 'true'));
+        try {
+            if (window.innerWidth < 1280 && sessionStorage.getItem('olt-sidebar-open') === 'true') setMobileNav(true);
+        } catch (_) {}
+        document.addEventListener('keydown', event => { if (event.key === 'Escape') setMobileNav(false); });
+
+        const quickTr069Button = document.getElementById('quickAddTr069');
+        const quickTr069Dialog = document.getElementById('quickTr069Dialog');
+        const quickTr069Form = document.getElementById('quickTr069Form');
+        if (quickTr069Button && quickTr069Dialog && quickTr069Form) {
+            const quickMessage = document.getElementById('quickTr069Message');
+            const quickVlan = document.getElementById('quickTr069Vlan');
+            const quickOltList = document.getElementById('quickTr069Olts');
+            document.querySelectorAll('input[name="quickVlanMode"]').forEach((radio) => radio.addEventListener('change', () => {
+                const tagged = document.querySelector('input[name="quickVlanMode"]:checked').value === 'tag';
+                quickVlan.disabled = !tagged;
+                quickVlan.required = tagged;
+                if (!tagged) quickVlan.value = '';
+            }));
+            quickTr069Button.addEventListener('click', async () => {
+                quickTr069Form.reset();
+                quickVlan.disabled = false;
+                quickVlan.required = true;
+                quickMessage.classList.add('hidden');
+                quickOltList.textContent = 'Memuat daftar OLT...';
+                quickTr069Dialog.showModal();
+                try {
+                    const response = await fetch('/api/olts');
+                    if (!response.ok) throw new Error('Daftar OLT gagal dimuat');
+                    const olts = await response.json();
+                    quickOltList.replaceChildren();
+                    if (!olts.length) quickOltList.textContent = 'Belum ada OLT terdaftar.';
+                    olts.forEach((olt) => {
+                        const label = document.createElement('label');
+                        label.className = 'flex items-center gap-2';
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox'; checkbox.name = 'quickDefaultOlt'; checkbox.value = olt.name;
+                        label.append(checkbox, document.createTextNode(olt.name));
+                        quickOltList.append(label);
+                    });
+                } catch (error) { quickOltList.textContent = error.message; }
+            });
+            const closeQuickDialog = () => quickTr069Dialog.close();
+            document.getElementById('quickTr069Close').addEventListener('click', closeQuickDialog);
+            document.getElementById('quickTr069Cancel').addEventListener('click', closeQuickDialog);
+            quickTr069Form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const saveButton = document.getElementById('quickTr069Save');
+                const tagged = document.querySelector('input[name="quickVlanMode"]:checked').value === 'tag';
+                const defaultOlts = [...document.querySelectorAll('input[name="quickDefaultOlt"]:checked')].map((input) => input.value);
+                const data = {
+                    acs_url: document.getElementById('quickTr069Url').value.trim(),
+                    username: document.getElementById('quickTr069Username').value.trim(),
+                    password: document.getElementById('quickTr069Password').value,
+                    vlan: tagged ? quickVlan.value : '', vlan_tag: tagged,
+                    default_olts: defaultOlts, default_olt: defaultOlts[0] || '', apply_default: defaultOlts.length > 0
+                };
+                saveButton.disabled = true; saveButton.textContent = 'Saving...'; quickMessage.classList.add('hidden');
+                try {
+                    const response = await fetch('/api/olt-settings/data', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({category: 'tr069_profile', name: document.getElementById('quickTr069Name').value.trim(), data})});
+                    const result = await response.json();
+                    if (!response.ok) throw new Error(result.detail || 'Gagal menyimpan TR069 Profile');
+                    if (result.status !== 'success' || !result.id) throw new Error('Server belum mengonfirmasi penyimpanan.');
+                    if (location.pathname === '/tr069-profiles') location.reload();
+                    else {
+                        window.dispatchEvent(new CustomEvent('tr069-profile-saved', {detail: {name: document.getElementById('quickTr069Name').value.trim()}}));
+                        quickMessage.textContent = 'TR069 Profile berhasil disimpan.'; quickMessage.className = 'text-sm text-emerald-700';
+                    }
+                } catch (error) {
+                    quickMessage.textContent = error.message; quickMessage.className = 'text-sm text-rose-600';
+                } finally { saveButton.disabled = false; saveButton.textContent = 'Save'; }
+            });
+        }
 
         const profileButton = document.getElementById('profileButton');
         const profileDropdown = document.getElementById('profileDropdown');

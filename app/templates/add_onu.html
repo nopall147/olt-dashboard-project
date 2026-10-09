@@ -22,7 +22,7 @@
 <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <div>
         <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Provisioning ONU ZTE</h1>
-        <p class="text-xs text-slate-500 mt-1">Pratinjau UI untuk registrasi ONU GPON</p>
+        <p class="text-xs text-slate-500 mt-1">Terapkan konfigurasi ONU GPON ke OLT dan simpan hasilnya</p>
     </div>
 
     <div class="flex items-center gap-3">
@@ -43,7 +43,7 @@
     </div>
 </div>
 
-<div class="mb-5 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-xs text-sky-800"><b>Mode uji:</b> simpan hanya membuat record di database aplikasi. Konfigurasi tidak dikirim ke OLT.</div>
+<div class="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800"><b>Perhatian:</b> Apply Config mengirim perintah langsung ke OLT yang dipilih. Pastikan Slot, PON, ONU ID, VLAN, dan profil sudah benar. Kredensial Telnet OLT harus disimpan di OLT Management.</div>
 
 <form id="onuConfigForm" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -127,14 +127,15 @@
                         <input type="text" id="sn_onu" name="sn_onu" placeholder="FHTTC0BFA89F / ZTEGC..."
                             class="input-field font-mono uppercase tracking-wider" required maxlength="16">
                     </div>
+                    <p class="text-[11px] text-slate-500 mt-1.5">Catatan: gunakan serial number asli ONU, 1–16 karakter huruf/angka tanpa tanda hubung atau spasi. Contoh: <span class="font-mono">ZTEGC0BFA89F</span>.</p>
                 </div>
 
                 <!-- ONU Index ID -->
                 <div>
                     <label for="onu_id" class="label-style">ONU Index ID</label>
-                    <input type="number" id="onu_id" name="onu_id" placeholder="Auto (1-128)"
-                        class="input-field-no-icon bg-slate-50 font-mono" min="1" max="128">
-                    <p class="text-[10px] text-slate-400 mt-1">Kosongkan untuk alokasi otomatis</p>
+                    <input type="number" id="onu_id" name="onu_id" placeholder="1-128"
+                        class="input-field-no-icon bg-slate-50 font-mono" required min="1" max="128">
+                    <p class="text-[10px] text-slate-400 mt-1">Masukkan ONU ID yang masih tersedia pada PON tujuan.</p>
                 </div>
 
                 <!-- Actual Type / Model ONT -->
@@ -147,8 +148,8 @@
                             </svg>
                         </div>
                         <select id="actual_type" name="actual_type" class="input-field">
-                            <option value="HG6145D2" selected>Fiberhome HG6145D2</option>
-                            <option value="F660">ZTE F660</option>
+                            <option value="HG6145D2">Fiberhome HG6145D2</option>
+                            <option value="F660" selected>ZTE F660</option>
                             <option value="F609">ZTE F609</option>
                             <option value="F670L">ZTE F670L</option>
                             <option value="GP1705-2G">GP1705-2G</option>
@@ -303,7 +304,6 @@
 
 <!-- AJAX Script -->
 <script>
-    const uiDemoMode = {{ 'true' if ui_demo else 'false' }};
     document.getElementById('onuConfigForm').addEventListener('submit', async function (e) {
         e.preventDefault();
 
@@ -336,38 +336,15 @@
             }
         });
 
-        if (uiDemoMode) {
-            try {
-                const response = await fetch('/api/v1/register-onu/demo', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formObject),
-                });
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.detail || 'Gagal menyimpan data uji.');
-                statusPanel.classList.remove('bg-sky-50', 'text-sky-900', 'border-sky-200');
-                statusPanel.classList.add('bg-emerald-50', 'text-emerald-900', 'border', 'border-emerald-200');
-                statusPanel.textContent = `${result.message} Membuka All ONUs...`;
-                setTimeout(() => { window.location.href = '/all-onus'; }, 900);
-            } catch (error) {
-                statusPanel.classList.remove('bg-sky-50', 'text-sky-900', 'border-sky-200');
-                statusPanel.classList.add('bg-rose-50', 'text-rose-900', 'border', 'border-rose-200');
-                statusPanel.textContent = error.message;
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            }
-            return;
-        }
-
         try {
-            const response = await fetch('/api/v1/register-onu', {
+            const response = await fetch('/api/v1/provision-onu', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formObject),
             });
 
-            const result = await response.json();
+            let result = {};
+            try { result = await response.json(); } catch {}
             statusPanel.classList.remove('bg-sky-50', 'text-sky-900', 'border-sky-200');
 
             if (response.ok && result.status === 'success') {
@@ -380,7 +357,7 @@
                         Konfigurasi Berhasil Diterapkan!
                     </div>
                     <p class="text-[11px] text-emerald-700 font-sans mb-3">
-                        ONU <b>${formObject.sn_onu.toUpperCase()}</b> milik <b>${formObject.nama_pelanggan}</b> berhasil tersimpan di database.
+                        ONU berhasil dikonfigurasi di OLT dan dicatat di database.
                     </p>
                     <a href="/all-onus" class="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-[11px] font-semibold transition-colors">
                         Lihat di Tabel All ONUs ➔
@@ -388,21 +365,16 @@
                 `;
                 e.target.reset();
             } else {
-                throw new Error(result.detail || result.message || 'Gagal mengirim konfigurasi.');
+                const detail = Array.isArray(result.detail)
+                    ? result.detail.map(item => `${(item.loc || []).filter(part => part !== 'body').join('.')}: ${item.msg}`).join('\n')
+                    : result.detail;
+                throw new Error(detail || result.message || `Gagal mengirim konfigurasi (HTTP ${response.status}).`);
             }
 
         } catch (error) {
             statusPanel.classList.remove('bg-sky-50', 'text-sky-900', 'border-sky-200');
             statusPanel.classList.add('bg-rose-50', 'text-rose-900', 'border', 'border-rose-200');
-            statusPanel.innerHTML = `
-                <div class="font-sans font-semibold text-rose-800 mb-1 flex items-center gap-1.5">
-                    <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                    Execution Error
-                </div>
-                <p class="text-[11px] text-rose-700 font-sans">${error.message}</p>
-            `;
+            statusPanel.textContent = `Execution Error: ${error.message}`;
         } finally {
             submitBtn.disabled = false;
             submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');

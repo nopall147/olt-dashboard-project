@@ -9,7 +9,7 @@
     <form id="accountProfileForm">
         <header class="flex items-center justify-between gap-4 border-b border-slate-200 pb-5">
             <h2 class="text-lg font-semibold text-blue-950">Edit Profile</h2>
-            <button type="submit" class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
+            <button id="saveAccountProfileButton" type="submit" class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
                 <span aria-hidden="true">⇩</span> Save Changes
             </button>
         </header>
@@ -95,6 +95,21 @@
     </form>
 </section>
 
+<dialog id="accountFeedbackDialog" class="w-[min(92vw,440px)] rounded-xl border border-slate-200 p-0 shadow-2xl backdrop:bg-slate-900/50">
+    <div class="p-5">
+        <div class="flex items-start gap-3">
+            <span id="accountFeedbackIcon" class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-50 text-lg font-bold text-emerald-600" aria-hidden="true">✓</span>
+            <div>
+                <h2 id="accountFeedbackTitle" class="text-base font-semibold text-slate-900">Berhasil</h2>
+                <p id="accountFeedbackText" class="mt-1 text-sm leading-6 text-slate-600"></p>
+            </div>
+        </div>
+        <div class="mt-5 flex justify-end">
+            <button type="button" onclick="document.getElementById('accountFeedbackDialog').close()" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Mengerti</button>
+        </div>
+    </div>
+</dialog>
+
 <script>
 let accountProfileImage = {{ (profile.image | tojson) if profile.image else '""' }};
 const accountAvatar = document.getElementById('accountAvatar');
@@ -136,6 +151,16 @@ function showAccountMessage(message, error = false) {
     element.classList.remove('hidden');
 }
 
+function showAccountDialog(message, error = false) {
+    const dialog = document.getElementById('accountFeedbackDialog');
+    const icon = document.getElementById('accountFeedbackIcon');
+    document.getElementById('accountFeedbackTitle').textContent = error ? 'Gagal menyimpan' : 'Perubahan berhasil disimpan';
+    document.getElementById('accountFeedbackText').textContent = message;
+    icon.textContent = error ? '!' : '✓';
+    icon.className = `grid h-9 w-9 shrink-0 place-items-center rounded-full text-lg font-bold ${error ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`;
+    if (!dialog.open) dialog.showModal();
+}
+
 document.getElementById('accountProfileForm').addEventListener('submit', async event => {
     event.preventDefault();
     const fullName = document.getElementById('profileFullName').value.trim();
@@ -144,13 +169,19 @@ document.getElementById('accountProfileForm').addEventListener('submit', async e
 
     if (password && password !== repeat) {
         showAccountMessage('Password baru dan konfirmasi tidak cocok.', true);
+        showAccountDialog('Password baru dan konfirmasi tidak cocok.', true);
         return;
     }
     if (password && password.length < 6) {
         showAccountMessage('Password minimal 6 karakter.', true);
+        showAccountDialog('Password minimal 6 karakter.', true);
         return;
     }
 
+    const saveButton = document.getElementById('saveAccountProfileButton');
+    const changingPassword = Boolean(password);
+    saveButton.disabled = true;
+    saveButton.textContent = 'Menyimpan...';
     try {
         const response = await fetch('/api/user/profile', {
             method: 'POST',
@@ -161,13 +192,22 @@ document.getElementById('accountProfileForm').addEventListener('submit', async e
                 new_password: password || null
             })
         });
-        const result = await response.json();
+        let result = {};
+        try { result = await response.json(); } catch {}
         if (!response.ok) throw new Error(result.detail || 'Gagal menyimpan profil');
-        showAccountMessage('Profil berhasil disimpan.');
+        const successMessage = changingPassword
+            ? 'Password baru berhasil disimpan. Gunakan password baru saat masuk berikutnya.'
+            : 'Profil berhasil disimpan.';
+        showAccountMessage(successMessage);
+        showAccountDialog(successMessage);
         document.getElementById('newAccountPassword').value = '';
         document.getElementById('repeatAccountPassword').value = '';
     } catch(error) {
         showAccountMessage(error.message, true);
+        showAccountDialog(error.message, true);
+    } finally {
+        saveButton.disabled = false;
+        saveButton.innerHTML = '<span aria-hidden="true">⇩</span> Save Changes';
     }
 });
 

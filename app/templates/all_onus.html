@@ -12,6 +12,9 @@
             <p class="text-xs text-slate-400">Home / Monitoring / All-ONUs</p>
         </div>
         <div class="flex items-center space-x-2">
+            <button type="button" onclick="window.location.href='/'" class="px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold shadow-sm transition" aria-label="Kembali ke Dashboard">
+                ← Kembali
+            </button>
             <button id="exportOnus" type="button" class="px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold shadow-sm flex items-center space-x-1.5 transition">
                 <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -28,60 +31,60 @@
     </div>
 
     <!-- TOP STATS CARDS SUMMARY (REDAMAN & SINYAL OPTIK) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <!-- Good Signal -->
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <button type="button" data-summary-signal="Good" aria-label="Filter ONUs dengan sinyal Good" aria-pressed="false" class="w-full rounded-xl bg-white p-4 text-left shadow-sm border border-slate-200 flex items-center justify-between transition hover:border-emerald-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-300">
             <div>
                 <div class="flex items-center space-x-2">
                     <p class="text-xs text-slate-500 font-semibold">Good Signal</p>
                     <span class="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">{{ stats.good_percentage }}%</span>
                 </div>
                 <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ stats.good_count }}</h2>
-                <p class="text-[10px] text-slate-400 mt-1">≥ -27.00 dBm &bull; OLT: {{ stats.good_olt_count }}</p>
+                <p class="text-[10px] text-slate-400 mt-1">≥ {{ custom_settings.good_threshold }} dBm &bull; OLT: {{ stats.good_olt_count }}</p>
             </div>
             <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
                 </svg>
             </div>
-        </div>
+        </button>
 
         <!-- Warning Signal -->
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <button type="button" data-summary-signal="Warning" aria-label="Filter ONUs dengan sinyal Warning" aria-pressed="false" class="w-full rounded-xl bg-white p-4 text-left shadow-sm border border-slate-200 flex items-center justify-between transition hover:border-amber-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-amber-300">
             <div>
                 <div class="flex items-center space-x-2">
                     <p class="text-xs text-slate-500 font-semibold">Warning</p>
                     <span class="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold">{{ stats.warning_percentage }}%</span>
                 </div>
                 <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ stats.warning_count }}</h2>
-                <p class="text-[10px] text-slate-400 mt-1">-27 ~ -30 dBm &bull; OLT: {{ stats.warning_olt_count }}</p>
+                <p class="text-[10px] text-slate-400 mt-1">{{ custom_settings.warning_threshold }} ~ {{ custom_settings.good_threshold }} dBm &bull; OLT: {{ stats.warning_olt_count }}</p>
             </div>
             <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
             </div>
-        </div>
+        </button>
 
         <!-- Critical Signal -->
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <button type="button" data-summary-signal="Critical" aria-label="Filter ONUs dengan sinyal Critical" aria-pressed="false" class="w-full rounded-xl bg-white p-4 text-left shadow-sm border border-slate-200 flex items-center justify-between transition hover:border-rose-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-rose-300">
             <div>
                 <div class="flex items-center space-x-2">
                     <p class="text-xs text-slate-500 font-semibold">Critical</p>
                     <span class="text-[9px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold">{{ stats.critical_percentage }}%</span>
                 </div>
                 <h2 class="text-2xl font-bold text-rose-600 mt-1">{{ stats.critical_count }}</h2>
-                <p class="text-[10px] text-slate-400 mt-1">&lt; -30.00 dBm &bull; OLT: {{ stats.critical_olt_count }}</p>
+                <p class="text-[10px] text-slate-400 mt-1">&lt; {{ custom_settings.warning_threshold }} dBm &bull; OLT: {{ stats.critical_olt_count }}</p>
             </div>
             <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
             </div>
-        </div>
+        </button>
 
         <!-- Loss / Other -->
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <button type="button" data-summary-signal="Other" aria-label="Filter ONUs LOS atau tanpa data sinyal" aria-pressed="false" class="w-full rounded-xl bg-white p-4 text-left shadow-sm border border-slate-200 flex items-center justify-between transition hover:border-slate-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-slate-300">
             <div>
                 <div class="flex items-center space-x-2">
                     <p class="text-xs text-slate-500 font-semibold">LOS / N/A</p>
@@ -95,7 +98,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                 </svg>
             </div>
-        </div>
+        </button>
     </div>
 
     <!-- MAIN ONU TABLE CARD -->
@@ -160,7 +163,7 @@
 
         <!-- TABLE -->
         <div class="overflow-x-auto">
-            <table id="onuTable" class="w-full text-left text-xs border-collapse">
+            <table id="onuTable" class="w-full min-w-[1050px] text-left text-xs border-collapse">
                 <thead>
                     <tr class="bg-slate-50/80 border-b border-slate-100 text-slate-500 font-semibold text-[11px]">
                         <th class="p-3 w-8 text-center"><input id="selectAllOnus" type="checkbox" class="rounded border-slate-300"></th>
@@ -180,7 +183,7 @@
                     {% for onu in onus %}
                     {% set port_base = onu.gpon_port.split(':')[0] if onu.gpon_port else '' %}
                     {% set parts = port_base.split('/') %}
-                    {% set signal = 'Good' if onu.rx_onu is not none and onu.rx_onu >= -27 else 'Warning' if onu.rx_onu is not none and onu.rx_onu >= -30 else 'Critical' if onu.rx_onu is not none else 'Other' %}
+                    {% set signal = 'Good' if onu.rx_onu is not none and onu.rx_onu >= custom_settings.good_threshold else 'Warning' if onu.rx_onu is not none and onu.rx_onu >= custom_settings.warning_threshold else 'Critical' if onu.rx_onu is not none else 'Other' %}
                     <tr class="onu-row hover:bg-slate-50/60 transition"
                         data-olt="{{ onu.olt_name }}" 
                         data-card="{{ parts[1] if parts|length > 1 else '' }}" 
@@ -209,10 +212,10 @@
                             <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-200">● {{ onu.status }}</span>
                             {% endif %}
                         </td>
-                        <td class="p-3 font-mono font-medium {% if onu.rx_olt is none %}text-slate-400{% elif onu.rx_olt < -30 %}text-rose-600 font-bold{% elif onu.rx_olt < -27 %}text-amber-600 font-bold{% else %}text-emerald-600{% endif %}">
+                        <td class="p-3 font-mono font-medium {% if onu.rx_olt is none %}text-slate-400{% elif onu.rx_olt < custom_settings.warning_threshold %}text-rose-600 font-bold{% elif onu.rx_olt < custom_settings.good_threshold %}text-amber-600 font-bold{% else %}text-emerald-600{% endif %}">
                             {{ '%.2f dBm'|format(onu.rx_olt) if onu.rx_olt is not none else '—' }}
                         </td>
-                        <td class="p-3 font-mono font-medium {% if onu.rx_onu is none %}text-slate-400{% elif onu.rx_onu < -30 %}text-rose-600 font-bold{% elif onu.rx_onu < -27 %}text-amber-600 font-bold{% else %}text-emerald-600{% endif %}">
+                        <td class="p-3 font-mono font-medium {% if onu.rx_onu is none %}text-slate-400{% elif onu.rx_onu < custom_settings.warning_threshold %}text-rose-600 font-bold{% elif onu.rx_onu < custom_settings.good_threshold %}text-amber-600 font-bold{% else %}text-emerald-600{% endif %}">
                             {{ '%.2f dBm'|format(onu.rx_onu) if onu.rx_onu is not none else '—' }}
                         </td>
                         <td class="p-3 font-mono text-slate-700">{{ onu.sn_mac or '—' }}</td>
@@ -351,22 +354,27 @@ document.querySelectorAll('[data-status-filter]').forEach(btn => {
     });
 });
 
-// Signal buttons
-document.querySelectorAll('[data-signal-filter]').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const val = btn.dataset.signalFilter;
-        filterState.signal = filterState.signal === val ? '' : val;
-        
-        document.querySelectorAll('[data-signal-filter]').forEach(b => {
-            b.classList.remove('bg-slate-800', 'text-white', 'border-slate-800');
-        });
-        if (filterState.signal) {
-            btn.classList.add('bg-slate-800', 'text-white', 'border-slate-800');
-        }
-        page = 1;
-        renderTable();
+// Signal pills and summary cards share the same signal filter.
+function applySignalFilter(value) {
+    filterState.signal = filterState.signal === value ? '' : value;
+    document.querySelectorAll('[data-signal-filter]').forEach(btn => {
+        const active = filterState.signal === btn.dataset.signalFilter;
+        btn.classList.toggle('bg-slate-800', active);
+        btn.classList.toggle('text-white', active);
+        btn.classList.toggle('border-slate-800', active);
+        btn.setAttribute('aria-pressed', String(active));
     });
-});
+    document.querySelectorAll('[data-summary-signal]').forEach(card => {
+        const active = filterState.signal === card.dataset.summarySignal;
+        card.classList.toggle('ring-2', active);
+        card.classList.toggle('ring-blue-500', active);
+        card.setAttribute('aria-pressed', String(active));
+    });
+    page = 1;
+    renderTable();
+}
+document.querySelectorAll('[data-signal-filter]').forEach(btn => btn.addEventListener('click', () => applySignalFilter(btn.dataset.signalFilter)));
+document.querySelectorAll('[data-summary-signal]').forEach(card => card.addEventListener('click', () => applySignalFilter(card.dataset.summarySignal)));
 
 // Search input
 document.getElementById('tableSearch').addEventListener('input', e => {
@@ -415,29 +423,64 @@ function showOnuDetail(button) {
 // Export CSV
 document.getElementById('exportOnus').addEventListener('click', () => {
     const visible = filteredRows();
-    const headers = ['OLT', 'Name', 'PPPoE', 'GPON Port', 'Status', 'RX OLT', 'RX ONU', 'SN / MAC', 'Type'];
-    const csvData = [
-        headers,
-        ...visible.map(row => [
-            row.cells[1].innerText.trim(),
-            row.cells[2].innerText.trim().replaceAll('\n', ' - '),
-            row.cells[3].innerText.trim(),
-            row.cells[4].innerText.trim(),
-            row.cells[5].innerText.trim(),
-            row.cells[6].innerText.trim(),
-            row.cells[7].innerText.trim(),
-            row.cells[8].innerText.trim(),
-            row.cells[9].innerText.trim()
-        ])
-    ];
-    const csvContent = csvData.map(r => r.map(x => `"${(x || '').replaceAll('"', '""')}"`).join(',')).join('\r\n');
+    const headers = ['OLT', 'ONU ID', 'Name', 'Description', 'PPPoE', 'SN/MAC', 'Status', 'RX OLT', 'RX ONU', 'Actual Type'];
+    const cleanCell = value => {
+        const text = (value || '').replace(/\s+/g, ' ').trim();
+        return !text || text === '—' || text === '-' ? 'N/A' : text;
+    };
+    const cleanSignal = cell => {
+        const value = cleanCell(cell.innerText).replace(/\s*dBm$/i, '').trim();
+        return value;
+    };
+    const csvData = [headers, ...visible.map(row => {
+        const customer = row.cells[2];
+        return [
+            cleanCell(row.cells[1].innerText),
+            cleanCell(row.cells[4].innerText),
+            cleanCell(customer.children[0]?.innerText || customer.innerText),
+            cleanCell(customer.children[1]?.innerText),
+            cleanCell(row.cells[3].innerText),
+            cleanCell(row.cells[8].innerText),
+            cleanCell(row.dataset.status),
+            cleanSignal(row.cells[6]),
+            cleanSignal(row.cells[7]),
+            cleanCell(row.cells[9].innerText)
+        ];
+    })];
+    // Excel on Indonesian Windows expects semicolons as CSV field separators.
+    const csvContent = '\uFEFF' + csvData.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(';')).join('\r\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
+    const downloadUrl = URL.createObjectURL(blob);
+    link.href = downloadUrl;
     link.download = `all-onus-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
 });
 
+const savedOnuColumns = {{ custom_settings | tojson }};
+function applySavedOnuColumns() {
+    const selected = new Set(window.matchMedia('(max-width: 767px)').matches
+        ? savedOnuColumns.mobile_columns
+        : savedOnuColumns.desktop_columns);
+    const columnPositions = {olt: 1, name: 2, description: 2, pppoe: 3, port: 4, status: 5, rx_olt: 6, rx_onu: 7, serial: 8, type: 9};
+    const table = document.getElementById('onuTable');
+    Object.entries(columnPositions).forEach(([key, position]) => {
+        const visible = key === 'description'
+            ? selected.has('description') || selected.has('name')
+            : selected.has(key);
+        table.querySelectorAll(`tr > :nth-child(${position + 1})`).forEach(cell => cell.classList.toggle('hidden', !visible));
+    });
+    table.querySelectorAll('tbody tr.onu-row').forEach(row => {
+        const nameCell = row.cells[2];
+        if (!nameCell) return;
+        const parts = nameCell.querySelectorAll(':scope > div');
+        if (parts[0]) parts[0].classList.toggle('hidden', !selected.has('name'));
+        if (parts[1]) parts[1].classList.toggle('hidden', !selected.has('description'));
+    });
+}
 renderTable();
+applySavedOnuColumns();
+window.addEventListener('resize', applySavedOnuColumns);
 </script>
 {% endblock %}

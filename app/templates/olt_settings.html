@@ -8,6 +8,9 @@
 </style>
 
 <header class="px-1">
+    <button type="button" onclick="window.location.href='/'" class="mb-3 inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50" aria-label="Kembali ke Dashboard">
+        ← Kembali
+    </button>
     <h1 class="text-2xl font-medium text-blue-950">OLT Configurations</h1>
     <p class="mt-1 text-sm text-slate-500">
         <a href="/" class="hover:text-blue-600">Home</a>
@@ -72,7 +75,7 @@
 
     <nav class="mt-7 flex justify-center overflow-x-auto border-b border-slate-200" aria-label="OLT configuration sections">
         {% for tab, panel in [('Uplinks', 'Uplinks'), ('PON Cards', 'PON Cards'), ('VLANs', 'VLANs'), ('ONU Types', 'ONU Types'), ('WAN-IP Profiles', 'WAN-IP Profiles'), ('Speed Profiles', 'Speed Profiles'), ('System', 'System')] %}
-        <button type="button" data-panel="{{ panel }}" onclick="showTab('{{ panel }}')" class="setting-tab flex shrink-0 items-center gap-2 border-b-2 border-transparent px-4 py-4 text-sm text-slate-500 hover:text-sky-600">
+        <button type="button" data-panel="{{ panel }}" class="setting-tab flex shrink-0 items-center gap-2 border-b-2 border-transparent px-4 py-4 text-sm text-slate-500 hover:text-sky-600">
             <svg class="h-4 w-4 shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 {% if panel == 'Uplinks' %}
                     <circle cx="12" cy="12" r="9" fill="currentColor" stroke="none"/>
@@ -241,8 +244,32 @@
             </div>
         </div>
     {% else %}
-        <div class="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-400 shadow-sm">
-            Tidak ada card Uplink yang terdeteksi atau terpasang.
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <h3 class="flex items-center gap-2 text-base font-semibold text-blue-950">
+                    <svg class="h-5 w-5 text-sky-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <rect x="3" y="5" width="18" height="14" rx="2" stroke-width="1.8"/><path d="M6 9h12M6 13h12M8 17h.01M12 17h.01" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                    Card Uplink
+                </h3>
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                    <span class="h-2 w-2 rounded-full bg-slate-400"></span>Belum tersedia
+                </span>
+            </div>
+            <div class="grid grid-cols-2 gap-5 pt-4 text-xs sm:grid-cols-4">
+                <div class="sm:col-span-2">
+                    <p class="text-slate-500">Temperature</p>
+                    <p class="mt-1 text-base font-semibold text-slate-700">Belum tersedia</p>
+                    <div class="mt-2 h-1 rounded-full bg-slate-100"></div>
+                </div>
+                <div><p class="text-slate-500">Total Ports</p><p class="mt-1 text-base font-semibold text-slate-700">Belum tersedia</p></div>
+                <div><p class="text-slate-500">UP</p><p class="mt-1 text-base font-semibold text-slate-700">Belum tersedia</p></div>
+                <div><p class="text-slate-500">Down</p><p class="mt-1 text-base font-semibold text-slate-700">Belum tersedia</p></div>
+                <div><p class="text-slate-500">Shutdown</p><p class="mt-1 text-base font-semibold text-slate-700">Belum tersedia</p></div>
+                <div><p class="text-slate-500">CPU Usage</p><p class="mt-1 text-base font-semibold text-slate-700">Belum tersedia</p><div class="mt-2 h-1 rounded-full bg-slate-100"></div></div>
+                <div><p class="text-slate-500">Memory Usage</p><p class="mt-1 text-base font-semibold text-slate-700">Belum tersedia</p><div class="mt-2 h-1 rounded-full bg-slate-100"></div></div>
+            </div>
+            <p class="mt-5 border-t border-slate-100 pt-3 text-xs text-slate-500">Aplikasi belum terhubung untuk membaca inventaris card dan statistik port Uplink dari OLT ini.</p>
         </div>
     {% endif %}
 
@@ -517,58 +544,67 @@
 
 <!-- ==================== 7. SYSTEM & BACKUP PANEL ==================== -->
 <section data-panel="System" class="setting-panel hidden space-y-4 mt-6">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h3 class="text-sm font-bold text-slate-900">Sinkronisasi Jam & Waktu</h3>
-            <p class="text-xs text-slate-400 mt-0.5">Zona waktu sinkronisasi log event sistem.</p>
-            <form id="systemClockForm" class="entry-form mt-4 space-y-3" data-category="system">
-                <input type="hidden" name="name" value="clock">
-                <div>
-                    <label class="block text-xs font-medium text-slate-600">Zona Waktu</label>
-                    <select name="timezone" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-blue-500">
-                        <option value="Asia/Jakarta">Asia/Jakarta (WIB - UTC+7)</option>
-                        <option value="Asia/Makassar">Asia/Makassar (WITA - UTC+8)</option>
-                        <option value="Asia/Jayapura">Asia/Jayapura (WIT - UTC+9)</option>
-                        <option value="UTC">UTC Universal Time</option>
-                    </select>
-                </div>
-                <label class="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
-                    <input id="clockAutoSync" name="auto_sync" type="checkbox" class="rounded border-slate-300 text-blue-600">
-                    Otomatis sinkronkan waktu NTP ke hardware OLT
-                </label>
-                <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition">Simpan Jam</button>
-            </form>
-        </div>
+    <div class="grid grid-cols-1 gap-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:grid-cols-[220px_minmax(0,1fr)] lg:p-5">
+        <aside class="border-b border-slate-200 pb-3 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-4">
+            <h3 class="mb-3 px-3 text-sm font-semibold text-slate-800">⚙ System</h3>
+            <nav class="flex gap-2 overflow-x-auto lg:flex-col" aria-label="System settings">
+                <button type="button" data-system-tab="clock" class="system-subtab shrink-0 rounded-lg px-3 py-2.5 text-left text-sm text-slate-600 hover:bg-slate-50">◷ Clock</button>
+                <button type="button" data-system-tab="autosave" class="system-subtab shrink-0 rounded-lg px-3 py-2.5 text-left text-sm text-slate-600 hover:bg-slate-50">▣ Auto Save</button>
+                <button type="button" data-system-tab="backup" class="system-subtab shrink-0 rounded-lg px-3 py-2.5 text-left text-sm text-slate-600 hover:bg-slate-50">▧ Backup Config</button>
+            </nav>
+        </aside>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h3 class="text-sm font-bold text-slate-900">Backup Konfigurasi Sasis</h3>
-                    <p class="text-xs text-slate-400 mt-0.5">Runs daily at 02:00 UTC+7</p>
+        <div class="min-w-0">
+            <section data-system-content="clock" class="system-subpanel rounded-lg border border-slate-100 p-4 sm:p-5">
+                <h3 class="text-sm font-bold text-slate-900">Sinkronisasi Jam &amp; Waktu</h3>
+                <p class="mt-0.5 text-xs text-slate-400">Simpan preferensi zona waktu untuk aplikasi.</p>
+                <form id="systemClockForm" class="entry-form mt-4 max-w-xl space-y-3" data-category="system">
+                    <input type="hidden" name="name" value="clock">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600">Zona Waktu</label>
+                        <select name="timezone" class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-xs focus:outline-blue-500">
+                            {% for item in timezone_options %}
+                            <option value="{{ item.name }}" {% if item.name == selected_timezone %}selected{% endif %}>{{ item.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <label class="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                        <input id="clockAutoSync" name="auto_sync" type="checkbox" class="rounded border-slate-300 text-blue-600">
+                        Otomatis sinkronkan waktu NTP (belum diterapkan ke perangkat OLT)
+                    </label>
+                    <button type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition">Simpan Jam</button>
+                </form>
+            </section>
+
+            <section data-system-content="autosave" class="system-subpanel hidden rounded-lg border border-slate-100 p-4 sm:p-5">
+                <h3 class="text-sm font-bold text-slate-900">Auto Save</h3>
+                <p class="mt-1 text-sm text-slate-600">Penjadwalan backup otomatis belum aktif.</p>
+                <p class="mt-2 text-xs leading-5 text-slate-500">Aplikasi saat ini belum mengambil berkas konfigurasi langsung dari OLT atau menjalankan backup terjadwal. Gunakan <b>Backup Now</b> pada tab Backup Config untuk membuat snapshot konfigurasi yang tersimpan di aplikasi.</p>
+            </section>
+
+            <section data-system-content="backup" class="system-subpanel hidden space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900">Daily Auto Backup</h3>
+                        <p class="mt-0.5 text-xs text-slate-400">Jadwal harian 02:00 WIB belum aktif.</p>
+                    </div>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700"><span class="h-2 w-2 rounded-full bg-amber-500"></span>Belum dikonfigurasi</span>
                 </div>
-                <button type="button" id="backupNowButton" class="rounded-lg bg-blue-50 border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-100 transition">
-                    + Backup Now
-                </button>
-            </div>
-            <div id="backupLatestStatus" class="mt-4 rounded-lg border border-dashed border-slate-200 p-3 text-xs text-slate-500">
-                Memuat status backup...
-            </div>
-            <div class="overflow-x-auto mt-4">
-                <table class="w-full text-left text-xs border-collapse">
-                    <thead>
-                        <tr class="border-y border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                            <th class="py-2.5 px-3 text-center">#</th>
-                            <th class="py-2.5 px-3">File</th>
-                            <th class="py-2.5 px-3">Type</th>
-                            <th class="py-2.5 px-3">Size</th>
-                            <th class="py-2.5 px-3 text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="backupRows" class="divide-y divide-slate-100">
-                        <tr><td colspan="5" class="py-6 text-center text-slate-400">Loading backup files...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+                <div id="backupLatestStatus" class="rounded-lg border border-dashed border-slate-200 p-3 text-xs text-slate-500">Belum ada backup otomatis.</div>
+                <div class="overflow-hidden rounded-lg border border-slate-200">
+                    <div class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+                        <h4 class="text-sm font-semibold text-slate-800">Backup File</h4>
+                        <button type="button" id="backupNowButton" class="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-100 transition">⇩ Backup Now</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[650px] border-collapse text-left text-xs">
+                            <thead><tr class="border-b border-slate-200 text-[11px] font-semibold text-slate-500"><th class="px-3 py-3 text-center">#</th><th class="px-3 py-3">Name</th><th class="px-3 py-3">Type</th><th class="px-3 py-3">Size</th><th class="px-3 py-3">Date</th><th class="px-3 py-3 text-center">Action</th></tr></thead>
+                            <tbody id="backupRows" class="divide-y divide-slate-100"><tr><td colspan="6" class="py-6 text-center text-slate-400">Loading backup files...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+                <p class="text-[11px] leading-5 text-slate-400">Maksimal 7 backup manual dan 7 backup otomatis. Backup yang tersedia saat ini merupakan snapshot konfigurasi aplikasi, bukan export running-config langsung dari perangkat OLT.</p>
+            </section>
         </div>
     </div>
 </section>
@@ -926,10 +962,36 @@
 <!-- Toast Message Container -->
 <div id="settingsMessage" class="hidden fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl shadow-lg text-xs font-medium text-white"></div>
 
+<dialog id="clockSavedDialog" class="w-[min(92vw,440px)] rounded-xl border border-slate-200 p-0 shadow-2xl backdrop:bg-slate-900/50">
+    <div class="p-5">
+        <h2 class="text-base font-semibold text-slate-900">Pengaturan waktu tersimpan</h2>
+        <p id="clockSavedMessage" class="mt-2 text-sm leading-6 text-slate-600"></p>
+        <div class="mt-5 flex justify-end">
+            <button type="button" onclick="document.getElementById('clockSavedDialog').close()" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Mengerti</button>
+        </div>
+    </div>
+</dialog>
+
 <!-- JAVASCRIPT LOGIC -->
 <script>
 // Main Tab Switching
 const tabs = document.querySelectorAll('.setting-tab');
+const systemTabs = document.querySelectorAll('.system-subtab');
+function showSystemTab(name) {
+    document.querySelectorAll('.system-subpanel').forEach(panel => {
+        panel.classList.toggle('hidden', panel.dataset.systemContent !== name);
+    });
+    systemTabs.forEach(button => {
+        const active = button.dataset.systemTab === name;
+        button.classList.toggle('bg-sky-50', active);
+        button.classList.toggle('font-semibold', active);
+        button.classList.toggle('text-sky-700', active);
+        button.classList.toggle('text-slate-600', !active);
+        button.setAttribute('aria-current', active ? 'page' : 'false');
+    });
+}
+systemTabs.forEach(button => button.addEventListener('click', () => showSystemTab(button.dataset.systemTab)));
+
 function showTab(name) {
     if (name === 'Uplinks') closePortDetail();
     document.querySelectorAll('.setting-panel').forEach(panel => {
@@ -943,11 +1005,13 @@ function showTab(name) {
         button.classList.toggle('text-slate-500', !active);
         if (active) {
             button.setAttribute('aria-current', 'page');
+            if (name === 'System') showSystemTab('backup');
         } else {
             button.removeAttribute('aria-current');
         }
     });
 }
+tabs.forEach(button => button.addEventListener('click', () => showTab(button.dataset.panel)));
 
 // Sub Tab GPON / EPON di ONU Types & Speed Profiles
 let activeOnuTypePon = 'GPON';
@@ -992,8 +1056,8 @@ function openPortDetail(cardName, portName, speed, status, isUp) {
 }
 
 function closePortDetail() {
-    document.getElementById('portDetailView').classList.add('hidden');
-    document.getElementById('uplinkCardsList').classList.remove('hidden');
+    document.getElementById('portDetailView')?.classList.add('hidden');
+    document.getElementById('uplinkCardsList')?.classList.remove('hidden');
 }
 
 const portConfigModal = document.getElementById('portConfigModal');
@@ -1374,7 +1438,11 @@ document.getElementById('systemClockForm')?.addEventListener('submit', async (e)
         });
         const d = await res.json();
         if (!res.ok) throw new Error(d.detail || 'Gagal menyimpan konfigurasi jam');
-        notify('Konfigurasi jam berhasil disimpan');
+        const clockDialog = document.getElementById('clockSavedDialog');
+        document.getElementById('clockSavedMessage').textContent = form.auto_sync.checked
+            ? 'Preferensi zona waktu tersimpan di aplikasi. Opsi NTP juga tersimpan, tetapi sinkronisasi waktu ke perangkat OLT belum dijalankan.'
+            : 'Preferensi zona waktu tersimpan di aplikasi. Perubahan ini tidak mengubah jam perangkat OLT.';
+        clockDialog.showModal();
     } catch(err) {
         notify(err.message, true);
     }
@@ -1391,8 +1459,9 @@ document.getElementById('saveConfigTopButton')?.addEventListener('click', async 
         const res = await fetch(`/api/olt-settings/backups${query}`, { method: 'POST' });
         const d = await res.json();
         if (!res.ok) throw new Error(d.detail || 'Gagal membuat backup');
-        window.location.href = `/api/olt-settings/backups/${d.id}/download`;
         notify('Backup konfigurasi berhasil disimpan');
+        setTimeout(() => { window.location.href = `/api/olt-settings/backups/${d.id}/download`; }, 300);
+        loadBackupFiles();
     } catch(e) { notify(e.message, true); }
     finally { btn.disabled = false; }
 });
@@ -1419,16 +1488,17 @@ async function loadBackupFiles() {
         const res = await fetch(`/api/olt-settings/backups${query}`);
         const d = await res.json();
         if (!res.ok) throw new Error(d.detail);
-        status.innerHTML = d.last_auto ? `<span class="text-emerald-700 font-bold">● Auto Backup Sukses:</span> ${d.last_auto.filename} (${d.last_auto.created_at})` : 'Belum ada backup harian otomatis yang tersimpan.';
+        status.innerHTML = d.last_auto ? `<span class="text-emerald-700 font-bold">● Auto Backup Sukses:</span> ${d.last_auto.filename} (${d.last_auto.created_at})` : 'Belum ada backup otomatis tersimpan.';
         tbody.innerHTML = d.backups.length ? d.backups.map((b, i) => `
             <tr>
                 <td class="py-2.5 px-3 text-center text-slate-400 font-medium">${i+1}</td>
                 <td class="py-2.5 px-3 font-mono font-medium text-slate-800">${b.filename}</td>
-                <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${b.type==='auto'?'bg-emerald-50 text-emerald-700':'bg-slate-100 text-slate-600'}">${b.type}</span></td>
+                <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${b.type==='auto'?'bg-emerald-50 text-emerald-700':'bg-slate-100 text-slate-600'}">${b.type==='auto'?'Auto':'Manual'}</span></td>
                 <td class="py-2.5 px-3 font-mono text-slate-500">${(b.size/1024).toFixed(1)} KB</td>
-                <td class="py-2.5 px-3 text-center"><a href="/api/olt-settings/backups/${b.id}/download" class="text-blue-600 hover:underline">Download</a></td>
+                <td class="py-2.5 px-3 text-slate-500">${b.created_at ? new Intl.DateTimeFormat('id-ID', {dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta'}).format(new Date(b.created_at)) : '—'}</td>
+                <td class="py-2.5 px-3 text-center"><a href="/api/olt-settings/backups/${b.id}/download" title="Download backup" aria-label="Download ${b.filename}" class="inline-flex rounded-lg bg-blue-50 p-2 text-blue-600 hover:bg-blue-100"><svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v4h16v-4"/></svg></a></td>
             </tr>
-        `).join('') : '<tr><td colspan="5" class="py-6 text-center text-slate-400">Belum ada file backup.</td></tr>';
+        `).join('') : '<tr><td colspan="6" class="py-6 text-center text-slate-400">Belum ada file backup.</td></tr>';
     } catch(e) {}
 }
 
@@ -1439,5 +1509,6 @@ loadWanProfiles();
 loadSpeedProfiles();
 loadBackupFiles();
 showTab('Uplinks');
+showSystemTab('backup');
 </script>
 {% endblock %}

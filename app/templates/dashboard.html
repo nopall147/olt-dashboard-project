@@ -10,9 +10,10 @@
 </div>
 
 <!-- TOP STATS CARDS SUMMARY -->
-<div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
     <!-- OLTs Total -->
-    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+    <a {% if data.summary.selected_olt_id %}href="/olt-management?olt_id={{ data.summary.selected_olt_id }}"{% else %}href="/olt-management"{% endif %} class="block h-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Buka OLT Management">
+    <div class="h-full min-h-[116px] bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between hover:border-blue-300 hover:shadow-md transition">
         <div>
             <p class="text-xs text-slate-500 font-semibold">OLTs</p>
             <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.total_olts }}</h2>
@@ -24,15 +25,17 @@
             </svg>
         </div>
     </div>
+    </a>
 
     <!-- Online Summary -->
-    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between relative overflow-hidden">
+    <a href="/all-onus?status=Online" class="block h-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Lihat ONU Online">
+    <div class="h-full min-h-[116px] bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between relative overflow-hidden transition hover:border-blue-300 hover:shadow-md">
         <div>
             <div class="flex items-center space-x-2">
                 <p class="text-xs text-slate-500 font-semibold">Online</p>
                 <span class="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">{{ data.summary.online_percentage }}%</span>
             </div>
-            <a href="/all-onus?status=Online" class="block hover:underline"><h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.online_onus }}</h2></a>
+            <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.online_onus }}</h2>
         </div>
         <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -40,15 +43,17 @@
             </svg>
         </div>
     </div>
+    </a>
 
     <!-- DyingGasp Summary -->
-    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+    <a href="/all-onus?status=DyingGasp" class="block h-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Lihat ONU DyingGasp">
+    <div class="h-full min-h-[116px] bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between transition hover:border-blue-300 hover:shadow-md">
         <div>
             <div class="flex items-center space-x-2">
                 <p class="text-xs text-slate-500 font-semibold">DyingGasp</p>
                 <span class="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold">{{ data.summary.dying_gasp_percentage }}%</span>
             </div>
-            <a href="/all-onus?status=DyingGasp" class="block hover:underline"><h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.dying_gasp_onus }}</h2></a>
+            <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.dying_gasp_onus }}</h2>
         </div>
         <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -56,15 +61,17 @@
             </svg>
         </div>
     </div>
+    </a>
 
     <!-- LOS Summary -->
-    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+    <a href="/all-onus?status=LOS" class="block h-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Lihat ONU LOS">
+    <div class="h-full min-h-[116px] bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between transition hover:border-blue-300 hover:shadow-md">
         <div>
             <div class="flex items-center space-x-2">
                 <p class="text-xs text-slate-500 font-semibold">LOS</p>
                 <span class="text-[9px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold">{{ data.summary.los_percentage }}%</span>
             </div>
-            <a href="/all-onus?status=LOS" class="block hover:underline"><h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.los_onus }}</h2></a>
+            <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.los_onus }}</h2>
         </div>
         <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -72,15 +79,17 @@
             </svg>
         </div>
     </div>
+    </a>
 
     <!-- Offline Summary -->
-    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+    <a href="/all-onus?status=Offline" class="block h-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Lihat ONU Offline">
+    <div class="h-full min-h-[116px] bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between transition hover:border-blue-300 hover:shadow-md">
         <div>
             <div class="flex items-center space-x-2">
                 <p class="text-xs text-slate-500 font-semibold">Offline</p>
                 <span class="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold">{{ data.summary.offline_percentage }}%</span>
             </div>
-            <a href="/all-onus?status=Offline" class="block hover:underline"><h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.offline_onus }}</h2></a>
+            <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.offline_onus }}</h2>
         </div>
         <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold">
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -88,6 +97,7 @@
             </svg>
         </div>
     </div>
+    </a>
 </div>
 
 <!-- INDIVIDUAL OLT CARDS LIST -->
@@ -142,6 +152,13 @@
                     </span>
                 </div>
             </div>
+            {% if olt.id %}
+            <div class="md:ml-4">
+                <a href="/olt-management?olt_id={{ olt.id }}" class="inline-flex items-center justify-center rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100" aria-label="Buka OLT Management untuk {{ olt.name }}">
+                    ⚙ Menu OLT
+                </a>
+            </div>
+            {% endif %}
         </div>
 
         {% if olt.fans %}

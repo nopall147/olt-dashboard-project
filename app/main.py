@@ -5,7 +5,7 @@ import asyncio
 import bcrypt
 from enum import Enum
 from datetime import datetime, timezone, timedelta
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, available_timezones
 from fastapi import FastAPI, Request, Depends, HTTPException, Form, status
 from fastapi.responses import HTMLResponse, Response, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -101,7 +101,12 @@ def format_uptime(ticks):
 # ==============================================================================
 with SessionLocal() as startup_db:
     for name, ip in (("OLT-C300 Tajur", "192.168.100.20"), ("OLT-C320 Anggraeni", "10.10.10.5")):
-        if not startup_db.query(OLTConfig).filter(OLTConfig.name == name).first():
+        # Nama OLT dapat diedit. Jangan mencoba membuat seed lama jika IP
+        # bawaannya sudah terdaftar dengan nama baru, karena IP bersifat unik.
+        existing_seed_olt = startup_db.query(OLTConfig).filter(
+            (OLTConfig.name == name) | (OLTConfig.ip_address == ip)
+        ).first()
+        if not existing_seed_olt:
             startup_db.add(OLTConfig(name=name, ip_address=ip, model="ZTE C300/C320"))
     
     admin_user = startup_db.query(User).filter(User.username == "admin").first()
@@ -113,7 +118,6 @@ with SessionLocal() as startup_db:
             password_hash=hash_password("admin123"),
             role="Super Admin",
             is_active=True,
-            is_verified=True
         ))
     else:
         # Otomatis perbaiki role akun admin lama jika masih bernama "admin"
@@ -216,11 +220,17 @@ def api_update_profile(
     db: Session = Depends(get_db),
     user: User = Depends(login_required)
 ):
-    user.fullname = payload.full_name.strip()
+    full_name = payload.full_name.strip()
+    if not full_name:
+        raise HTTPException(status_code=400, detail="Nama lengkap tidak boleh kosong.")
+    user.fullname = full_name
     if payload.image is not None:
         user.image = payload.image
-    if payload.new_password and len(payload.new_password.strip()) >= 6:
-        user.password_hash = hash_password(payload.new_password.strip())
+    if payload.new_password is not None:
+        new_password = payload.new_password.strip()
+        if len(new_password) < 6:
+            raise HTTPException(status_code=400, detail="Password minimal 6 karakter.")
+        user.password_hash = hash_password(new_password)
 
     db.add(audit_event(request, "Update", f"User {user.username} memperbarui profil"))
     db.commit()
@@ -318,12 +328,13 @@ def dashboard_page(request: Request, db: Session = Depends(get_db), user: User =
     config_by_name = {olt.name: olt for olt in olt_configs}
     names = sorted(({onu.olt_name for onu in onus if onu.olt_name}) | set(config_by_name))
     olt_rows = []
-    for idx, name in enumerate(names, 1):
+    for name in names:
         devices = [onu for onu in onus if onu.olt_name == name]
         config = config_by_name.get(name)
-        olt_rows.append({"id": config.id if config else idx, "name": name, "model": config.model if config else "OLT", "ip": config.ip_address if config else "—", "status": "Terdaftar" if config else "ONU database", "uptime": "Tidak tersedia dari database", "temperature": "—", "total_fan": "—", "total_onu": len(devices), "online": sum(x.status == "Online" for x in devices), "los": sum(x.status == "LOS" for x in devices), "dying_gasp": sum(x.status == "DyingGasp" for x in devices), "offline": sum(x.status == "Offline" for x in devices), "other": sum(x.status not in ("Online", "DyingGasp", "LOS", "Offline") for x in devices), "fans": []})
+        olt_rows.append({"id": config.id if config else None, "name": name, "model": config.model if config else "OLT", "ip": config.ip_address if config else "—", "status": "Terdaftar" if config else "ONU database", "uptime": "Tidak tersedia dari database", "temperature": "—", "total_fan": "—", "total_onu": len(devices), "online": sum(x.status == "Online" for x in devices), "los": sum(x.status == "LOS" for x in devices), "dying_gasp": sum(x.status == "DyingGasp" for x in devices), "offline": sum(x.status == "Offline" for x in devices), "other": sum(x.status not in ("Online", "DyingGasp", "LOS", "Offline") for x in devices), "fans": []})
     percentage = lambda value: round(value / total * 100, 2) if total else 0
-    dashboard_data = {"summary": {"total_olts": len(names), "total_onus": total, "online_onus": counts["Online"], "online_percentage": percentage(counts["Online"]), "dying_gasp_onus": counts["DyingGasp"], "dying_gasp_percentage": percentage(counts["DyingGasp"]), "los_onus": counts["LOS"], "los_percentage": percentage(counts["LOS"]), "offline_onus": counts["Offline"], "offline_percentage": percentage(counts["Offline"])}, "olts": olt_rows}
+    selected_olt = max(olt_configs, key=lambda config: sum(onu.olt_name == config.name for onu in onus), default=None)
+    dashboard_data = {"summary": {"total_olts": len(names), "total_onus": total, "selected_olt_id": selected_olt.id if selected_olt else None, "online_onus": counts["Online"], "online_percentage": percentage(counts["Online"]), "dying_gasp_onus": counts["DyingGasp"], "dying_gasp_percentage": percentage(counts["DyingGasp"]), "los_onus": counts["LOS"], "los_percentage": percentage(counts["LOS"]), "offline_onus": counts["Offline"], "offline_percentage": percentage(counts["Offline"])}, "olts": olt_rows}
     return templates.TemplateResponse(request=request, name="dashboard.html", context={"data": dashboard_data})
 
 # ONU & All ONUs: Semua Role (Super Admin, NOC, Viewer)
@@ -331,15 +342,18 @@ def dashboard_page(request: Request, db: Session = Depends(get_db), user: User =
 def all_onus_page(request: Request, status: str = "ALL", db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC, Role.VIEWER]))):
     allowed_statuses = {"ALL", "Online", "DyingGasp", "LOS", "Offline"}
     selected_status = status if status in allowed_statuses else "ALL"
+    custom_settings = get_customization_settings(db)
+    good_threshold = custom_settings["good_threshold"]
+    warning_threshold = custom_settings["warning_threshold"]
     onus = db.query(OnuDevice).order_by(OnuDevice.id.desc()).all()
     total_onus = len(onus)
-    good_count = sum(1 for onu in onus if onu.rx_onu is not None and onu.rx_onu >= -27.00)
-    warning_count = sum(1 for onu in onus if onu.rx_onu is not None and -30.00 <= onu.rx_onu < -27.00)
-    critical_count = sum(1 for onu in onus if onu.rx_onu is not None and onu.rx_onu < -30.00)
+    good_count = sum(1 for onu in onus if onu.rx_onu is not None and onu.rx_onu >= good_threshold)
+    warning_count = sum(1 for onu in onus if onu.rx_onu is not None and warning_threshold <= onu.rx_onu < good_threshold)
+    critical_count = sum(1 for onu in onus if onu.rx_onu is not None and onu.rx_onu < warning_threshold)
     other_count = total_onus - (good_count + warning_count + critical_count)
-    good_olt_count = sum(1 for onu in onus if onu.rx_olt is not None and onu.rx_olt >= -27.00)
-    warning_olt_count = sum(1 for onu in onus if onu.rx_olt is not None and -30.00 <= onu.rx_olt < -27.00)
-    critical_olt_count = sum(1 for onu in onus if onu.rx_olt is not None and onu.rx_olt < -30.00)
+    good_olt_count = sum(1 for onu in onus if onu.rx_olt is not None and onu.rx_olt >= good_threshold)
+    warning_olt_count = sum(1 for onu in onus if onu.rx_olt is not None and warning_threshold <= onu.rx_olt < good_threshold)
+    critical_olt_count = sum(1 for onu in onus if onu.rx_olt is not None and onu.rx_olt < warning_threshold)
     status_counts = {status_name: sum(1 for onu in onus if onu.status == status_name) for status_name in ("Online", "Offline", "LOS", "DyingGasp")}
     olt_names = sorted({onu.olt_name for onu in onus if onu.olt_name})
     card_names = sorted({onu.gpon_port.split("/")[1] for onu in onus if onu.gpon_port and len(onu.gpon_port.split("/")) > 2})
@@ -358,8 +372,63 @@ def all_onus_page(request: Request, status: str = "ALL", db: Session = Depends(g
 
     return templates.TemplateResponse(
         request=request, name="all_onus.html",
-        context={"onus": onus, "stats": stats, "selected_status": selected_status, "olt_names": olt_names, "card_names": card_names, "pon_names": pon_names, "onu_types": onu_types}
+        context={"onus": onus, "stats": stats, "selected_status": selected_status, "olt_names": olt_names, "card_names": card_names, "pon_names": pon_names, "onu_types": onu_types, "custom_settings": custom_settings}
     )
+
+CUSTOMIZATION_COLUMNS = [
+    ("olt", "OLT"), ("name", "Pelanggan"), ("description", "Deskripsi"),
+    ("pppoe", "PPPoE"), ("port", "GPON Port"), ("status", "Status"),
+    ("rx_olt", "RX OLT"), ("rx_onu", "RX ONU"), ("serial", "SN / MAC"), ("type", "Tipe ONU"),
+]
+DEFAULT_CUSTOMIZATION = {
+    "desktop_columns": [key for key, _ in CUSTOMIZATION_COLUMNS],
+    "mobile_columns": ["name", "port", "status", "rx_onu"],
+    "good_threshold": -27.0,
+    "warning_threshold": -30.0,
+}
+
+def get_customization_settings(db: Session):
+    settings = {
+        "desktop_columns": list(DEFAULT_CUSTOMIZATION["desktop_columns"]),
+        "mobile_columns": list(DEFAULT_CUSTOMIZATION["mobile_columns"]),
+        "good_threshold": DEFAULT_CUSTOMIZATION["good_threshold"],
+        "warning_threshold": DEFAULT_CUSTOMIZATION["warning_threshold"],
+    }
+    entry = db.query(OLTSettingEntry).filter(
+        OLTSettingEntry.category == "system", OLTSettingEntry.name == "customization"
+    ).first()
+    if entry:
+        try:
+            saved = json.loads(entry.data_json)
+            for key in settings:
+                if key in saved:
+                    settings[key] = saved[key]
+        except (TypeError, ValueError):
+            pass
+    allowed_keys = {key for key, _ in CUSTOMIZATION_COLUMNS}
+    for key in ("desktop_columns", "mobile_columns"):
+        chosen = settings[key]
+        settings[key] = [value for value in chosen if value in allowed_keys] if isinstance(chosen, list) else []
+        if not settings[key]:
+            settings[key] = list(DEFAULT_CUSTOMIZATION[key])
+    try:
+        settings["good_threshold"] = float(settings["good_threshold"])
+        settings["warning_threshold"] = float(settings["warning_threshold"])
+        if not -32 <= settings["warning_threshold"] < settings["good_threshold"] <= -20:
+            raise ValueError
+    except (TypeError, ValueError):
+        settings["good_threshold"] = DEFAULT_CUSTOMIZATION["good_threshold"]
+        settings["warning_threshold"] = DEFAULT_CUSTOMIZATION["warning_threshold"]
+    return settings
+
+@app.get("/customization", response_class=HTMLResponse)
+def customization_page(request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN]))):
+    onus = db.query(OnuDevice).order_by(OnuDevice.id.desc()).all()
+    settings = get_customization_settings(db)
+    return templates.TemplateResponse(request=request, name="customization.html", context={
+        "onus": onus, "columns": CUSTOMIZATION_COLUMNS, "mobile_columns": CUSTOMIZATION_COLUMNS,
+        "settings": settings,
+    })
 
 # Template TR069: Semua Role (Super Admin, NOC, Viewer)
 @app.get("/tr069-profiles", response_class=HTMLResponse)
@@ -382,7 +451,7 @@ def graphs_page(request: Request, db: Session = Depends(get_db), user: User = De
 
 # OLT Management: Super Admin & NOC Saja (Viewer Ditolak)
 @app.get("/olt-management", response_class=HTMLResponse)
-def olt_management_page(request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
+def olt_management_page(request: Request, olt_id: int | None = None, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
     configs = db.query(OLTConfig).order_by(OLTConfig.name).all()
     olts = []
     for config in configs:
@@ -410,14 +479,14 @@ def olt_management_page(request: Request, db: Session = Depends(get_db), user: U
             "dying_gasp": sum(x.status == "DyingGasp" for x in devices),
             "offline": sum(x.status == "Offline" for x in devices)
         })
-    return templates.TemplateResponse(request=request, name="olt_management.html", context={"olts": olts})
+    return templates.TemplateResponse(request=request, name="olt_management.html", context={"olts": olts, "selected_olt_id": olt_id})
 
 # OLT Settings: Super Admin & NOC Saja (Viewer Ditolak)
 @app.get("/olt-settings", response_class=HTMLResponse)
 def olt_settings_page(request: Request, olt_id: int | None = None, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
     configs = db.query(OLTConfig).order_by(OLTConfig.name).all()
     selected = db.query(OLTConfig).filter(OLTConfig.id == olt_id).first() if olt_id else None
-    if not selected and configs:
+    if not selected and configs and olt_id is None:
         onu_counts = dict(db.query(OnuDevice.olt_name, sql_func.count(OnuDevice.id)).group_by(OnuDevice.olt_name).all())
         selected = max(configs, key=lambda config: onu_counts.get(config.name, 0))
     devices = db.query(OnuDevice).filter(OnuDevice.olt_name == selected.name).all() if selected else []
@@ -461,9 +530,30 @@ def olt_settings_page(request: Request, olt_id: int | None = None, db: Session =
         "uptime": format_uptime(selected.uptime_ticks),
         "updated": selected.last_connection_test.strftime("%Y-%m-%d %H:%M:%S") if selected.last_connection_test else "Belum disinkronkan",
     } if selected else None
+    now_utc = datetime.now(timezone.utc)
+    timezone_options = []
+    for zone_name in sorted(available_timezones()):
+        local_now = now_utc.astimezone(ZoneInfo(zone_name))
+        raw_offset = local_now.strftime("%z") or "+0000"
+        formatted_offset = f"{raw_offset[:3]}:{raw_offset[3:]}"
+        abbreviation = local_now.tzname()
+        suffix = f" ({abbreviation}, UTC{formatted_offset})" if abbreviation and abbreviation != zone_name else f" (UTC{formatted_offset})"
+        timezone_options.append({"name": zone_name, "label": f"{zone_name}{suffix}"})
+    clock_entry = db.query(OLTSettingEntry).filter(
+        OLTSettingEntry.category == "system", OLTSettingEntry.name == "clock"
+    ).first()
+    selected_timezone = "Asia/Jakarta"
+    if clock_entry:
+        try:
+            saved_timezone = json.loads(clock_entry.data_json).get("timezone", "Asia/Jakarta")
+            if saved_timezone in available_timezones():
+                selected_timezone = saved_timezone
+        except (TypeError, ValueError):
+            pass
     return templates.TemplateResponse(request=request, name="olt_settings.html", context={
         "summary": summary, "olt_names": [config.name for config in configs], "selected_olt": olt,
-        "card_inventory": card_inventory,
+        "card_inventory": card_inventory, "timezone_options": timezone_options,
+        "selected_timezone": selected_timezone,
     })
 
 # Activity Log: Super Admin & NOC Saja (Viewer Ditolak)
@@ -479,9 +569,9 @@ def activity_log_page(request: Request, db: Session = Depends(get_db), user: Use
 
 # Registrasi ONU: Hanya Super Admin & NOC yang bisa menambahkan
 @app.get("/add-onu", response_class=HTMLResponse)
-def manual_add_onu_page(request: Request, user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
+def manual_add_onu_page(request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
     return templates.TemplateResponse(request=request, name="add_onu.html", context={
-        "olts": [{"name": "OLT-C300 Tajur", "ip_address": "192.168.100.20"}, {"name": "OLT-C320 Anggraeni", "ip_address": "10.10.10.5"}], "ui_demo": True
+        "olts": db.query(OLTConfig).order_by(OLTConfig.name).all()
     })
 
 @app.get("/unregistered-onus", response_class=HTMLResponse)
@@ -522,6 +612,12 @@ class SettingEntryInput(BaseModel):
     data: dict = Field(default_factory=dict)
     id: int | None = None
 
+class CustomizationInput(BaseModel):
+    desktop_columns: list[str]
+    mobile_columns: list[str]
+    good_threshold: float
+    warning_threshold: float
+
 @app.get("/api/olts")
 def api_list_olts(db: Session = Depends(get_db)):
     return [{"id": olt.id, "name": olt.name, "ip_address": olt.ip_address, "model": olt.model, "snmp_version": olt.snmp_version, "snmp_port": olt.snmp_port, "telnet_username": olt.telnet_username, "telnet_port": olt.telnet_port} for olt in db.query(OLTConfig).order_by(OLTConfig.name).all()]
@@ -537,6 +633,8 @@ def api_save_olt(payload: OLTInput, request: Request, db: Session = Depends(get_
     ip_address = payload.ip_address.strip()
     if not name or not ip_address or payload.snmp_version != "2c":
         raise HTTPException(status_code=400, detail="Isi nama/IP OLT; versi SNMP yang didukung saat ini v2c.")
+    if not 1 <= payload.snmp_port <= 65535 or not 1 <= payload.telnet_port <= 65535:
+        raise HTTPException(status_code=400, detail="Port SNMP dan Telnet harus berada pada rentang 1–65535.")
     olt = db.query(OLTConfig).filter(OLTConfig.id == payload.id).first() if payload.id else db.query(OLTConfig).filter(OLTConfig.name == name).first()
     if payload.id and not olt:
         raise HTTPException(status_code=404, detail="OLT tidak ditemukan")
@@ -550,7 +648,7 @@ def api_save_olt(payload: OLTInput, request: Request, db: Session = Depends(get_
     else:
         old_name = olt.name
         event_type, verb = "Update", "Memperbarui"
-    if db.query(OLTConfig).filter(OLTConfig.ip_address == ip_address, OLTConfig.name != name).first():
+    if db.query(OLTConfig).filter(OLTConfig.ip_address == ip_address, OLTConfig.id != (olt.id if olt else 0)).first():
         raise HTTPException(status_code=409, detail="IP address sudah digunakan OLT lain.")
     olt.name, olt.ip_address, olt.model = name, ip_address, payload.model.strip()
     if old_name and old_name != name:
@@ -562,7 +660,11 @@ def api_save_olt(payload: OLTInput, request: Request, db: Session = Depends(get_
     if payload.telnet_password:
         olt.telnet_password_encrypted = encrypt_olt_secret(payload.telnet_password)
     db.add(audit_event(request, event_type, f"{verb} konfigurasi OLT {name} ({ip_address})"))
-    db.commit()
+    try:
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Perubahan OLT gagal disimpan: {str(exc)[:500]}") from exc
     return {"status": "success", "id": olt.id}
 
 @app.get("/api/olt-settings/data")
@@ -609,6 +711,117 @@ def api_delete_setting_entry(entry_id: int, request: Request, db: Session = Depe
     db.commit()
     return {"status": "success"}
 
+@app.post("/api/customization")
+def api_save_customization(payload: CustomizationInput, request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN]))):
+    allowed = {key for key, _ in CUSTOMIZATION_COLUMNS}
+    if not payload.desktop_columns or not payload.mobile_columns:
+        raise HTTPException(status_code=400, detail="Pilih minimal satu kolom untuk tampilan desktop dan mobile.")
+    if any(key not in allowed for key in payload.desktop_columns + payload.mobile_columns):
+        raise HTTPException(status_code=400, detail="Pilihan kolom tidak dikenal.")
+    if not -32 <= payload.warning_threshold < payload.good_threshold <= -20:
+        raise HTTPException(status_code=400, detail="Ambang Warning dan Good harus berada di -32 sampai -20 dBm, dan Good harus lebih tinggi dari Warning.")
+
+    entry = db.query(OLTSettingEntry).filter(
+        OLTSettingEntry.category == "system", OLTSettingEntry.name == "customization"
+    ).first()
+    if not entry:
+        entry = OLTSettingEntry(category="system", name="customization")
+        db.add(entry)
+    entry.data_json = json.dumps({
+        "desktop_columns": list(dict.fromkeys(payload.desktop_columns)),
+        "mobile_columns": list(dict.fromkeys(payload.mobile_columns)),
+        "good_threshold": payload.good_threshold,
+        "warning_threshold": payload.warning_threshold,
+    })
+    db.add(audit_event(request, "Update", "Memperbarui tampilan tabel All ONUs dan ambang sinyal"))
+    try:
+        db.commit()
+        db.refresh(entry)
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Customization gagal disimpan: {str(exc)[:400]}") from exc
+    return {"status": "success", "persisted": True, "id": entry.id}
+
+def _build_olt_backup(olt: OLTConfig, db: Session):
+    settings = db.query(OLTSettingEntry).order_by(OLTSettingEntry.category, OLTSettingEntry.name).all()
+    onus = db.query(OnuDevice).filter(OnuDevice.olt_name == olt.name).order_by(OnuDevice.gpon_port).all()
+    def without_secrets(value):
+        if isinstance(value, dict):
+            return {key: ("[REDACTED]" if any(secret in key.lower() for secret in ("password", "community", "secret")) and item else without_secrets(item)) for key, item in value.items()}
+        if isinstance(value, list):
+            return [without_secrets(item) for item in value]
+        return value
+    return {
+        "backup_scope": "application_configuration",
+        "note": "Snapshot konfigurasi yang tersimpan di aplikasi; bukan hasil export running-config langsung dari perangkat OLT.",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "olt": {
+            "id": olt.id, "name": olt.name, "ip_address": olt.ip_address, "model": olt.model,
+            "snmp_version": olt.snmp_version, "snmp_port": olt.snmp_port,
+            "telnet_username": olt.telnet_username, "telnet_port": olt.telnet_port,
+            "snmp_community_configured": bool(olt.snmp_community_encrypted),
+            "telnet_password_configured": bool(olt.telnet_password_encrypted),
+        },
+        "settings": [{"category": entry.category, "name": entry.name, "data": without_secrets(json.loads(entry.data_json))} for entry in settings],
+        "onus": [{
+            "customer_name": onu.customer_name, "description": onu.description,
+            "pppoe_user": onu.pppoe_user, "gpon_port": onu.gpon_port,
+            "status": onu.status, "sn_mac": onu.sn_mac, "actual_type": onu.actual_type,
+        } for onu in onus],
+    }
+
+@app.post("/api/olt-settings/backups")
+def create_olt_backup(request: Request, olt_id: int | None = None, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
+    olt = db.query(OLTConfig).filter(OLTConfig.id == olt_id).first() if olt_id else None
+    if not olt:
+        raise HTTPException(status_code=404, detail="OLT yang dipilih tidak ditemukan.")
+    created = datetime.now(timezone.utc)
+    safe_name = re.sub(r"[^A-Za-z0-9_-]+", "_", olt.name).strip("_") or f"olt-{olt.id}"
+    filename = f"{safe_name}-config-{created.strftime('%Y%m%d-%H%M%S')}.json"
+    snapshot = _build_olt_backup(olt, db)
+    backup = OLTConfigBackup(olt_id=olt.id, filename=filename, backup_type="manual", content_json=json.dumps(snapshot, ensure_ascii=False))
+    try:
+        db.add(backup)
+        db.add(audit_event(request, "Create", f"Membuat backup konfigurasi OLT {olt.name}"))
+        db.commit()
+        db.refresh(backup)
+        older_backups = db.query(OLTConfigBackup).filter(
+            OLTConfigBackup.olt_id == olt.id,
+            OLTConfigBackup.backup_type == "manual",
+            OLTConfigBackup.id != backup.id,
+        ).order_by(OLTConfigBackup.created_at.desc(), OLTConfigBackup.id.desc()).all()
+        for old_backup in older_backups[6:]:
+            db.delete(old_backup)
+        if len(older_backups) > 6:
+            db.commit()
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Backup gagal disimpan: {str(exc)[:400]}") from exc
+    return {"status": "success", "id": backup.id, "filename": backup.filename}
+
+@app.get("/api/olt-settings/backups")
+def list_olt_backups(olt_id: int | None = None, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
+    query = db.query(OLTConfigBackup)
+    if olt_id:
+        query = query.filter(OLTConfigBackup.olt_id == olt_id)
+    backups = query.order_by(OLTConfigBackup.created_at.desc(), OLTConfigBackup.id.desc()).all()
+    auto_backups = [backup for backup in backups if backup.backup_type == "auto"][:7]
+    manual_backups = [backup for backup in backups if backup.backup_type != "auto"][:7]
+    backups = sorted(auto_backups + manual_backups, key=lambda backup: (backup.created_at or datetime.min.replace(tzinfo=timezone.utc), backup.id), reverse=True)
+    records = [{
+        "id": backup.id, "filename": backup.filename, "type": backup.backup_type,
+        "size": len(backup.content_json.encode("utf-8")),
+        "created_at": backup.created_at.isoformat() if backup.created_at else None,
+    } for backup in backups]
+    return {"backups": records, "last_auto": next((item for item in records if item["type"] == "auto"), None)}
+
+@app.get("/api/olt-settings/backups/{backup_id}/download")
+def download_olt_backup(backup_id: int, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
+    backup = db.query(OLTConfigBackup).filter(OLTConfigBackup.id == backup_id).first()
+    if not backup:
+        raise HTTPException(status_code=404, detail="File backup tidak ditemukan.")
+    return Response(content=backup.content_json, media_type="application/json; charset=utf-8", headers={"Content-Disposition": f'attachment; filename="{backup.filename}"'})
+
 @app.post("/api/v1/register-onu")
 def register_onu(req: ONURequest, request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
     existing = db.query(OnuDevice).filter(OnuDevice.sn_mac == req.sn_onu.strip().upper()).first()
@@ -630,3 +843,80 @@ def register_onu(req: ONURequest, request: Request, db: Session = Depends(get_db
     db.add(audit_event(request, "Register", f"Registrasi ONU {req.sn_onu} untuk {req.nama_pelanggan}"))
     db.commit()
     return {"status": "success", "message": "Konfigurasi disimpan"}
+
+@app.post("/api/v1/provision-onu")
+def provision_onu(req: ONURequest, request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
+    existing = db.query(OnuDevice).filter(OnuDevice.sn_mac == req.sn_onu.strip().upper()).first()
+    if existing:
+        raise HTTPException(status_code=409, detail=f"Serial Number {req.sn_onu} sudah terdaftar.")
+    olt = db.query(OLTConfig).filter(OLTConfig.ip_address == req.olt_ip).first()
+    if not olt:
+        raise HTTPException(status_code=404, detail="OLT yang dipilih tidak ditemukan di OLT Management.")
+    if req.onu_id is None or not 1 <= req.onu_id <= 128:
+        raise HTTPException(status_code=400, detail="Isi ONU Index ID yang tersedia pada PON tujuan (1–128).")
+    if not 1 <= req.slot <= 21 or not 1 <= req.port <= 16:
+        raise HTTPException(status_code=400, detail="Slot harus 1–21 dan PON Port harus 1–16.")
+    if not 1 <= req.vlan_id <= 4094:
+        raise HTTPException(status_code=400, detail="VLAN ID harus berada pada rentang 1–4094.")
+    target_port = f"1/{req.slot}/{req.port}:{req.onu_id}"
+    if db.query(OnuDevice).filter(OnuDevice.olt_name == olt.name, OnuDevice.gpon_port == target_port).first():
+        raise HTTPException(status_code=409, detail=f"ONU ID {req.onu_id} sudah tercatat pada port GPON 1/{req.slot}/{req.port}.")
+
+    # Values are inserted into multiline CLI commands; reject control characters
+    # and command separators to prevent a form value from adding CLI commands.
+    cli_values = {
+        "Serial Number": (req.sn_onu.strip().upper(), r"[A-Z0-9]{1,16}"),
+        "Nama pelanggan": (req.nama_pelanggan.strip(), r"[A-Za-z0-9][A-Za-z0-9 ._()\-]{0,149}"),
+        "Tipe ONU": (req.actual_type.strip(), r"[A-Za-z0-9_.\-]{1,50}"),
+        "Traffic Profile": (req.profil_paket.strip(), r"[A-Za-z0-9_.\-]{1,64}"),
+        "PPPoE Username": (req.pppoe_user.strip(), r"[A-Za-z0-9_.@+\-]{1,100}"),
+        "PPPoE Password": (req.pppoe_pass, r"[^\r\n;!]{1,128}"),
+    }
+    for label, (value, pattern) in cli_values.items():
+        if not re.fullmatch(pattern, value):
+            raise HTTPException(status_code=400, detail=f"{label} tidak valid. Periksa karakter yang digunakan.")
+    if req.description and (len(req.description) > 255 or any(char in req.description for char in "\r\n;!")):
+        raise HTTPException(status_code=400, detail="Description terlalu panjang atau mengandung karakter yang tidak didukung.")
+
+    try:
+        password = get_telnet_password(olt)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    if not password:
+        raise HTTPException(status_code=503, detail=f"Kredensial Telnet OLT belum diatur. Simpan username dan password OLT di OLT Management untuk {olt.name}.")
+
+    deployment = deploy_onu_zte(olt.ip_address, olt.telnet_username, password, {
+        "slot": req.slot,
+        "port": req.port,
+        "onu_id": req.onu_id,
+        "actual_type": req.actual_type.strip(),
+        "sn_onu": req.sn_onu.strip().upper(),
+        "nama_pelanggan": req.nama_pelanggan.strip(),
+        "profil_paket": req.profil_paket.strip(),
+        "vlan_id": req.vlan_id,
+        "pppoe_user": req.pppoe_user.strip(),
+        "pppoe_pass": req.pppoe_pass,
+        "telnet_port": olt.telnet_port,
+    })
+    if deployment.get("status") != "success":
+        detail = str(deployment.get("message", "Tidak ada detail dari driver.")).replace(req.pppoe_pass, "[REDACTED]")
+        raise HTTPException(status_code=502, detail=f"OLT menolak atau tidak dapat menjalankan konfigurasi: {detail[:2000]}")
+
+    new_onu = OnuDevice(
+        olt_name=olt.name,
+        customer_name=req.nama_pelanggan.strip().upper(),
+        description=req.description or f"VLAN: {req.vlan_id} | Profile: {req.profil_paket}",
+        pppoe_user=req.pppoe_user.strip(),
+        gpon_port=target_port,
+        status="Offline",
+        sn_mac=req.sn_onu.strip().upper(),
+        actual_type=req.actual_type.strip(),
+    )
+    try:
+        db.add(new_onu)
+        db.add(audit_event(request, "Register", f"Provision ONU {req.sn_onu} ke OLT {olt.name}, GPON {new_onu.gpon_port}"))
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Konfigurasi kemungkinan sudah diterapkan di OLT, tetapi pencatatan database gagal. Periksa ONU {req.sn_onu} pada OLT sebelum mencoba ulang. Detail: {str(exc)[:500]}") from exc
+    return {"status": "success", "message": f"Konfigurasi ONU {req.sn_onu.strip().upper()} berhasil diterapkan ke {olt.name} dan dicatat di database."}

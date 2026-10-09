@@ -18,6 +18,10 @@ def deploy_onu_zte(olt_ip, username, password, data_input):
         'username': username,
         'password': password,
         'port': data_input.get('telnet_port', 23),
+        'conn_timeout': 8,
+        'banner_timeout': 12,
+        'auth_timeout': 12,
+        'fast_cli': False,
     }
 
     # 3. Kirim komando via Netmiko
@@ -25,7 +29,7 @@ def deploy_onu_zte(olt_ip, username, password, data_input):
     try:
         net_connect = ConnectHandler(**device)
         output = net_connect.send_config_set(commands_list)
-        if any(token in output.lower() for token in ("% error", "invalid command", "unknown command", "failed")):
+        if any(token in output.lower() for token in ("% error", "invalid command", "unknown command", "failed", "failure", "incomplete command")):
             return {"status": "error", "message": output}
         return {"status": "success", "output": output}
     except Exception as e:

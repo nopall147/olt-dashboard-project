@@ -13,18 +13,27 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func as sql_func
 from sqlalchemy import text
-from app.database import Base, SessionLocal, engine, get_db
-from app.models import ActivityEvent, OLTConfig, OLTConfigBackup, OLTSettingEntry, OnuDevice, TrafficSample, User
-from app.services.olt_client import encrypt_olt_secret, env_key, get_telnet_password, read_onu_traffic, read_pon_snapshot, read_pon_state, test_snmp, test_telnet
-from app.services.netmiko_driver import deploy_onu_zte
-from app.database import engine, Base, SessionLocal
-from app.models import User
 from contextlib import asynccontextmanager
 from fastapi.staticfiles import StaticFiles
+from dotenv import load_dotenv
+
+# Load environment variables (wajib dieksekusi sebelum modul yang membaca env)
+load_dotenv()
+
+# Database models and clients
+from app.database import Base, SessionLocal, engine, get_db
+from app.models import ActivityEvent, OLTConfig, OLTConfigBackup, OLTSettingEntry, OnuDevice, TrafficSample, User
+from app.services.olt_client import (
+    encrypt_olt_secret, env_key, get_telnet_password, 
+    read_onu_traffic, read_pon_snapshot, read_pon_state, 
+    test_snmp, test_telnet
+)
+from app.services.netmiko_driver import deploy_onu_zte
 
 # Inisialisasi tabel database
 Base.metadata.create_all(bind=engine)
 
+# Migrasi idempotent skema database
 # Migrasi idempotent skema database
 with engine.begin() as connection:
     connection.execute(text("ALTER TABLE olt_configs ADD COLUMN IF NOT EXISTS snmp_status VARCHAR(40)"))
@@ -37,6 +46,10 @@ with engine.begin() as connection:
     connection.execute(text("ALTER TABLE activity_events ADD COLUMN IF NOT EXISTS user_agent VARCHAR(255)"))
     connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT TRUE"))
     connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS image TEXT"))
+    connection.execute(text("ALTER TABLE olt_setting_entries ADD COLUMN IF NOT EXISTS olt_id INTEGER"))
+    # Tambahkan 2 baris ini:
+    connection.execute(text("ALTER TABLE olt_setting_entries ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()"))
+    connection.execute(text("ALTER TABLE olt_setting_entries ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE"))
 
 # ==============================================================================
 # RBAC ENUM & HELPER
@@ -103,7 +116,6 @@ def format_uptime(ticks):
 # ==============================================================================
 # INISIALISASI DATA AWAL (OLT & ADMIN DEFAULT)
 # ==============================================================================
-# 1. Pastikan seluruh tabel terbuat sebelum query dijalankan
 Base.metadata.create_all(bind=engine)
 
 with SessionLocal() as startup_db:
@@ -114,23 +126,26 @@ with SessionLocal() as startup_db:
         if not existing_seed_olt:
             startup_db.add(OLTConfig(name=name, ip_address=ip, model="ZTE C300/C320"))
     
-    admin_user = startup_db.query(User).filter(User.username == "admin").first()
-    if not admin_user:
+    hari_user = startup_db.query(User).filter(
+        (User.username == "hari") | (User.email == "hari@olt.local")
+    ).first()
+    
+    if not hari_user:
         startup_db.add(User(
             fullname="Hari Pujianto",
             username="hari",
-            email="admin@olt.local",
-            password_hash=hash_password("admin123"),
+            email="hari@olt.local",
+            password_hash=hash_password("hari123"),
             plain_password="hari123",
             role="Super Admin",
             is_active=True,
             is_verified=True
         ))
     else:
-        if admin_user.role in ["admin", "operator", "Viewer"]:
-            admin_user.role = "Super Admin"
-        if not admin_user.plain_password:
-            admin_user.plain_password = "admin123"
+        if hari_user.role != "Super Admin":
+            hari_user.role = "Super Admin"
+        if not hari_user.plain_password:
+            hari_user.plain_password = "hari123"
 
     startup_db.commit()
 
@@ -139,10 +154,7 @@ with SessionLocal() as startup_db:
 # ==============================================================================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Otomatis buat semua tabel jika belum ada di database
     Base.metadata.create_all(bind=engine)
-
-    # 2. Otomatis buat akun Super Admin jika belum terdaftar
     db = SessionLocal()
     try:
         admin_user = db.query(User).filter(User.username == "superadmin").first()
@@ -152,6 +164,7 @@ async def lifespan(app: FastAPI):
                 username="superadmin",
                 email="superadmin@olt.local",
                 password_hash=hash_password("adminpassword123"),
+                plain_password="adminpassword123",
                 role="Super Admin",
                 is_active=True,
                 is_verified=True
@@ -164,7 +177,6 @@ async def lifespan(app: FastAPI):
         db.rollback()
     finally:
         db.close()
-
     yield
 
 # ==============================================================================
@@ -175,13 +187,8 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# 1. Definisikan BASE_DIR terlebih dahulu
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# 2. Baru mount static files menggunakan BASE_DIR
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
-
-# 3. Inisialisasi Jinja2Templates
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 def shared_navigation_context(request: Request):
@@ -199,7 +206,12 @@ def shared_navigation_context(request: Request):
     finally:
         db.close()
     return {
-        "nav_counts": {"dying_gasp": counts.get("DyingGasp", 0), "los": counts.get("LOS", 0)},
+        "nav_counts": {
+            "dying_gasp": counts.get("DyingGasp", 0), 
+            "los": counts.get("LOS", 0),
+            "DyingGasp": counts.get("DyingGasp", 0),
+            "LOS": counts.get("LOS", 0)
+        },
         "account_profile": account_profile
     }
 
@@ -245,43 +257,6 @@ def redirect_signup():
     return RedirectResponse(url="/login")
 
 # ==============================================================================
-# ROUTES: REVEAL USER PASSWORD (SUPER ADMIN VERIFICATION)
-# ==============================================================================
-class RevealPasswordRequest(BaseModel):
-    admin_password: str
-
-@app.post("/api/users/{user_id}/reveal-password")
-def reveal_user_password(
-    user_id: int,
-    payload: RevealPasswordRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(login_required)
-):
-    if current_user.role != "Super Admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Akses Ditolak: Hanya Super Admin yang diizinkan melihat password."
-        )
-
-    if not verify_password(payload.admin_password, current_user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Password Super Admin salah!"
-        )
-
-    target_user = db.query(User).filter(User.id == user_id).first()
-    if not target_user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User tidak ditemukan.")
-
-    # Ambil nilai dari kolom plain_password di database
-    password_val = target_user.plain_password or "(Belum disetel)"
-
-    return {
-        "status": "success",
-        "password": password_val
-    }
-
-# ==============================================================================
 # ROUTES: MY ACCOUNT
 # ==============================================================================
 @app.get("/my-account", response_class=HTMLResponse)
@@ -320,6 +295,7 @@ def api_update_profile(
         if len(new_password) < 6:
             raise HTTPException(status_code=400, detail="Password minimal 6 karakter.")
         user.password_hash = hash_password(new_password)
+        user.plain_password = new_password
 
     db.add(audit_event(request, "Update", f"User {user.username} memperbarui profil"))
     db.commit()
@@ -368,7 +344,7 @@ def api_create_user(payload: AdminUserCreateInput, request: Request, db: Session
         username=payload.username.strip(),
         email=payload.email.strip().lower(),
         password_hash=hash_password(payload.password),
-        plain_password=payload.password,  # Simpan password asli untuk Super Admin
+        plain_password=payload.password,
         role=payload.role,
         is_verified=True,
         is_active=True
@@ -390,7 +366,7 @@ def api_update_user(target_id: int, payload: AdminUserUpdateInput, request: Requ
     if payload.new_password and len(payload.new_password.strip()) >= 6:
         clean_pwd = payload.new_password.strip()
         target.password_hash = hash_password(clean_pwd)
-        target.plain_password = clean_pwd  # Perbarui password asli saat reset
+        target.plain_password = clean_pwd
 
     db.add(audit_event(request, "Update", f"Super Admin {user.username} mengubah data user: {target.username}"))
     db.commit()
@@ -693,7 +669,9 @@ def unregistered_onus_page(request: Request, user: User = Depends(require_roles(
     olts = [{"name": "OLT-C300 Tajur", "ip_address": "192.168.100.20"}, {"name": "OLT-C320 Anggraeni", "ip_address": "10.10.10.5"}]
     return templates.TemplateResponse(request=request, name="unregistered_onus.html", context={"unregistered_onus": [], "olts": olts})
 
-# API Endpoints
+# ==============================================================================
+# PYDANTIC SCHEMAS & INPUT MODELS
+# ==============================================================================
 class ONURequest(BaseModel):
     olt_ip: str
     slot: int
@@ -725,6 +703,12 @@ class SettingEntryInput(BaseModel):
     name: str
     data: dict = Field(default_factory=dict)
     id: int | None = None
+    olt_id: int | None = None  # Ditambahkan untuk isolasi data per OLT
+
+class DirectVlanCreateInput(BaseModel):
+    olt_id: int
+    vlan_id: int
+    vlan_name: str
 
 class CustomizationInput(BaseModel):
     desktop_columns: list[str]
@@ -732,6 +716,9 @@ class CustomizationInput(BaseModel):
     good_threshold: float
     warning_threshold: float
 
+# ==============================================================================
+# API: OLT & TELEMETRY SUMMARY
+# ==============================================================================
 @app.get("/api/olts")
 def api_list_olts(db: Session = Depends(get_db)):
     return [{"id": olt.id, "name": olt.name, "ip_address": olt.ip_address, "model": olt.model, "snmp_version": olt.snmp_version, "snmp_port": olt.snmp_port, "telnet_username": olt.telnet_username, "telnet_port": olt.telnet_port} for olt in db.query(OLTConfig).order_by(OLTConfig.name).all()]
@@ -739,7 +726,14 @@ def api_list_olts(db: Session = Depends(get_db)):
 @app.get("/api/summary")
 def api_summary(db: Session = Depends(get_db)):
     counts = dict(db.query(OnuDevice.status, sql_func.count(OnuDevice.id)).group_by(OnuDevice.status).all())
-    return {"DyingGasp": counts.get("DyingGasp", 0), "LOS": counts.get("LOS", 0)}
+    d_gasp = counts.get("DyingGasp", 0)
+    los_val = counts.get("LOS", 0)
+    return {
+        "DyingGasp": d_gasp, 
+        "LOS": los_val,
+        "dying_gasp": d_gasp,
+        "los": los_val
+    }
 
 @app.post("/api/olts")
 def api_save_olt(payload: OLTInput, request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
@@ -781,13 +775,21 @@ def api_save_olt(payload: OLTInput, request: Request, db: Session = Depends(get_
         raise HTTPException(status_code=500, detail=f"Perubahan OLT gagal disimpan: {str(exc)[:500]}") from exc
     return {"status": "success", "id": olt.id}
 
+# ==============================================================================
+# API: OLT SETTINGS CRUD (DILENGKAPI ISOLASI OLT_ID)
+# ==============================================================================
 @app.get("/api/olt-settings/data")
-def api_list_setting_entries(category: str, db: Session = Depends(get_db)):
+def api_list_setting_entries(category: str, olt_id: int | None = None, db: Session = Depends(get_db)):
     allowed = {"uplink", "pon", "vlan", "onu_type", "vlan_profile", "ip_profile", "speed_profile", "system", "tr069_profile"}
     if category not in allowed:
         raise HTTPException(status_code=400, detail="Kategori pengaturan tidak dikenal")
-    entries = db.query(OLTSettingEntry).filter(OLTSettingEntry.category == category).order_by(OLTSettingEntry.name).all()
-    return [{"id": entry.id, "category": entry.category, "name": entry.name, "data": json.loads(entry.data_json), "updated_at": entry.updated_at.isoformat() if entry.updated_at else None} for entry in entries]
+    
+    query = db.query(OLTSettingEntry).filter(OLTSettingEntry.category == category)
+    if olt_id is not None and hasattr(OLTSettingEntry, "olt_id"):
+        query = query.filter((OLTSettingEntry.olt_id == olt_id) | (OLTSettingEntry.olt_id.is_(None)))
+        
+    entries = query.order_by(OLTSettingEntry.name).all()
+    return [{"id": entry.id, "category": entry.category, "name": entry.name, "olt_id": getattr(entry, "olt_id", None), "data": json.loads(entry.data_json), "updated_at": entry.updated_at.isoformat() if entry.updated_at else None} for entry in entries]
 
 @app.post("/api/olt-settings/data")
 def api_save_setting_entry(payload: SettingEntryInput, request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
@@ -795,23 +797,40 @@ def api_save_setting_entry(payload: SettingEntryInput, request: Request, db: Ses
     category, name = payload.category.strip(), payload.name.strip()
     if category not in allowed or not name or len(name) > 120:
         raise HTTPException(status_code=400, detail="Kategori atau nama pengaturan tidak valid")
+    
     entry = db.query(OLTSettingEntry).filter(OLTSettingEntry.id == payload.id, OLTSettingEntry.category == category).first() if payload.id else None
-    if entry and db.query(OLTSettingEntry).filter(OLTSettingEntry.category == category, OLTSettingEntry.name == name, OLTSettingEntry.id != entry.id).first():
-        raise HTTPException(status_code=409, detail="Nama profile sudah digunakan")
+    
+    dup_query = db.query(OLTSettingEntry).filter(OLTSettingEntry.category == category, OLTSettingEntry.name == name)
+    if hasattr(OLTSettingEntry, "olt_id") and payload.olt_id:
+        dup_query = dup_query.filter(OLTSettingEntry.olt_id == payload.olt_id)
+    if entry:
+        dup_query = dup_query.filter(OLTSettingEntry.id != entry.id)
+    if dup_query.first():
+        raise HTTPException(status_code=409, detail="Nama profile sudah digunakan pada OLT ini")
+
     if not entry:
-        entry = db.query(OLTSettingEntry).filter(OLTSettingEntry.category == category, OLTSettingEntry.name == name).first()
+        match_query = db.query(OLTSettingEntry).filter(OLTSettingEntry.category == category, OLTSettingEntry.name == name)
+        if hasattr(OLTSettingEntry, "olt_id") and payload.olt_id:
+            match_query = match_query.filter(OLTSettingEntry.olt_id == payload.olt_id)
+        entry = match_query.first()
+
     if not entry:
         entry = OLTSettingEntry(category=category, name=name)
+        if hasattr(entry, "olt_id"):
+            entry.olt_id = payload.olt_id
         db.add(entry)
         event_type = "Create"
     else:
         event_type = "Update"
+        if hasattr(entry, "olt_id") and payload.olt_id:
+            entry.olt_id = payload.olt_id
+
     entry.name = name
     setting_data = dict(payload.data)
     if entry.id and category == "tr069_profile" and not setting_data.get("password"):
         setting_data["password"] = json.loads(entry.data_json).get("password", "")
     entry.data_json = json.dumps(setting_data, ensure_ascii=False)
-    db.add(audit_event(request, event_type, f"{event_type} konfigurasi lokal {category}: {name}"))
+    db.add(audit_event(request, event_type, f"{event_type} konfigurasi {category}: {name}"))
     db.commit()
     return {"status": "success", "id": entry.id}
 
@@ -820,11 +839,118 @@ def api_delete_setting_entry(entry_id: int, request: Request, db: Session = Depe
     entry = db.query(OLTSettingEntry).filter(OLTSettingEntry.id == entry_id).first()
     if not entry:
         raise HTTPException(status_code=404, detail="Konfigurasi tidak ditemukan")
-    db.add(audit_event(request, "Delete", f"Menghapus konfigurasi lokal {entry.category}: {entry.name}"))
+    db.add(audit_event(request, "Delete", f"Menghapus konfigurasi {entry.category}: {entry.name}"))
     db.delete(entry)
     db.commit()
     return {"status": "success"}
 
+# ==============================================================================
+# API: DIRECT HARDWARE CLI CONFIGURATION ENGINE (VLAN CREATION LANGSUNG KE OLT)
+# ==============================================================================
+@app.post("/api/v1/olt/create-vlan")
+def api_create_vlan_direct(
+    payload: DirectVlanCreateInput,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))
+):
+    """
+    Mengeksekusi pembuatan VLAN langsung ke hardware OLT fisik via CLI ZXROS
+    dan mencatatnya ke repository database aplikasi.
+    Mendukung mode mock (simulasi) jika hardware belum terhubung.
+    """
+    if not 1 <= payload.vlan_id <= 4094:
+        raise HTTPException(status_code=400, detail="VLAN ID harus berada pada rentang 1-4094.")
+    
+    clean_vlan_name = re.sub(r"[^A-Za-z0-9_-]", "", payload.vlan_name.strip())
+    if not clean_vlan_name:
+        clean_vlan_name = f"VLAN_{payload.vlan_id}"
+
+    olt = db.query(OLTConfig).filter(OLTConfig.id == payload.olt_id).first()
+    if not olt:
+        raise HTTPException(status_code=404, detail="Perangkat OLT tidak ditemukan.")
+
+    # --------------------------------------------------------------------------
+    # MODE SIMULASI (MOCK OLT) KETIKA HARDWARE BELUM TERPASANG
+    # --------------------------------------------------------------------------
+    is_mock = os.getenv("MOCK_OLT", "false").lower() in ("true", "1", "yes")
+
+    if not is_mock:
+        # Jalur Real Hardware (Hanya dijalankan jika MOCK_OLT=false)
+        password = get_telnet_password(olt)
+        if not password:
+            raise HTTPException(status_code=503, detail=f"Kredensial OLT {olt.name} belum disetel di OLT Management.")
+
+        # Susun CLI command ZXROS untuk OLT ZTE C300/C320
+        commands = [
+            f"vlan {payload.vlan_id}",
+            f"name {clean_vlan_name}",
+            "exit",
+            "write"
+        ]
+
+        # Eksekusi via netmiko driver
+        from netmiko import ConnectHandler
+        device_params = {
+            "device_type": "zte_zxros",
+            "host": olt.ip_address,
+            "username": olt.telnet_username,
+            "password": password,
+            "port": olt.telnet_port,
+            "timeout": 10
+        }
+
+        try:
+            with ConnectHandler(**device_params) as net_connect:
+                net_connect.enable()
+                output = net_connect.send_config_set(commands)
+                if re.search(r"(% Error|% Ambiguous|% Incomplete|% Unknown)", output, re.IGNORECASE):
+                    raise HTTPException(status_code=502, detail=f"OLT menolak konfigurasi: {output}")
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Gagal menghubungkan ke OLT ({olt.ip_address}): {str(exc)[:500]}")
+
+    # --------------------------------------------------------------------------
+    # CATAT KE REPOSITORY DATABASE APLIKASI
+    # --------------------------------------------------------------------------
+    entry = db.query(OLTSettingEntry).filter(
+        OLTSettingEntry.category == "vlan",
+        OLTSettingEntry.name == str(payload.vlan_id)
+    ).first()
+    
+    if not entry:
+        entry = OLTSettingEntry(
+            category="vlan",
+            name=str(payload.vlan_id),
+            data_json=json.dumps({"vlan_name": clean_vlan_name})
+        )
+        if hasattr(entry, "olt_id"):
+            entry.olt_id = olt.id
+        db.add(entry)
+    else:
+        entry.data_json = json.dumps({"vlan_name": clean_vlan_name})
+        if hasattr(entry, "olt_id"):
+            entry.olt_id = olt.id
+
+    audit_msg = (
+        f"[SIMULASI] Buat VLAN {payload.vlan_id} ({clean_vlan_name}) pada {olt.name}"
+        if is_mock
+        else f"Push CLI VLAN {payload.vlan_id} ({clean_vlan_name}) ke OLT {olt.name}"
+    )
+    db.add(audit_event(request, "Create", audit_msg))
+    db.commit()
+
+    return {
+        "status": "success",
+        "message": f"[{'SIMULASI' if is_mock else 'HARDWARE'}] VLAN {payload.vlan_id} ({clean_vlan_name}) berhasil dibuat untuk {olt.name}!",
+        "vlan_id": payload.vlan_id,
+        "vlan_name": clean_vlan_name
+    }
+
+# ==============================================================================
+# API: CUSTOMIZATION & DISPLAY
+# ==============================================================================
 @app.post("/api/customization")
 def api_save_customization(payload: CustomizationInput, request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN]))):
     allowed = {key for key, _ in CUSTOMIZATION_COLUMNS}
@@ -856,6 +982,9 @@ def api_save_customization(payload: CustomizationInput, request: Request, db: Se
         raise HTTPException(status_code=500, detail=f"Customization gagal disimpan: {str(exc)[:400]}") from exc
     return {"status": "success", "persisted": True, "id": entry.id}
 
+# ==============================================================================
+# API: BACKUP REPOSITORY
+# ==============================================================================
 def _build_olt_backup(olt: OLTConfig, db: Session):
     settings = db.query(OLTSettingEntry).order_by(OLTSettingEntry.category, OLTSettingEntry.name).all()
     onus = db.query(OnuDevice).filter(OnuDevice.olt_name == olt.name).order_by(OnuDevice.gpon_port).all()
@@ -936,6 +1065,9 @@ def download_olt_backup(backup_id: int, db: Session = Depends(get_db), user: Use
         raise HTTPException(status_code=404, detail="File backup tidak ditemukan.")
     return Response(content=backup.content_json, media_type="application/json; charset=utf-8", headers={"Content-Disposition": f'attachment; filename="{backup.filename}"'})
 
+# ==============================================================================
+# API: PROVISIONING & REGISTRASI ONU
+# ==============================================================================
 @app.post("/api/v1/register-onu")
 def register_onu(req: ONURequest, request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
     existing = db.query(OnuDevice).filter(OnuDevice.sn_mac == req.sn_onu.strip().upper()).first()
@@ -976,8 +1108,6 @@ def provision_onu(req: ONURequest, request: Request, db: Session = Depends(get_d
     if db.query(OnuDevice).filter(OnuDevice.olt_name == olt.name, OnuDevice.gpon_port == target_port).first():
         raise HTTPException(status_code=409, detail=f"ONU ID {req.onu_id} sudah tercatat pada port GPON 1/{req.slot}/{req.port}.")
 
-    # Values are inserted into multiline CLI commands; reject control characters
-    # and command separators to prevent a form value from adding CLI commands.
     cli_values = {
         "Serial Number": (req.sn_onu.strip().upper(), r"[A-Z0-9]{1,16}"),
         "Nama pelanggan": (req.nama_pelanggan.strip(), r"[A-Za-z0-9][A-Za-z0-9 ._()\-]{0,149}"),

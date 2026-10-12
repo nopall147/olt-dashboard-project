@@ -1,221 +1,282 @@
 {% extends "base.html" %}
 {% block title %}User Management - OLT Monitoring System{% endblock %}
+
 {% block content %}
-<header class="px-1 flex flex-wrap items-center justify-between gap-4">
-    <div>
-        <h1 class="text-2xl font-medium text-blue-950">User Management</h1>
-        <p class="mt-1 text-sm text-slate-500"><a href="/" class="hover:text-blue-600">Home</a><span class="px-2">/</span>User Management</p>
-    </div>
-    <button type="button" onclick="openAddUserModal()" class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition">
-        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        <span>Tambah User</span>
-    </button>
-</header>
+<div class="space-y-6">
 
-<section class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm md:p-6 mt-4">
-    <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs border-collapse">
-            <thead>
-                <tr class="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                    <th class="py-3 px-3 w-12 text-center">#</th>
-                    <th class="py-3 px-4">Nama Lengkap</th>
-                    <th class="py-3 px-4">Username</th>
-                    <th class="py-3 px-4">Password</th>
-                    <th class="py-3 px-4">Email</th>
-                    <th class="py-3 px-4">Role</th>
-                    <th class="py-3 px-4 text-center">Status Akun</th>
-                    <th class="py-3 px-4 text-center">Aksi</th>
-                </tr>
-            </thead>
-<tbody id="userTableRows" class="divide-y divide-slate-100">
-    {% for u in users %}
-    <tr class="hover:bg-slate-50/70">
-        <td class="py-3 px-3 text-center text-slate-400 font-medium">{{ loop.index }}</td>
-        <td class="py-3 px-4 font-bold text-slate-800">{{ u.fullname }}</td>
-        <td class="py-3 px-4 font-mono text-slate-600">{{ u.username }}</td>
-
-        <!-- PASSWORD (DI SAMPING USERNAME) -->
-        <td class="py-3 px-4">
-            <div class="flex items-center gap-2">
-                <span id="pwd-display-{{ u.id }}" class="font-mono text-slate-400 tracking-wider">••••••••</span>
-                <button type="button" 
-                    data-id="{{ u.id }}" 
-                    data-username="{{ u.username }}" 
-                    onclick="triggerRevealPassword(this)" 
-                    class="p-1 text-slate-400 hover:text-blue-600 transition" 
-                    title="Lihat / Sembunyikan Password">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                </button>
+    <!-- ========================================================= -->
+    <!-- 1. TOP HEADER & ACCESS REGISTRY HUD -->
+    <!-- ========================================================= -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-[#162a45] gap-4">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2.5">
+                <span class="inline-block h-2 w-2 rounded-full bg-[#00e5ff] shadow-[0_0_8px_#00e5ff]"></span>
+                <h1 class="text-base font-bold tracking-wider text-slate-100 uppercase neon-glow-cyan font-mono">OPERATOR ACCESS REGISTRY</h1>
             </div>
-        </td>
+            <p class="text-[10px] text-slate-500 font-mono tracking-widest uppercase">RBAC PRIVILEGES & SECURITY CREDENTIAL AUDIT</p>
+        </div>
 
-        <!-- EMAIL -->
-        <td class="py-3 px-4 text-slate-500">{{ u.email }}</td>
-
-        <!-- ROLE -->
-        <td class="py-3 px-4">
-            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider {{ 'bg-purple-100 text-purple-700' if u.role == 'Super Admin' else ('bg-sky-100 text-sky-700' if u.role == 'NOC' else 'bg-slate-100 text-slate-600') }}">
-                {{ u.role }}
-            </span>
-        </td>
-
-        <!-- STATUS AKUN -->
-        <td class="py-3 px-4 text-center">
-            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold {{ 'bg-emerald-50 text-emerald-700 border border-emerald-200' if u.is_active else 'bg-rose-50 text-rose-700 border border-rose-200' }}">
-                {{ 'Aktif' if u.is_active else 'Nonaktif' }}
-            </span>
-        </td>
-
-        <!-- AKSI -->
-        <td class="py-3 px-4 text-center">
-            <div class="flex items-center justify-center gap-2">
-                <button type="button" 
-                    data-id="{{ u.id }}" 
-                    data-fullname="{{ u.fullname }}" 
-                    data-role="{{ u.role }}" 
-                    data-active="{{ 'true' if u.is_active else 'false' }}" 
-                    onclick="handleEditClick(this)" 
-                    class="p-1 text-blue-600 hover:text-blue-800 transition" 
-                    title="Edit">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                </button>
-                {% if u.id != current_user.id %}
-                <button type="button" 
-                    data-id="{{ u.id }}" 
-                    data-username="{{ u.username }}" 
-                    onclick="handleDeleteClick(this)" 
-                    class="p-1 text-slate-400 hover:text-rose-600 transition" 
-                    title="Hapus">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                </button>
-                {% endif %}
+        <div class="flex items-center gap-3">
+            <div class="px-3 py-1.5 rounded-lg bg-[#08111e] border border-[#162a45] text-[11px] font-mono text-slate-400">
+                TOTAL: <strong class="text-[#00e5ff]">{{ users|length }} ACCOUNTS</strong>
             </div>
-        </td>
-    </tr>
-    {% endfor %}
-</tbody>
-        </table>
+            <button type="button" onclick="openAddUserModal()" class="inline-flex items-center gap-2 rounded-lg bg-[#00e5ff] hover:bg-[#00c8e0] px-4 py-2 text-xs font-bold uppercase tracking-wider text-black shadow-[0_0_12px_rgba(0,229,255,0.35)] transition cursor-pointer">
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>+ ADD OPERATOR</span>
+            </button>
+        </div>
     </div>
-</section>
 
-<!-- MODAL TAMBAH USER -->
-<dialog id="addUserModal" class="w-full max-w-md rounded-2xl p-0 shadow-2xl backdrop:bg-slate-900/50">
-    <form id="addUserForm" class="p-6 space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 class="text-base font-bold text-slate-900">Tambah User Baru</h3>
-            <button type="button" onclick="addUserModal.close()" class="text-slate-400 hover:text-slate-600">
+    <!-- ========================================================= -->
+    <!-- 2. OPERATOR REGISTRY TABLE (CYBER CONSOLE MATRIX) -->
+    <!-- ========================================================= -->
+    <section class="bg-[#08111e] rounded-xl border border-[#162a45] overflow-hidden shadow-xl font-mono">
+        <!-- Table Control Strip -->
+        <div class="p-3.5 bg-[#091322] border-b border-[#162a45] flex items-center justify-between text-[10px] text-slate-400">
+            <span class="flex items-center gap-2 font-bold uppercase tracking-wider text-slate-300">
+                <span class="text-[#00e5ff]">■</span> AUTHORIZED USERS DIRECTORY
+            </span>
+            <span class="text-slate-500">ENCRYPTED IDENTITY ROSTER</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="bg-[#060c17]/80 border-b border-[#162a45] text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                        <th class="py-3 px-3 w-12 text-center">SLOT</th>
+                        <th class="py-3 px-4">FULL NAME</th>
+                        <th class="py-3 px-4">USERNAME</th>
+                        <th class="py-3 px-4">CREDENTIAL</th>
+                        <th class="py-3 px-4">EMAIL ADDRESS</th>
+                        <th class="py-3 px-4">ACCESS TIER</th>
+                        <th class="py-3 px-4 text-center">STATUS</th>
+                        <th class="py-3 px-4 text-center">ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableRows" class="divide-y divide-[#162a45]/60 bg-[#08111e]">
+                    {% for u in users %}
+                    <tr class="hover:bg-[#0d1d33]/50 transition duration-150">
+                        <!-- SLOT / INDEX -->
+                        <td class="py-3.5 px-3 text-center text-slate-500 font-mono text-[11px]">
+                            {{ "%02d" % loop.index }}
+                        </td>
+
+                        <!-- FULL NAME -->
+                        <td class="py-3.5 px-4 font-bold text-slate-200">
+                            {{ u.fullname }}
+                        </td>
+
+                        <!-- USERNAME -->
+                        <td class="py-3.5 px-4 font-mono text-[#00e5ff]">
+                            {{ u.username }}
+                        </td>
+
+                        <!-- PASSWORD (REVEAL CONTROLLER) -->
+                        <td class="py-3.5 px-4">
+                            <div class="inline-flex items-center gap-2 bg-[#060c17] px-2.5 py-1 rounded-md border border-[#162a45]">
+                                <span id="pwd-display-{{ u.id }}" class="font-mono text-slate-500 tracking-widest text-[11px]">••••••••</span>
+                                <button type="button" 
+                                    data-id="{{ u.id }}" 
+                                    data-username="{{ u.username }}" 
+                                    onclick="triggerRevealPassword(this)" 
+                                    class="p-0.5 text-slate-400 hover:text-[#00e5ff] transition cursor-pointer" 
+                                    title="Reveal / Obscure Password">
+                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+
+                        <!-- EMAIL -->
+                        <td class="py-3.5 px-4 text-slate-400 font-mono text-[11px]">
+                            {{ u.email }}
+                        </td>
+
+                        <!-- ROLE -->
+                        <td class="py-3.5 px-4">
+                            <span class="inline-flex items-center rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider font-mono {{ 'bg-purple-500/10 text-purple-400 border border-purple-500/30 shadow-[0_0_8px_rgba(168,85,247,0.15)]' if u.role == 'Super Admin' else ('bg-[#00e5ff]/10 text-[#00e5ff] border border-[#00e5ff]/30 shadow-[0_0_8px_rgba(0,229,255,0.15)]' if u.role == 'NOC' else 'bg-slate-800 text-slate-400 border border-slate-700') }}">
+                                {{ u.role }}
+                            </span>
+                        </td>
+
+                        <!-- STATUS -->
+                        <td class="py-3.5 px-4 text-center">
+                            <span class="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider font-mono {{ 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' if u.is_active else 'bg-[#ff3366]/10 text-[#ff3366] border border-[#ff3366]/30' }}">
+                                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-emerald-400 shadow-[0_0_6px_#10b981]' if u.is_active else 'bg-[#ff3366]' }}"></span>
+                                {{ 'ACTIVE' if u.is_active else 'LOCKED' }}
+                            </span>
+                        </td>
+
+                        <!-- AKSI -->
+                        <td class="py-3.5 px-4 text-center">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <button type="button" 
+                                    data-id="{{ u.id }}" 
+                                    data-fullname="{{ u.fullname }}" 
+                                    data-role="{{ u.role }}" 
+                                    data-active="{{ 'true' if u.is_active else 'false' }}" 
+                                    onclick="handleEditClick(this)" 
+                                    class="p-1.5 rounded-md bg-[#060c17] border border-[#162a45] text-[#00e5ff] hover:bg-[#00e5ff]/10 hover:border-[#00e5ff]/40 transition cursor-pointer" 
+                                    title="Edit Operator Configuration">
+                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                </button>
+                                {% if u.id != current_user.id %}
+                                <button type="button" 
+                                    data-id="{{ u.id }}" 
+                                    data-username="{{ u.username }}" 
+                                    onclick="handleDeleteClick(this)" 
+                                    class="p-1.5 rounded-md bg-[#060c17] border border-[#162a45] text-slate-500 hover:text-[#ff3366] hover:bg-[#ff3366]/10 hover:border-[#ff3366]/40 transition cursor-pointer" 
+                                    title="Purge Operator Record">
+                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</div>
+
+<!-- ========================================================= -->
+<!-- 3. CYBER MODAL: TAMBAH USER -->
+<!-- ========================================================= -->
+<dialog id="addUserModal" class="w-full max-w-md rounded-2xl p-0 shadow-[0_0_50px_rgba(0,0,0,0.9)] bg-[#091322] border border-[#162a45] backdrop:bg-black/75">
+    <form id="addUserForm" class="p-6 space-y-4 font-mono text-slate-200">
+        <div class="flex items-center justify-between border-b border-[#162a45] pb-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-[#00e5ff] flex items-center gap-2">
+                <span class="inline-block w-2 h-2 rounded-full bg-[#00e5ff] shadow-[0_0_6px_#00e5ff]"></span>
+                PROVISION NEW OPERATOR
+            </h3>
+            <button type="button" onclick="addUserModal.close()" class="text-slate-400 hover:text-white transition">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
-        <div class="space-y-3 text-xs font-medium text-slate-700">
+        <div class="space-y-3 text-xs font-medium">
             <div>
-                <label class="block text-slate-600 mb-1">Nama Lengkap</label>
-                <input id="addFullName" required placeholder="Contoh: Budi Santoso" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+                <label class="block text-slate-400 mb-1 text-[10px] uppercase font-bold tracking-wider">FULL NAME</label>
+                <input id="addFullName" required placeholder="e.g. Budi Santoso" class="w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3.5 py-2 text-slate-200 focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff] outline-none transition">
             </div>
             <div>
-                <label class="block text-slate-600 mb-1">Username</label>
-                <input id="addUsername" required placeholder="budi_noc" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+                <label class="block text-slate-400 mb-1 text-[10px] uppercase font-bold tracking-wider">SYSTEM USERNAME</label>
+                <input id="addUsername" required placeholder="e.g. budi_noc" class="w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3.5 py-2 text-slate-200 focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff] outline-none transition">
             </div>
             <div>
-                <label class="block text-slate-600 mb-1">Email</label>
-                <input id="addEmail" type="email" required placeholder="budi@example.com" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+                <label class="block text-slate-400 mb-1 text-[10px] uppercase font-bold tracking-wider">EMAIL ADDRESS</label>
+                <input id="addEmail" type="email" required placeholder="budi@example.com" class="w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3.5 py-2 text-slate-200 focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff] outline-none transition">
             </div>
             <div>
-                <label class="block text-slate-600 mb-1">Password</label>
-                <input id="addPassword" type="password" required minlength="6" placeholder="Minimal 6 karakter" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+                <label class="block text-slate-400 mb-1 text-[10px] uppercase font-bold tracking-wider">ACCESS PASSWORD</label>
+                <input id="addPassword" type="password" required minlength="6" placeholder="Min. 6 characters" class="w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3.5 py-2 text-slate-200 focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff] outline-none transition placeholder:text-slate-600">
             </div>
             <div>
-                <label class="block text-slate-600 mb-1">Role / Peran</label>
-                <select id="addRole" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+                <label class="block text-slate-400 mb-1 text-[10px] uppercase font-bold tracking-wider">PRIVILEGE TIER (ROLE)</label>
+                <select id="addRole" class="w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3.5 py-2 text-slate-200 focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff] outline-none transition">
                     <option value="NOC">NOC (Read/Write)</option>
                     <option value="Viewer">Viewer (Read-only)</option>
-                    <option value="Super Admin">Super Admin (Full)</option>
+                    <option value="Super Admin">Super Admin (Full Access)</option>
                 </select>
             </div>
-            <p id="addUserError" class="hidden text-rose-600 text-xs"></p>
+            <p id="addUserError" class="hidden text-[#ff3366] text-xs font-mono p-2.5 rounded-lg bg-[#ff3366]/10 border border-[#ff3366]/30"></p>
         </div>
-        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
-            <button type="button" onclick="addUserModal.close()" class="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
-            <button type="submit" class="rounded-lg bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700">Simpan User</button>
+        <div class="flex justify-end gap-2 pt-3 border-t border-[#162a45]">
+            <button type="button" onclick="addUserModal.close()" class="rounded-lg border border-[#162a45] px-4 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-[#0d1d33] transition cursor-pointer">CANCEL</button>
+            <button type="submit" class="rounded-lg bg-[#00e5ff] px-5 py-2 text-xs font-bold uppercase tracking-wider text-black shadow-[0_0_12px_rgba(0,229,255,0.35)] hover:bg-[#00c8e0] transition cursor-pointer">PROVISION USER</button>
         </div>
     </form>
 </dialog>
 
-<!-- MODAL EDIT USER -->
-<dialog id="editUserModal" class="w-full max-w-md rounded-2xl p-0 shadow-2xl backdrop:bg-slate-900/50">
-    <form id="editUserForm" class="p-6 space-y-4">
+<!-- ========================================================= -->
+<!-- 4. CYBER MODAL: EDIT USER -->
+<!-- ========================================================= -->
+<dialog id="editUserModal" class="w-full max-w-md rounded-2xl p-0 shadow-[0_0_50px_rgba(0,0,0,0.9)] bg-[#091322] border border-[#162a45] backdrop:bg-black/75">
+    <form id="editUserForm" class="p-6 space-y-4 font-mono text-slate-200">
         <input type="hidden" id="editUserId">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 class="text-base font-bold text-slate-900">Edit User</h3>
-            <button type="button" onclick="editUserModal.close()" class="text-slate-400 hover:text-slate-600">
+        <div class="flex items-center justify-between border-b border-[#162a45] pb-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-[#00e5ff] flex items-center gap-2">
+                <span class="inline-block w-2 h-2 rounded-full bg-[#00e5ff] shadow-[0_0_6px_#00e5ff]"></span>
+                MODIFY OPERATOR ATTRIBUTES
+            </h3>
+            <button type="button" onclick="editUserModal.close()" class="text-slate-400 hover:text-white transition">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
-        <div class="space-y-3 text-xs font-medium text-slate-700">
+        <div class="space-y-3 text-xs font-medium">
             <div>
-                <label class="block text-slate-600 mb-1">Nama Lengkap</label>
-                <input id="editFullName" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+                <label class="block text-slate-400 mb-1 text-[10px] uppercase font-bold tracking-wider">FULL NAME</label>
+                <input id="editFullName" required class="w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3.5 py-2 text-slate-200 focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff] outline-none transition">
             </div>
             <div>
-                <label class="block text-slate-600 mb-1">Role</label>
-                <select id="editRole" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+                <label class="block text-slate-400 mb-1 text-[10px] uppercase font-bold tracking-wider">ASSIGNED ROLE</label>
+                <select id="editRole" class="w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3.5 py-2 text-slate-200 focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff] outline-none transition">
                     <option value="NOC">NOC (Read/Write)</option>
                     <option value="Viewer">Viewer (Read-only)</option>
-                    <option value="Super Admin">Super Admin (Full)</option>
+                    <option value="Super Admin">Super Admin (Full Access)</option>
                 </select>
             </div>
             <div>
-                <label class="flex items-center gap-2 cursor-pointer mt-2">
-                    <input type="checkbox" id="editIsActive" class="rounded text-blue-600">
-                    <span>Akun Aktif (Bisa Login)</span>
+                <label class="flex items-center gap-2.5 cursor-pointer mt-2 text-slate-300">
+                    <input type="checkbox" id="editIsActive" class="rounded accent-[#00e5ff] h-4 w-4">
+                    <span class="text-[11px] font-mono">ACCOUNT ACTIVE (PERMIT LOGIN)</span>
                 </label>
             </div>
             <div>
-                <label class="block text-slate-600 mb-1 mt-2">Reset Password (Opsional)</label>
-                <input id="editPassword" type="password" placeholder="Kosongkan jika tidak ingin ganti" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-slate-800 focus:outline-blue-500">
+                <label class="block text-slate-400 mb-1 mt-2 text-[10px] uppercase font-bold tracking-wider">RESET PASSWORD (OPTIONAL)</label>
+                <input id="editPassword" type="password" placeholder="Kosongkan jika tidak ingin ganti" class="w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3.5 py-2 text-slate-200 focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff] outline-none transition placeholder:text-slate-600">
             </div>
-            <p id="editUserError" class="hidden text-rose-600 text-xs"></p>
+            <p id="editUserError" class="hidden text-[#ff3366] text-xs font-mono p-2.5 rounded-lg bg-[#ff3366]/10 border border-[#ff3366]/30"></p>
         </div>
-        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
-            <button type="button" onclick="editUserModal.close()" class="rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
-            <button type="submit" class="rounded-lg bg-blue-600 px-5 py-2 font-semibold text-white hover:bg-blue-700">Simpan Perubahan</button>
+        <div class="flex justify-end gap-2 pt-3 border-t border-[#162a45]">
+            <button type="button" onclick="editUserModal.close()" class="rounded-lg border border-[#162a45] px-4 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-[#0d1d33] transition cursor-pointer">CANCEL</button>
+            <button type="submit" class="rounded-lg bg-[#00e5ff] px-5 py-2 text-xs font-bold uppercase tracking-wider text-black shadow-[0_0_12px_rgba(0,229,255,0.35)] hover:bg-[#00c8e0] transition cursor-pointer">SAVE CHANGES</button>
         </div>
     </form>
 </dialog>
 
-<!-- MODAL VERIFIKASI SUPER ADMIN -->
-<dialog id="verifyAdminModal" class="w-full max-w-sm rounded-2xl p-0 shadow-2xl backdrop:bg-slate-900/50">
-    <form id="verifyAdminForm" class="p-6 space-y-4">
+<!-- ========================================================= -->
+<!-- 5. CYBER MODAL: VERIFIKASI SUPER ADMIN -->
+<!-- ========================================================= -->
+<dialog id="verifyAdminModal" class="w-full max-w-sm rounded-2xl p-0 shadow-[0_0_50px_rgba(0,0,0,0.9)] bg-[#091322] border border-[#162a45] backdrop:bg-black/75">
+    <form id="verifyAdminForm" class="p-6 space-y-4 font-mono text-slate-200">
         <input type="hidden" id="targetUserId">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 class="text-sm font-bold text-slate-900">Verifikasi Super Admin</h3>
-            <button type="button" onclick="verifyAdminModal.close()" class="text-slate-400 hover:text-slate-600">✕</button>
+        <div class="flex items-center justify-between border-b border-[#162a45] pb-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                <span>🛡️</span> SUPER ADMIN VERIFICATION
+            </h3>
+            <button type="button" onclick="verifyAdminModal.close()" class="text-slate-400 hover:text-white transition">✕</button>
         </div>
         <div>
-            <p class="text-xs text-slate-500 mb-2">Masukkan password akun Anda untuk melihat password <b id="targetUsernameText"></b>:</p>
-            <input id="adminConfirmPassword" type="password" required placeholder="Password Super Admin Anda" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-800 focus:outline-blue-500">
-            <p id="verifyAdminError" class="hidden text-rose-600 text-xs mt-1.5"></p>
+            <p class="text-[11px] text-slate-400 mb-2 leading-relaxed">
+                Otorisasi diperlukan untuk mendekripsi sandi target: <b id="targetUsernameText" class="text-[#00e5ff]"></b>
+            </p>
+            <input id="adminConfirmPassword" type="password" required placeholder="Password Super Admin Anda" class="w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3.5 py-2 text-xs text-slate-200 focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff] outline-none transition placeholder:text-slate-600">
+            <p id="verifyAdminError" class="hidden text-[#ff3366] text-xs mt-2 font-mono p-2 rounded bg-[#ff3366]/10 border border-[#ff3366]/30"></p>
         </div>
-        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
-            <button type="button" onclick="verifyAdminModal.close()" class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600">Batal</button>
-            <button type="submit" class="rounded-lg bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">Tampilkan</button>
+        <div class="flex justify-end gap-2 pt-2 border-t border-[#162a45]">
+            <button type="button" onclick="verifyAdminModal.close()" class="rounded-lg border border-[#162a45] px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-[#0d1d33] transition cursor-pointer">CANCEL</button>
+            <button type="submit" class="rounded-lg bg-[#00e5ff] px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-black shadow-[0_0_12px_rgba(0,229,255,0.35)] hover:bg-[#00c8e0] transition cursor-pointer">AUTHORIZE</button>
         </div>
     </form>
 </dialog>
 
+<!-- ========================================================= -->
+<!-- 6. LOGIKA JAVASCRIPT GLOBAL -->
+<!-- ========================================================= -->
 <script>
 const addUserModal = document.getElementById('addUserModal');
 const editUserModal = document.getElementById('editUserModal');
@@ -326,7 +387,7 @@ function triggerRevealPassword(btn) {
     // Jika password sedang terlihat, klik lagi untuk menutup / hide kembali
     if (pwdSpan && pwdSpan.textContent !== '••••••••') {
         pwdSpan.textContent = '••••••••';
-        pwdSpan.className = 'font-mono text-slate-400 tracking-wider';
+        pwdSpan.className = 'font-mono text-slate-500 tracking-widest text-[11px]';
         return;
     }
 
@@ -356,7 +417,7 @@ document.getElementById('verifyAdminForm').addEventListener('submit', async (e) 
         const pwdSpan = document.getElementById(`pwd-display-${userId}`);
         if (pwdSpan) {
             pwdSpan.textContent = data.password;
-            pwdSpan.className = 'font-mono text-blue-700 font-bold tracking-normal';
+            pwdSpan.className = 'font-mono text-[#00e5ff] font-bold tracking-normal text-xs';
         }
 
         verifyAdminModal.close();

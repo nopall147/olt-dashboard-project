@@ -1,7 +1,14 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Float, BigInteger, ForeignKey
+from datetime import datetime
+from sqlalchemy import (
+    Column, Integer, String, Boolean, DateTime, Text, 
+    Float, BigInteger, ForeignKey
+)
 from sqlalchemy.sql import func
 from app.database import Base
-from datetime import datetime
+
+# Alias agar pemanggilan 'func' maupun 'sql_func' keduanya valid
+sql_func = func
+
 
 class User(Base):
     __tablename__ = "users"
@@ -17,6 +24,7 @@ class User(Base):
     is_verified = Column(Boolean, default=False)
     image = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
 
 class OnuDevice(Base):
     __tablename__ = "onu_devices"
@@ -34,6 +42,7 @@ class OnuDevice(Base):
     actual_type = Column(String(50), default="GPON")     # Tipe ONU (Misal: HG6145D2 / F660)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+
 class ActivityEvent(Base):
     __tablename__ = "activity_events"
 
@@ -44,6 +53,7 @@ class ActivityEvent(Base):
     client_ip = Column(String(64), nullable=True)
     user_agent = Column(String(255), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
 
 class OLTConfig(Base):
     __tablename__ = "olt_configs"
@@ -65,6 +75,7 @@ class OLTConfig(Base):
     uptime_ticks = Column(BigInteger, nullable=True)
     last_sync = Column(DateTime(timezone=True), nullable=True)
 
+
 class TrafficSample(Base):
     __tablename__ = "traffic_samples"
 
@@ -74,14 +85,18 @@ class TrafficSample(Base):
     upload_bps = Column(Float, nullable=False)
     sampled_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
+
 class OLTSettingEntry(Base):
     __tablename__ = "olt_setting_entries"
 
     id = Column(Integer, primary_key=True, index=True)
-    category = Column(String(40), nullable=False, index=True)
+    olt_id = Column(Integer, nullable=True, index=True)
+    category = Column(String(50), nullable=False, index=True)
     name = Column(String(120), nullable=False)
-    data_json = Column(Text, nullable=False, default="{}")
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    data_json = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=sql_func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=sql_func.now())
+
 
 class OLTConfigBackup(Base):
     __tablename__ = "olt_config_backups"

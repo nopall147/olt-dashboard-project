@@ -4,216 +4,509 @@
 
 {% block content %}
 <style>
-    .iptv-port-button { display: flex; flex-direction: column; align-items: center; gap: .25rem; border: 0; padding: 0; background: transparent; color: #94a3b8; cursor: pointer; }
+    .iptv-port-button { display: flex; flex-direction: column; align-items: center; gap: .25rem; border: 0; padding: 0; background: transparent; color: #64748b; cursor: pointer; }
     .iptv-port-button:focus { outline: none; }
-    .iptv-port-icon { border-color: #cbd5e1; color: #94a3b8; background: #fff; }
-    .iptv-port-button.is-selected .iptv-port-icon { border-color: #15803d; color: #15803d; background: #f0fdf4; }
-    .iptv-port-button.is-selected .iptv-port-label { color: #15803d; }
-    .service-switch { appearance: none; position: relative; width: 2.75rem; height: 1.25rem; flex: none; border-radius: 9999px; background: #aeb8c4; cursor: pointer; transition: background .15s ease; }
-    .service-switch::before { content: ""; position: absolute; top: .125rem; left: .125rem; width: 1rem; height: 1rem; border-radius: 9999px; background: #fff; transition: transform .15s ease; }
-    .service-switch::after { content: "OFF"; position: absolute; right: .2rem; top: .25rem; color: #fff; font-size: .48rem; font-weight: 700; line-height: .75rem; }
-    .service-switch:checked { background: #0879c9; }
-    .service-switch:checked::before { transform: translateX(1.5rem); }
-    .service-switch:checked::after { content: "ON"; left: .25rem; right: auto; }
+    .iptv-port-icon { border-color: #162a45; color: #64748b; background: #060c17; }
+    .iptv-port-button.is-selected .iptv-port-icon { border-color: #00e5ff; color: #00e5ff; background: rgba(0, 229, 255, 0.1); box-shadow: 0 0 8px rgba(0, 229, 255, 0.3); }
+    .iptv-port-button.is-selected .iptv-port-label { color: #00e5ff; font-weight: 700; }
+    .service-switch { appearance: none; position: relative; width: 2.75rem; height: 1.25rem; flex: none; border-radius: 9999px; background: #162a45; cursor: pointer; transition: background .15s ease; border: 1px solid #1e3a5f; }
+    .service-switch::before { content: ""; position: absolute; top: .1rem; left: .125rem; width: 0.95rem; height: 0.95rem; border-radius: 9999px; background: #64748b; transition: transform .15s ease, background .15s ease; }
+    .service-switch::after { content: "OFF"; position: absolute; right: .25rem; top: .2rem; color: #64748b; font-size: .45rem; font-weight: 700; line-height: .75rem; }
+    .service-switch:checked { background: rgba(0, 229, 255, 0.2); border-color: #00e5ff; }
+    .service-switch:checked::before { transform: translateX(1.45rem); background: #00e5ff; box-shadow: 0 0 6px #00e5ff; }
+    .service-switch:checked::after { content: "ON"; left: .3rem; right: auto; color: #00e5ff; }
 </style>
-<div id="unconfiguredPage" class="space-y-5">
-    <header class="px-1">
-        <h1 class="text-2xl font-medium text-blue-950">ONU Management</h1>
-        <nav aria-label="Breadcrumb" class="mt-1 flex items-center gap-2 text-sm text-slate-400">
-            <a href="/" class="hover:text-blue-600">Home</a><span aria-hidden="true">/</span><span class="text-slate-500">Unregistered ONU</span>
-        </nav>
-    </header>
 
-    <section class="min-h-0 rounded-lg border border-slate-100 bg-white p-4 shadow-sm sm:p-5 md:p-6 lg:min-h-[calc(100vh-14rem)]">
-        <header class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
-            <h2 class="text-xl font-medium text-blue-950">Unregistered ONU Management</h2>
-            <div class="flex flex-wrap items-center gap-2">
-                <button type="button" onclick="location.reload()" class="inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
-                    <span aria-hidden="true">↻</span> Refresh
-                </button>
-                <button id="openPreRegister" type="button" class="inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
-                    <span aria-hidden="true">＋</span> Pre-Register ONU
-                </button>
+<div class="space-y-6 font-mono text-slate-300">
+
+    <!-- ========================================================= -->
+    <!-- 1. UNCONFIGURED ONU DIRECTORY VIEW -->
+    <!-- ========================================================= -->
+    <div id="unconfiguredPage" class="space-y-6">
+        <!-- TOP TELEMETRY STRIP -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-[#162a45] gap-4">
+            <div class="space-y-1">
+                <div class="flex items-center gap-2.5">
+                    <span class="inline-block h-2 w-2 rounded-full bg-[#00e5ff] shadow-[0_0_8px_#00e5ff]"></span>
+                    <h1 class="text-base font-bold tracking-wider text-slate-100 uppercase neon-glow-cyan">UNCONFIGURED ONU REGISTRY</h1>
+                </div>
+                <p class="text-[10px] text-slate-500 tracking-widest uppercase">DISCOVERED UNPROVISIONED OPTICAL NETWORK TERMINALS</p>
             </div>
-        </header>
 
-        <div class="grid grid-cols-[32px_minmax(0,1fr)_auto] items-center gap-3 border-b border-slate-200 px-2 py-4 text-xs font-semibold uppercase tracking-wide text-blue-950 xl:grid-cols-[48px_minmax(0,1fr)_180px_150px] xl:gap-4">
-            <span>#</span><span class="min-w-0">ONU Information</span><span class="hidden xl:block">OLT / PON</span><span class="text-right">Action</span>
-        </div>
-        <div class="flex min-h-[260px] flex-col items-center justify-center px-4 py-8 text-center sm:min-h-[32vh] sm:py-10">
-            <div class="flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-500" aria-hidden="true">
-                <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="6" rx="2" stroke-width="1.8"/><rect x="3" y="13" width="18" height="6" rx="2" stroke-width="1.8"/><path d="M8 8h.01M8 16h.01" stroke-width="2.5" stroke-linecap="round"/></svg>
+            <div class="flex items-center gap-2 text-xs">
+                <a href="/" class="text-slate-500 hover:text-[#00e5ff] transition">CORE</a>
+                <span class="text-slate-600">/</span>
+                <span class="text-[#00e5ff]">UNREGISTERED</span>
             </div>
-            <h3 class="mt-4 text-base font-semibold text-blue-950">There are no unregistered ONUs</h3>
-            <p class="mt-1 max-w-md text-sm leading-6 text-slate-500">Unregistered ONUs discovered on your OLTs will appear here. You can also pre-register an ONU manually.</p>
         </div>
-    </section>
-</div>
 
-<section id="preRegisterPage" class="hidden rounded-xl border border-slate-200 bg-white p-5 md:p-7">
-    <header class="mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-5">
-        <div class="flex items-center gap-3">
-            <button id="backToUnconfigured" type="button" aria-label="Back" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100">←</button>
-            <h1 id="pageTitle" class="text-xl font-medium text-slate-900">Pre-Register</h1>
-        </div>
-        <button id="saveConfig" type="button" class="hidden rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">▣ Save Config</button>
-    </header>
+        <!-- MAIN TABLE CONSOLE CONTAINER -->
+        <section class="rounded-xl border border-[#162a45] bg-[#08111e] overflow-hidden shadow-xl">
+            <div class="p-4 bg-[#091322] border-b border-[#162a45] flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2 text-xs">
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span class="font-bold text-slate-200 uppercase tracking-wider">AUTO-DISCOVERY POOL</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="location.reload()" class="px-3 py-1.5 bg-[#060c17] hover:bg-[#0d1d33] border border-[#162a45] text-slate-300 hover:text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                        <span>↻ REFRESH</span>
+                    </button>
+                    <button id="openPreRegister" type="button" class="px-3.5 py-1.5 bg-[#00e5ff] hover:bg-[#00c8e0] text-black rounded-lg text-xs font-bold uppercase tracking-wider shadow-[0_0_12px_rgba(0,229,255,0.35)] transition cursor-pointer">
+                        <span>+ PRE-REGISTER ONU</span>
+                    </button>
+                </div>
+            </div>
 
-    <form id="preRegisterForm" class="space-y-7" novalidate>
-        <section class="grid gap-5 border-b border-slate-200 pb-7 md:grid-cols-[220px_1fr]">
-            <div class="border-l-2 border-blue-600 pl-3"><h2 class="text-sm font-semibold uppercase tracking-wide text-slate-800">OLT</h2><p class="mt-1 text-xs text-slate-500">Select target device &amp; PON</p></div>
-            <div class="space-y-5">
-                <label class="block text-xs font-medium uppercase tracking-wide text-slate-700">OLT Device
-                    <select id="oltSelect" required class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm normal-case tracking-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
-                        <option value="">Select OLT</option>
-                        {% for olt in olts %}<option value="{{ olt.ip_address }}" data-name="{{ olt.name }}">{{ olt.name }} — {{ olt.ip_address }}</option>{% endfor %}
-                    </select>
-                </label>
-                <fieldset>
-                    <legend class="mb-2 text-xs font-medium uppercase tracking-wide text-slate-700">PON Type</legend>
-                    <div class="flex gap-5 text-sm text-slate-700">
-                        <label class="flex items-center gap-2"><input type="radio" name="ponType" value="GPON" required class="accent-blue-600"> GPON</label>
-                        <label class="flex items-center gap-2"><input type="radio" name="ponType" value="EPON" class="accent-blue-600"> EPON</label>
-                    </div>
-                </fieldset>
+            <div class="grid grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 border-b border-[#162a45] bg-[#060c17]/80 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-500 xl:grid-cols-[48px_minmax(0,1fr)_220px_140px] xl:gap-4">
+                <span class="text-center">#</span>
+                <span class="min-w-0">ONU IDENTIFIERS</span>
+                <span class="hidden xl:block">TARGET OLT / INTERFACE</span>
+                <span class="text-right">COMMAND</span>
+            </div>
+
+            <div class="flex min-h-[300px] flex-col items-center justify-center px-4 py-12 text-center">
+                <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#060c17] border border-[#162a45] text-[#00e5ff] shadow-[0_0_20px_rgba(0,229,255,0.1)]">
+                    <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <rect x="3" y="5" width="18" height="6" rx="2" stroke-width="1.8"/>
+                        <rect x="3" y="13" width="18" height="6" rx="2" stroke-width="1.8"/>
+                        <path d="M8 8h.01M8 16h.01" stroke-width="2.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <h3 class="mt-4 text-xs font-bold uppercase tracking-wider text-slate-200">THERE ARE NO UNREGISTERED ONUS</h3>
+                <p class="mt-1.5 max-w-md text-[11px] leading-5 text-slate-500">
+                    Sistem belum mendeteksi perangkat ONU baru pada PON link. Jalankan pre-registrasi manual untuk menambahkan profil antrean.
+                </p>
             </div>
         </section>
+    </div>
 
-        <div id="configSections" class="hidden space-y-7">
-            <input id="formOltIp" name="olt_ip" type="hidden">
-            <input id="formSlot" name="slot" type="hidden">
-            <input id="formPort" name="port" type="hidden">
-            <input id="formOnuId" name="onu_id" type="hidden">
-            <input id="formPonType" name="actual_type" type="hidden" value="GPON">
-            <input id="formVlan" name="vlan_id" type="hidden" value="100">
-            <input name="pppoe_user" type="hidden" value="demo-user">
-            <input name="pppoe_pass" type="hidden" value="demo-pass">
-            <input name="profil_paket" type="hidden" value="DEFAULT">
-            <input id="formDescription" name="description" type="hidden">
-
-            <div class="flex items-center justify-between border-b border-slate-200 pb-4">
-                <h2 id="configTitle" class="text-lg font-medium text-slate-900">GPON Pre-Register</h2>
-                <div class="flex flex-col items-end gap-1">
-                    <span class="text-xs font-medium text-slate-600">ONU ID</span>
-                    <div role="group" aria-label="ONU ID mode" class="flex">
-                        <button id="onuIdAuto" type="button" class="rounded-l-md bg-slate-600 px-3 py-1.5 text-xs text-white">Auto</button>
-                        <button id="onuIdCustom" type="button" class="rounded-r-md border border-slate-300 px-3 py-1.5 text-xs text-slate-600">Custom</button>
-                    </div>
-                </div>
+    <!-- ========================================================= -->
+    <!-- 2. PRE-REGISTER CONFIGURATION WIZARD -->
+    <!-- ========================================================= -->
+    <section id="preRegisterPage" class="hidden rounded-xl border border-[#162a45] bg-[#08111e] p-5 shadow-xl space-y-6">
+        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-[#162a45] pb-4">
+            <div class="flex items-center gap-3">
+                <button id="backToUnconfigured" type="button" aria-label="Back" class="p-1.5 rounded-lg bg-[#060c17] border border-[#162a45] text-slate-400 hover:text-white transition cursor-pointer">←</button>
+                <h1 id="pageTitle" class="text-xs font-bold uppercase tracking-wider text-[#00e5ff]">PRE-REGISTER CONSOLE</h1>
             </div>
+            <button id="saveConfig" type="button" class="hidden rounded-lg bg-[#00e5ff] hover:bg-[#00c8e0] px-4 py-2 text-xs font-bold uppercase tracking-wider text-black shadow-[0_0_12px_rgba(0,229,255,0.35)] transition cursor-pointer">💾 SAVE CONFIG</button>
+        </header>
 
-            <section class="grid gap-5 border-b border-slate-200 pb-7 md:grid-cols-[220px_1fr]">
-                <div class="border-l-2 border-blue-600 pl-3"><h3 class="text-sm font-semibold uppercase tracking-wide text-slate-800">OLT</h3><p class="mt-1 text-xs text-slate-500">Select target device &amp; pon</p></div>
-                <div class="grid gap-4 md:grid-cols-2">
-                    <label id="cardWrap" class="block text-xs font-medium uppercase tracking-wide text-slate-700">Card
-                        <select id="cardSelect" required class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm normal-case tracking-normal disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"><option value="">Select Card</option>{% for card in range(1, 17) %}<option value="{{ card }}">Card {{ card }}</option>{% endfor %}</select>
-                    </label>
-                    <label class="block text-xs font-medium uppercase tracking-wide text-slate-700">PON
-                        <select id="ponSelect" disabled class="mt-2 w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-2.5 text-sm normal-case tracking-normal disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"><option value="">Select PON</option>{% for pon in range(1, 17) %}<option value="{{ pon }}">PON {{ pon }}</option>{% endfor %}</select>
-                    </label>
-                    <label id="customIdWrap" class="hidden text-xs font-medium uppercase tracking-wide text-slate-700">ONU ID
-                        <input id="customId" type="number" min="1" max="128" placeholder="Enter ONU ID" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm normal-case tracking-normal">
-                    </label>
+        <form id="preRegisterForm" class="space-y-6" novalidate>
+            <!-- INITIAL OLT & TYPE SELECTION -->
+            <section class="grid gap-5 border-b border-[#162a45] pb-6 md:grid-cols-[220px_1fr]">
+                <div class="border-l-2 border-[#00e5ff] pl-3">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">CHASSIS TARGET</h2>
+                    <p class="mt-1 text-[10px] text-slate-500">Pilih OLT tujuan & jenis teknologi PON</p>
                 </div>
-            </section>
-
-            <section class="grid gap-5 border-b border-slate-200 pb-7 md:grid-cols-[220px_1fr]">
-                <div class="border-l-2 border-blue-600 pl-3"><h3 class="text-sm font-semibold uppercase tracking-wide text-slate-800">ONU</h3><p class="mt-1 text-xs text-slate-500">Device identity</p></div>
-                <div class="grid gap-4 md:grid-cols-2">
-                    <label class="block text-xs font-medium uppercase tracking-wide text-slate-700"><span id="serialLabel">Serial Number</span>
-                        <input id="serialInput" name="sn_onu" required maxlength="50" placeholder="E.G. ZTEG12AB3CD4" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm normal-case tracking-normal">
-                    </label>
-                    <label class="block text-xs font-medium uppercase tracking-wide text-slate-700">ONU Type
-                        <select id="onuTypeSelect" required class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm normal-case tracking-normal"><option value="">Select Type</option><option value="ZTE-F660">ZTE-F660</option><option value="ZTE-F670L">ZTE-F670L</option><option value="Generic-ONT">Generic ONT</option></select>
-                    </label>
-                    <label class="flex items-center gap-2 text-sm text-slate-700"><input id="veipToggle" type="checkbox" class="accent-blue-600"> Use VEIP <span class="text-slate-400" title="Virtual Ethernet Interface Point">ⓘ</span></label>
-                </div>
-            </section>
-
-            <section class="grid gap-5 border-b border-slate-200 pb-7 md:grid-cols-[220px_1fr]">
-                <div class="border-l-2 border-blue-600 pl-3"><h3 class="text-sm font-semibold uppercase tracking-wide text-slate-800">Information</h3><p class="mt-1 text-xs text-slate-500">Optional customer data</p></div>
-                <div class="grid gap-4 md:grid-cols-2">
-                    <label class="block text-xs font-medium uppercase tracking-wide text-slate-700">Name<input id="customerName" name="nama_pelanggan" required maxlength="127" placeholder="e.g. Bapak Budi" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm normal-case tracking-normal"></label>
-                    <label class="block text-xs font-medium uppercase tracking-wide text-slate-700">Description<input id="descriptionInput" placeholder="e.g. Jl. Pahlawan RT02/RW10" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm normal-case tracking-normal"></label>
-                </div>
-            </section>
-
-            <section id="gponWanSection" class="grid gap-5 border-b border-slate-200 pb-7 md:grid-cols-[220px_1fr]">
-                <div class="border-l-2 border-blue-600 pl-3"><h3 class="text-sm font-semibold uppercase tracking-wide text-slate-800">WAN</h3><p class="mt-1 text-xs text-slate-500">Config Method</p></div>
-                <div>
-                    <div id="gponConfigMethods" class="flex flex-wrap gap-5 border-b border-slate-200 text-sm">
-                        <button type="button" data-gpon-group="method" data-method="OMCI WAN-IP" aria-pressed="true" class="border-b-2 border-blue-600 px-2 pb-2 font-medium text-blue-600">◉ OMCI WAN-IP</button>
-                        <button type="button" data-gpon-group="method" data-method="OMCI PPPoE NAT" aria-pressed="false" class="px-2 pb-2 text-slate-500">◎ OMCI PPPoE NAT</button>
-                        <button type="button" data-gpon-group="method" data-method="Setup via ONT" aria-pressed="false" class="px-2 pb-2 text-slate-500">◉ Setup via ONT</button>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">TARGET OLT CHASSIS</label>
+                        <select id="oltSelect" required class="w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3.5 py-2 text-xs text-slate-200 focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff] outline-none transition cursor-pointer">
+                            <option value="">SELECT OLT CHASSIS</option>
+                            {% for olt in olts %}<option value="{{ olt.ip_address }}" data-name="{{ olt.name }}">{{ olt.name }} — {{ olt.ip_address }}</option>{% endfor %}
+                        </select>
                     </div>
-                    <div class="mt-4 rounded-lg border border-slate-200">
-                        <div class="flex items-center gap-3 border-b border-slate-200 px-4 py-3"><input type="checkbox" checked data-service-toggle="1" class="service-switch"><span class="text-sm font-medium">Service 1</span><span class="ml-auto text-xs text-slate-400">#01</span></div>
-                        <div data-service-content="1" class="grid gap-4 p-4 md:grid-cols-2">
-                            <div class="grid gap-3 md:col-span-2 md:grid-cols-[140px_1fr] md:items-center"><p class="text-sm font-medium text-slate-700">VLAN Mode</p><div id="gponVlanModes" class="flex text-xs"><button type="button" data-gpon-group="vlan" class="rounded-l border bg-slate-600 px-3 py-2 font-medium text-white">Tag</button><button type="button" data-gpon-group="vlan" class="border px-3 py-2 text-slate-600">Untag</button><button type="button" data-gpon-group="vlan" class="rounded-r border px-3 py-2 text-slate-600">QinQ</button></div><div id="gponServiceTypeWrap" class="grid gap-3 md:col-span-2 md:grid-cols-[140px_1fr] md:items-center"><p class="text-sm font-medium text-slate-700">Service Type</p><div id="gponServiceTypes" class="flex flex-wrap text-xs"><button type="button" data-gpon-group="service" class="rounded-l border bg-slate-600 px-3 py-2 font-medium text-white">◉ Internet</button><button type="button" data-gpon-group="service" class="border px-3 py-2 text-slate-600">▤ TR069</button><button type="button" data-gpon-group="service" class="border px-3 py-2 text-slate-600">▭ IPTV</button><button type="button" data-gpon-group="service" class="rounded-r border px-3 py-2 text-slate-600">♧ Bridge</button></div></div></div>
-                            <label id="gponInternetVlanWrap" class="text-sm font-medium text-slate-700 md:col-span-2"><span id="gponVlanLabel">VLAN ID</span><select id="gponVlan" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal"><option value="">Select VLAN</option><option value="100">VLAN 100</option><option value="200">VLAN 200</option></select></label>
-                            <div id="gponQinqFields" class="hidden border-l-2 border-slate-300 pl-4 md:col-span-2"><div class="grid gap-2 md:grid-cols-[140px_1fr]"><label for="gponQinqVlanId" class="text-xs font-medium text-slate-700">VLAN ID<input id="gponQinqVlanId" class="gpon-qinq-vlan-id mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm" type="number" min="1" max="4094" placeholder="e.g. 100"></label><label for="gponQinqVlanName" class="text-xs font-medium text-slate-700">NAME<input id="gponQinqVlanName" class="gpon-qinq-vlan-name mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm" maxlength="64" placeholder="e.g. HOTSPOT"></label></div></div>
-                            <label id="gponUntagVlanWrap" class="hidden text-xs font-medium text-slate-700">VLAN ID<select id="gponUntagVlan" class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"><option value="">Select VLAN</option><option value="100">VLAN 100</option><option value="200">VLAN 200</option></select></label>
-                            <label id="gponMvlanWrap" class="hidden text-xs font-medium text-slate-700 md:col-span-2">MVLAN<select id="gponMvlan" class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"><option value="">Select MVLAN</option><option value="100">MVLAN 100</option><option value="200">MVLAN 200</option></select></label>
-                            <div id="gponBridgeVlanWrap" class="hidden md:col-span-2"><label for="gponBridgeVlan" class="block text-xs font-medium text-slate-700">VLAN ID</label><div id="gponBridgeVlanList" class="space-y-2"><select id="gponBridgeVlan" class="gpon-bridge-vlan mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"><option value="">Select VLAN</option><option value="100">VLAN 100</option><option value="200">VLAN 200</option></select></div><div class="mt-2 flex justify-center"><button id="addGponBridgeVlan" type="button" class="rounded-lg border border-slate-400 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50">＋ Add VLAN</button></div></div>
-                            <label class="text-xs font-medium text-slate-700">Download Profile<select id="gponDownloadProfile" class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"><option value="">Select Profile</option><option>Residential 100M</option></select></label>
-                            <label class="text-xs font-medium text-slate-700">Upload Profile<select id="gponUploadProfile" class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"><option value="">Select Profile</option><option>Residential 100M</option></select></label>
-                            <div id="iptvPorts" class="hidden md:col-span-2"><p class="mb-2 text-xs font-medium uppercase text-slate-700">IPTV PORT LAN</p><div class="flex gap-3">{% for port in range(1, 5) %}<button type="button" class="iptv-port-button" aria-pressed="false"><span class="iptv-port-icon flex h-9 w-9 items-center justify-center rounded border-2 transition-colors"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 4h14v12h-3v4H8v-4H5V4Z" fill="currentColor"/><path d="M8 7v4m3-4v4m3-4v4m3-4v4" stroke="white" stroke-width="1.4" stroke-linecap="round"/><path d="M9 16h6" stroke="white" stroke-width="1.4" stroke-linecap="round"/></svg></span><span class="iptv-port-label text-[11px]">LAN {{ port }}</span></button>{% endfor %}</div></div>
-                            <div id="gponWanModeWrap" class="grid gap-2 md:col-span-2 md:grid-cols-[140px_1fr] md:items-center"><p class="text-sm font-medium text-slate-700">WAN Mode</p><div id="gponWanModes" class="inline-flex text-xs"><button type="button" data-gpon-group="wan" aria-pressed="true" class="rounded-l-md border border-slate-300 bg-slate-600 px-3 py-2 font-medium text-white">WAN-IP</button><button type="button" data-gpon-group="wan" aria-pressed="false" class="rounded-r-md border border-l-0 border-slate-300 px-3 py-2 text-slate-600">Setup via ONT</button></div></div>
-                            <div id="wanIpSettings" class="md:col-span-2">
-                                <p id="gponIpModeTitle" class="text-xs font-medium text-slate-700">MODE WAN-IP</p>
-                                <div id="gponIpModes" class="mt-2 inline-flex text-xs"><button type="button" data-gpon-group="ip-mode" aria-pressed="false" class="rounded-l-md border border-slate-300 px-3 py-2 text-slate-600">PPPoE</button><button type="button" data-gpon-group="ip-mode" aria-pressed="true" class="border border-l-0 border-slate-300 bg-slate-600 px-3 py-2 font-medium text-white">DHCP</button><button type="button" data-gpon-group="ip-mode" aria-pressed="false" class="rounded-r-md border border-l-0 border-slate-300 px-3 py-2 text-slate-600">STATIC</button></div>
-                                <label class="mt-3 block text-xs font-medium text-slate-700">VLAN PROFILE<select id="gponVlanProfile" class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"><option value="">Select VLAN Profile</option><option>Internet</option><option>Residential</option></select></label>
-                                <div id="gponPppoeFields" class="mt-3 hidden grid gap-4 md:grid-cols-2"><label class="text-xs font-medium text-slate-700">PPPoE Username<input id="gponPppoeUser" placeholder="budi@isp.net" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"></label><label class="text-xs font-medium text-slate-700">PPPoE Password<input id="gponPppoePass" type="password" placeholder="Password" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"></label></div>
-                                <div id="gponStaticFields" class="mt-3 hidden grid gap-4 md:grid-cols-2"><label class="text-xs font-medium text-slate-700 md:col-span-2">IP Profile<select id="gponIpProfile" class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"><option value="">Select IP Profile</option><option>Default IP Profile</option></select></label><label class="text-xs font-medium text-slate-700">IP Address<input id="gponIpAddress" placeholder="e.g. 192.168.1.1" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"></label><label class="text-xs font-medium text-slate-700">Subnet Mask<select id="gponSubnetMask" class="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"><option value="">Select Mask</option><option>255.255.255.0</option><option>255.255.0.0</option><option>255.0.0.0</option></select></label></div>
-                            </div>
-                            <div id="gponNatPppoeFields" class="hidden grid gap-4 md:col-span-2 md:grid-cols-2"><label class="text-xs font-medium text-slate-700">PPPoE Username<input id="gponNatPppoeUser" placeholder="budi@isp.net" maxlength="128" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"></label><label class="text-xs font-medium text-slate-700">PPPoE Password<input id="gponNatPppoePass" type="password" placeholder="12345" maxlength="25" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm"></label></div>
+                    <fieldset>
+                        <legend class="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">PON ARCHITECTURE</legend>
+                        <div class="flex gap-6 text-xs text-slate-300">
+                            <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+                                <input type="radio" name="ponType" value="GPON" required class="accent-[#00e5ff]"> GPON
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer hover:text-white">
+                                <input type="radio" name="ponType" value="EPON" class="accent-[#00e5ff]"> EPON
+                            </label>
                         </div>
-                        <div id="additionalGponServices" class="space-y-2 px-4 pb-4"></div>
-                    </div>
+                    </fieldset>
                 </div>
             </section>
 
-            <section id="eponConfigSection" class="hidden grid gap-5 border-b border-slate-200 pb-7 md:grid-cols-[220px_1fr]">
-                <div class="border-l-2 border-blue-600 pl-3"><h3 class="text-sm font-semibold uppercase tracking-wide text-slate-800">WAN</h3><p class="mt-1 text-xs text-slate-500">Service configuration</p></div>
-                <div class="space-y-5">
-                    <div class="grid gap-4 md:grid-cols-[140px_1fr] md:items-center">
-                        <span class="text-sm font-medium text-slate-700">VLAN Mode</span>
-                        <div id="eponVlanModes" class="flex"><button type="button" data-vlan-mode="Tag" class="rounded-l-md border bg-slate-600 px-3 py-2 text-xs font-medium text-white">Tag</button><button type="button" data-vlan-mode="Untag" class="border px-3 py-2 text-xs text-slate-600">Untag</button><button type="button" data-vlan-mode="QinQ" class="rounded-r-md border px-3 py-2 text-xs text-slate-600">QinQ</button></div>
-                    </div>
-                    <div class="grid gap-2 md:grid-cols-[140px_1fr] md:items-start">
-                        <label id="eponVlanLabel" for="eponVlan" class="pt-2 text-sm font-medium text-slate-700">VLAN ID</label>
-                        <div><div id="eponVlanList" class="space-y-2"><div class="epon-vlan-row flex items-center gap-2"><select id="eponVlan" required class="epon-vlan-id w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"><option value="">Select VLAN</option><option value="100">VLAN 100</option><option value="200">VLAN 200</option><option value="300">VLAN 300</option></select><button type="button" class="epon-vlan-remove hidden flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-300 text-lg text-slate-500 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600" aria-label="Remove VLAN ID">×</button></div></div><button id="addEponVlan" type="button" class="mt-2 rounded-lg border border-slate-400 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50">＋ Add VLAN</button>
-                            <div id="qinqVlanIds" class="mt-3 hidden space-y-3 border-l-2 border-slate-300 pl-4">
-                                <div class="qinq-vlan-row flex items-end gap-2"><label class="block w-full text-xs font-medium uppercase tracking-wide text-slate-700">VLAN ID<input class="qinq-vlan-id mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm normal-case tracking-normal" type="number" min="1" max="4094" placeholder="e.g. 100"></label><button type="button" class="qinq-vlan-remove hidden mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-300 text-lg text-slate-500 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600" aria-label="Remove VLAN ID">×</button></div>
-                            </div>
-                            <button id="addQinqVlanId" type="button" class="mt-2 hidden rounded-lg border border-slate-400 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50">＋ Add VLAN ID</button>
+            <!-- DETAIL CONFIGURATION SECTIONS -->
+            <div id="configSections" class="hidden space-y-6">
+                <input id="formOltIp" name="olt_ip" type="hidden">
+                <input id="formSlot" name="slot" type="hidden">
+                <input id="formPort" name="port" type="hidden">
+                <input id="formOnuId" name="onu_id" type="hidden">
+                <input id="formPonType" name="actual_type" type="hidden" value="GPON">
+                <input id="formVlan" name="vlan_id" type="hidden" value="100">
+                <input name="pppoe_user" type="hidden" value="demo-user">
+                <input name="pppoe_pass" type="hidden" value="demo-pass">
+                <input name="profil_paket" type="hidden" value="DEFAULT">
+                <input id="formDescription" name="description" type="hidden">
+
+                <!-- SUB-HEADER ONU ID MODE -->
+                <div class="flex items-center justify-between border-b border-[#162a45] pb-3">
+                    <h2 id="configTitle" class="text-xs font-bold uppercase tracking-wider text-[#00e5ff]">GPON PRE-REGISTER</h2>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold uppercase text-slate-500">INDEX ID:</span>
+                        <div role="group" aria-label="ONU ID mode" class="flex text-xs">
+                            <button id="onuIdAuto" type="button" class="rounded-l-md bg-[#00e5ff] px-2.5 py-1 text-[10px] font-bold text-black cursor-pointer">AUTO</button>
+                            <button id="onuIdCustom" type="button" class="rounded-r-md border border-[#162a45] bg-[#060c17] px-2.5 py-1 text-[10px] font-bold text-slate-400 hover:text-white cursor-pointer">CUSTOM</button>
                         </div>
                     </div>
-                    <div class="grid gap-2 md:grid-cols-[140px_1fr] md:items-center"><label for="eponSla" class="text-sm font-medium text-slate-700">SLA Profile</label><select id="eponSla" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"><option value="">Select SLA Profile</option><option>Residential 100M</option><option>Residential 300M</option></select></div>
-                    <div class="grid gap-2 md:grid-cols-[140px_1fr] md:items-center"><span class="text-sm font-medium text-slate-700">WAN Mode</span><div><button type="button" class="rounded-lg bg-slate-600 px-4 py-2 text-xs font-medium text-white">Setup via ONT</button></div></div>
                 </div>
-            </section>
 
-            <section id="tr069Section" class="grid gap-5 md:grid-cols-[220px_1fr]">
-                <div class="border-l-2 border-blue-600 pl-3"><h3 class="text-sm font-semibold uppercase tracking-wide text-slate-800">TR069 Profile</h3><p class="mt-1 text-xs text-slate-500">Optional</p></div>
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center"><label class="flex items-center gap-2 text-sm"><input id="tr069Toggle" type="checkbox" class="accent-blue-600"> Use TR069</label><select id="tr069Select" disabled class="w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-2.5 text-sm sm:max-w-xl"><option value="DEFAULT">Select Profile</option><option value="DEFAULT">Default TR-069</option><option value="Residential 100M">Residential 100M</option></select><button id="openTr069QuickAdd" type="button" class="inline-flex h-12 w-14 shrink-0 items-center justify-center rounded-lg border border-slate-300 text-lg text-blue-600 hover:bg-blue-50" title="Tambah TR069 Profile" aria-label="Tambah TR069 Profile">＋</button></div>
-            </section>
-            <div id="saveMessage" class="hidden rounded-lg border px-4 py-3 text-sm"></div>
-        </div>
-    </form>
-</section>
+                <!-- CARD / PON LOCATION -->
+                <section class="grid gap-5 border-b border-[#162a45] pb-6 md:grid-cols-[220px_1fr]">
+                    <div class="border-l-2 border-[#00e5ff] pl-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">PORT MAPPING</h3>
+                        <p class="mt-1 text-[10px] text-slate-500">Slot sasis dan port optik target</p>
+                    </div>
+                    <div class="grid gap-4 md:grid-cols-2 text-xs">
+                        <label id="cardWrap" class="block text-[10px] font-bold uppercase tracking-wider text-slate-500">CARD SLOT
+                            <select id="cardSelect" required class="mt-1.5 w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff] disabled:opacity-40 cursor-pointer">
+                                <option value="">SELECT CARD</option>
+                                {% for card in range(1, 17) %}<option value="{{ card }}">Card {{ card }}</option>{% endfor %}
+                            </select>
+                        </label>
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500">PON PORT
+                            <select id="ponSelect" disabled class="mt-1.5 w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff] disabled:opacity-40 cursor-pointer">
+                                <option value="">SELECT PON</option>
+                                {% for pon in range(1, 17) %}<option value="{{ pon }}">PON {{ pon }}</option>{% endfor %}
+                            </select>
+                        </label>
+                        <label id="customIdWrap" class="hidden text-[10px] font-bold uppercase tracking-wider text-slate-500">CUSTOM ONU ID
+                            <input id="customId" type="number" min="1" max="128" placeholder="ENTER ONU ID (1-128)" class="mt-1.5 w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff]">
+                        </label>
+                    </div>
+                </section>
 
-<dialog id="saveFeedbackDialog" class="w-[min(92vw,480px)] rounded-2xl border border-slate-200 p-0 shadow-2xl backdrop:bg-slate-950/50">
-    <div class="bg-white p-6">
-        <div class="flex items-start gap-4">
-            <div id="saveFeedbackIcon" class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-rose-100 text-xl font-bold text-rose-600" aria-hidden="true">!</div>
-            <div class="min-w-0 flex-1"><h2 id="saveFeedbackTitle" class="text-lg font-semibold text-slate-900">Tidak dapat menyimpan</h2><p id="saveFeedbackText" class="mt-2 whitespace-pre-line break-words text-sm leading-6 text-slate-600"></p></div>
-            <button type="button" id="closeSaveFeedback" class="-mr-2 -mt-2 rounded-lg p-2 text-xl leading-none text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Tutup">×</button>
+                <!-- ONU HARDWARE IDENTITY -->
+                <section class="grid gap-5 border-b border-[#162a45] pb-6 md:grid-cols-[220px_1fr]">
+                    <div class="border-l-2 border-[#00e5ff] pl-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">ONT IDENTITY</h3>
+                        <p class="mt-1 text-[10px] text-slate-500">Nomor seri & profil perangkat</p>
+                    </div>
+                    <div class="grid gap-4 md:grid-cols-2 text-xs">
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                            <span id="serialLabel">SERIAL NUMBER</span>
+                            <input id="serialInput" name="sn_onu" required maxlength="50" placeholder="E.G. ZTEG12AB3CD4" class="mt-1.5 w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3 py-2 text-xs font-mono text-[#00e5ff] outline-none focus:border-[#00e5ff] uppercase">
+                        </label>
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500">HARDWARE MODEL
+                            <select id="onuTypeSelect" required class="mt-1.5 w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff] cursor-pointer">
+                                <option value="">SELECT MODEL</option>
+                                <option value="ZTE-F660">ZTE-F660</option>
+                                <option value="ZTE-F670L">ZTE-F670L</option>
+                                <option value="Generic-ONT">Generic ONT</option>
+                            </select>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs text-slate-400 cursor-pointer pt-2">
+                            <input id="veipToggle" type="checkbox" class="accent-[#00e5ff]">
+                            <span>Use VEIP Encapsulation</span>
+                        </label>
+                    </div>
+                </section>
+
+                <!-- CUSTOMER METAS -->
+                <section class="grid gap-5 border-b border-[#162a45] pb-6 md:grid-cols-[220px_1fr]">
+                    <div class="border-l-2 border-[#00e5ff] pl-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">METADATA</h3>
+                        <p class="mt-1 text-[10px] text-slate-500">Identitas pelanggan & catatan instalasi</p>
+                    </div>
+                    <div class="grid gap-4 md:grid-cols-2 text-xs">
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500">CUSTOMER IDENTIFIER
+                            <input id="customerName" name="nama_pelanggan" required maxlength="127" placeholder="e.g. FITRIANA" class="mt-1.5 w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3 py-2 text-xs text-slate-200 font-bold outline-none focus:border-[#00e5ff] uppercase">
+                        </label>
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500">SITE / ADDRESS NOTE
+                            <input id="descriptionInput" placeholder="e.g. Jl. Pahlawan RT02/RW10" class="mt-1.5 w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff]">
+                        </label>
+                    </div>
+                </section>
+
+                <!-- GPON WAN PROVISIONING MATRIX -->
+                <section id="gponWanSection" class="grid gap-5 border-b border-[#162a45] pb-6 md:grid-cols-[220px_1fr]">
+                    <div class="border-l-2 border-[#00e5ff] pl-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">WAN TELEMETRY</h3>
+                        <p class="mt-1 text-[10px] text-slate-500">Service binding & OMCI profile</p>
+                    </div>
+                    <div>
+                        <!-- Method Ribbon -->
+                        <div id="gponConfigMethods" class="flex flex-wrap gap-4 border-b border-[#162a45] text-xs">
+                            <button type="button" data-gpon-group="method" data-method="OMCI WAN-IP" aria-pressed="true" class="border-b-2 border-[#00e5ff] px-2 pb-2 font-bold text-[#00e5ff] cursor-pointer">◉ OMCI WAN-IP</button>
+                            <button type="button" data-gpon-group="method" data-method="OMCI PPPoE NAT" aria-pressed="false" class="px-2 pb-2 text-slate-500 hover:text-slate-300 cursor-pointer">◎ OMCI PPPoE NAT</button>
+                            <button type="button" data-gpon-group="method" data-method="Setup via ONT" aria-pressed="false" class="px-2 pb-2 text-slate-500 hover:text-slate-300 cursor-pointer">◉ Setup via ONT</button>
+                        </div>
+
+                        <!-- Service Card 1 -->
+                        <div class="mt-4 rounded-xl border border-[#162a45] bg-[#060c17] overflow-hidden">
+                            <div class="flex items-center gap-3 border-b border-[#162a45] px-4 py-3 bg-[#091322]">
+                                <input type="checkbox" checked data-service-toggle="1" class="service-switch">
+                                <span class="text-xs font-bold text-slate-200 uppercase tracking-wider">Service 1</span>
+                                <span class="ml-auto text-[10px] font-mono text-[#00e5ff]">#01</span>
+                            </div>
+
+                            <div data-service-content="1" class="grid gap-4 p-4 md:grid-cols-2 text-xs">
+                                <!-- VLAN Mode -->
+                                <div class="grid gap-3 md:col-span-2 md:grid-cols-[140px_1fr] md:items-center">
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">VLAN MODE</p>
+                                    <div id="gponVlanModes" class="flex text-xs">
+                                        <button type="button" data-gpon-group="vlan" class="rounded-l border border-[#00e5ff]/40 bg-[#0e223b] px-3 py-1.5 font-bold text-[#00e5ff] cursor-pointer">Tag</button>
+                                        <button type="button" data-gpon-group="vlan" class="border border-l-0 border-[#162a45] px-3 py-1.5 text-slate-400 hover:text-white cursor-pointer">Untag</button>
+                                        <button type="button" data-gpon-group="vlan" class="rounded-r border border-l-0 border-[#162a45] px-3 py-1.5 text-slate-400 hover:text-white cursor-pointer">QinQ</button>
+                                    </div>
+
+                                    <!-- Service Type -->
+                                    <div id="gponServiceTypeWrap" class="grid gap-3 md:col-span-2 md:grid-cols-[140px_1fr] md:items-center mt-2">
+                                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">SERVICE TYPE</p>
+                                        <div id="gponServiceTypes" class="flex flex-wrap text-xs">
+                                            <button type="button" data-gpon-group="service" class="rounded-l border border-[#00e5ff]/40 bg-[#0e223b] px-3 py-1.5 font-bold text-[#00e5ff] cursor-pointer">◉ Internet</button>
+                                            <button type="button" data-gpon-group="service" class="border border-l-0 border-[#162a45] px-3 py-1.5 text-slate-400 hover:text-white cursor-pointer">▤ TR069</button>
+                                            <button type="button" data-gpon-group="service" class="border border-l-0 border-[#162a45] px-3 py-1.5 text-slate-400 hover:text-white cursor-pointer">▭ IPTV</button>
+                                            <button type="button" data-gpon-group="service" class="rounded-r border border-l-0 border-[#162a45] px-3 py-1.5 text-slate-400 hover:text-white cursor-pointer">♧ Bridge</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <label id="gponInternetVlanWrap" class="text-[10px] font-bold uppercase tracking-wider text-slate-500 md:col-span-2">
+                                    <span id="gponVlanLabel">VLAN ID</span>
+                                    <select id="gponVlan" class="mt-1 w-full rounded-lg bg-[#08111e] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff] cursor-pointer font-mono">
+                                        <option value="">SELECT VLAN</option>
+                                        <option value="100">VLAN 100</option>
+                                        <option value="200">VLAN 200</option>
+                                    </select>
+                                </label>
+
+                                <div id="gponQinqFields" class="hidden border-l-2 border-[#162a45] pl-4 md:col-span-2">
+                                    <div class="grid gap-3 md:grid-cols-[140px_1fr]">
+                                        <label for="gponQinqVlanId" class="text-[10px] font-bold uppercase text-slate-500">VLAN ID
+                                            <input id="gponQinqVlanId" class="gpon-qinq-vlan-id mt-1 w-full rounded-lg bg-[#08111e] border border-[#162a45] px-3 py-2 text-xs font-mono text-slate-200 outline-none focus:border-[#00e5ff]" type="number" min="1" max="4094" placeholder="100">
+                                        </label>
+                                        <label for="gponQinqVlanName" class="text-[10px] font-bold uppercase text-slate-500">NAME
+                                            <input id="gponQinqVlanName" class="gpon-qinq-vlan-name mt-1 w-full rounded-lg bg-[#08111e] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff]" maxlength="64" placeholder="HOTSPOT">
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <label id="gponUntagVlanWrap" class="hidden text-[10px] font-bold uppercase text-slate-500">VLAN ID
+                                    <select id="gponUntagVlan" class="mt-1 w-full rounded-lg bg-[#08111e] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff]">
+                                        <option value="">SELECT VLAN</option>
+                                        <option value="100">VLAN 100</option>
+                                        <option value="200">VLAN 200</option>
+                                    </select>
+                                </label>
+
+                                <label id="gponMvlanWrap" class="hidden text-[10px] font-bold uppercase text-slate-500 md:col-span-2">MVLAN
+                                    <select id="gponMvlan" class="mt-1 w-full rounded-lg bg-[#08111e] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff]">
+                                        <option value="">SELECT MVLAN</option>
+                                        <option value="100">MVLAN 100</option>
+                                        <option value="200">MVLAN 200</option>
+                                    </select>
+                                </label>
+
+                                <div id="gponBridgeVlanWrap" class="hidden md:col-span-2">
+                                    <label for="gponBridgeVlan" class="block text-[10px] font-bold uppercase text-slate-500">VLAN ID</label>
+                                    <div id="gponBridgeVlanList" class="space-y-2 mt-1">
+                                        <select id="gponBridgeVlan" class="gpon-bridge-vlan w-full rounded-lg bg-[#08111e] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff]">
+                                            <option value="">SELECT VLAN</option>
+                                            <option value="100">VLAN 100</option>
+                                            <option value="200">VLAN 200</option>
+                                        </select>
+                                    </div>
+                                    <button id="addGponBridgeVlan" type="button" class="mt-2 rounded bg-[#08111e] border border-[#162a45] px-2.5 py-1 text-[10px] font-bold uppercase text-slate-300 hover:text-white cursor-pointer">+ ADD VLAN</button>
+                                </div>
+
+                                <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">DOWNLOAD PROFILE
+                                    <select id="gponDownloadProfile" class="mt-1 w-full rounded-lg bg-[#08111e] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff] cursor-pointer">
+                                        <option value="">SELECT PROFILE</option>
+                                        <option>Residential 100M</option>
+                                    </select>
+                                </label>
+
+                                <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">UPLOAD PROFILE
+                                    <select id="gponUploadProfile" class="mt-1 w-full rounded-lg bg-[#08111e] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff] cursor-pointer">
+                                        <option value="">SELECT PROFILE</option>
+                                        <option>Residential 100M</option>
+                                    </select>
+                                </label>
+
+                                <div id="iptvPorts" class="hidden md:col-span-2">
+                                    <p class="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">IPTV PORT LAN</p>
+                                    <div class="flex gap-3">
+                                        {% for port in range(1, 5) %}
+                                        <button type="button" class="iptv-port-button" aria-pressed="false">
+                                            <span class="iptv-port-icon flex h-9 w-9 items-center justify-center rounded-lg border transition-colors">
+                                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none">
+                                                    <path d="M5 4h14v12h-3v4H8v-4H5V4Z" fill="currentColor"/>
+                                                    <path d="M8 7v4m3-4v4m3-4v4m3-4v4" stroke="#050b14" stroke-width="1.4" stroke-linecap="round"/>
+                                                    <path d="M9 16h6" stroke="#050b14" stroke-width="1.4" stroke-linecap="round"/>
+                                                </svg>
+                                            </span>
+                                            <span class="iptv-port-label text-[10px]">LAN {{ port }}</span>
+                                        </button>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <div id="gponWanModeWrap" class="grid gap-2 md:col-span-2 md:grid-cols-[140px_1fr] md:items-center">
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">WAN MODE</p>
+                                    <div id="gponWanModes" class="inline-flex text-xs">
+                                        <button type="button" data-gpon-group="wan" aria-pressed="true" class="rounded-l-md border border-[#00e5ff]/40 bg-[#0e223b] px-3 py-1.5 font-bold text-[#00e5ff] cursor-pointer">WAN-IP</button>
+                                        <button type="button" data-gpon-group="wan" aria-pressed="false" class="rounded-r-md border border-l-0 border-[#162a45] px-3 py-1.5 text-slate-400 hover:text-white cursor-pointer">Setup via ONT</button>
+                                    </div>
+                                </div>
+
+                                <div id="wanIpSettings" class="md:col-span-2">
+                                    <p id="gponIpModeTitle" class="text-[10px] font-bold uppercase tracking-wider text-slate-500">MODE WAN-IP</p>
+                                    <div id="gponIpModes" class="mt-1.5 inline-flex text-xs">
+                                        <button type="button" data-gpon-group="ip-mode" aria-pressed="false" class="rounded-l-md border border-[#162a45] px-3 py-1.5 text-slate-400 hover:text-white cursor-pointer">PPPoE</button>
+                                        <button type="button" data-gpon-group="ip-mode" aria-pressed="true" class="border border-l-0 border-[#00e5ff]/40 bg-[#0e223b] px-3 py-1.5 font-bold text-[#00e5ff] cursor-pointer">DHCP</button>
+                                        <button type="button" data-gpon-group="ip-mode" aria-pressed="false" class="rounded-r-md border border-l-0 border-[#162a45] px-3 py-1.5 text-slate-400 hover:text-white cursor-pointer">STATIC</button>
+                                    </div>
+
+                                    <label class="mt-3 block text-[10px] font-bold uppercase tracking-wider text-slate-500">VLAN PROFILE
+                                        <select id="gponVlanProfile" class="mt-1 w-full rounded-lg bg-[#08111e] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff] cursor-pointer">
+                                            <option value="">SELECT VLAN PROFILE</option>
+                                            <option>Internet</option>
+                                            <option>Residential</option>
+                                        </select>
+                                    </label>
+
+                                    <div id="gponPppoeFields" class="mt-3 hidden grid gap-3 md:grid-cols-2">
+                                        <label class="text-[10px] font-bold uppercase text-slate-500">PPPoE Username
+                                            <input id="gponPppoeUser" placeholder="budi@isp.net" class="mt-1 w-full rounded-lg bg-[#08111e] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff]">
+                                        </label>
+                                        <label class="text-[10px] font-bold uppercase text-slate-500">PPPoE Password
+                                            <input id="gponPppoePass" type="password" placeholder="Password" class="mt-1 w-full rounded-lg bg-[#08111e] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff]">
+                                        </label>
+                                    </div>
+
+                                    <div id="gponStaticFields" class="mt-3 hidden grid gap-3 md:grid-cols-2">
+                                        <label class="text-[10px] font-bold uppercase text-slate-500 md:col-span-2">IP Profile
+                                            <select id="gponIpProfile" class="mt-1 w-full rounded-lg bg-[#08111e] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff]">
+                                                <option value="">SELECT IP PROFILE</option>
+                                                <option>Default IP Profile</option>
+                                            </select>
+                                        </label>
+                                        <label class="text-[10px] font-bold uppercase text-slate-500">IP Address
+                                            <input id="gponIpAddress" placeholder="192.168.1.1" class="mt-1 w-full rounded-lg bg-[#08111e] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff]">
+                                        </label>
+                                        <label class="text-[10px] font-bold uppercase text-slate-500">Subnet Mask
+                                            <select id="gponSubnetMask" class="mt-1 w-full rounded-lg bg-[#08111e] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff]">
+                                                <option value="">SELECT MASK</option>
+                                                <option>255.255.255.0</option>
+                                                <option>255.255.0.0</option>
+                                            </select>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div id="gponNatPppoeFields" class="hidden grid gap-3 md:col-span-2 md:grid-cols-2">
+                                    <label class="text-[10px] font-bold uppercase text-slate-500">PPPoE Username
+                                        <input id="gponNatPppoeUser" placeholder="budi@isp.net" maxlength="128" class="mt-1 w-full rounded-lg bg-[#08111e] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff]">
+                                    </label>
+                                    <label class="text-[10px] font-bold uppercase text-slate-500">PPPoE Password
+                                        <input id="gponNatPppoePass" type="password" placeholder="12345" maxlength="25" class="mt-1 w-full rounded-lg bg-[#08111e] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff]">
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div id="additionalGponServices" class="space-y-3 px-4 pb-4"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- EPON WAN PROVISIONING MATRIX -->
+                <section id="eponConfigSection" class="hidden grid gap-5 border-b border-[#162a45] pb-6 md:grid-cols-[220px_1fr]">
+                    <div class="border-l-2 border-[#00e5ff] pl-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">EPON WAN FABRIC</h3>
+                        <p class="mt-1 text-[10px] text-slate-500">Konfigurasi jalur data EPON SLA</p>
+                    </div>
+                    <div class="space-y-4 text-xs">
+                        <div class="grid gap-4 md:grid-cols-[140px_1fr] md:items-center">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">VLAN MODE</span>
+                            <div id="eponVlanModes" class="flex">
+                                <button type="button" data-vlan-mode="Tag" class="rounded-l-md border border-[#00e5ff]/40 bg-[#0e223b] px-3 py-1.5 font-bold text-[#00e5ff] cursor-pointer">Tag</button>
+                                <button type="button" data-vlan-mode="Untag" class="border border-l-0 border-[#162a45] px-3 py-1.5 text-slate-400 hover:text-white cursor-pointer">Untag</button>
+                                <button type="button" data-vlan-mode="QinQ" class="rounded-r-md border border-l-0 border-[#162a45] px-3 py-1.5 text-slate-400 hover:text-white cursor-pointer">QinQ</button>
+                            </div>
+                        </div>
+
+                        <div class="grid gap-2 md:grid-cols-[140px_1fr] md:items-start">
+                            <label id="eponVlanLabel" for="eponVlan" class="pt-2 text-[10px] font-bold uppercase text-slate-500">VLAN ID</label>
+                            <div>
+                                <div id="eponVlanList" class="space-y-2">
+                                    <div class="epon-vlan-row flex items-center gap-2">
+                                        <select id="eponVlan" required class="epon-vlan-id w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff]">
+                                            <option value="">SELECT VLAN</option>
+                                            <option value="100">VLAN 100</option>
+                                            <option value="200">VLAN 200</option>
+                                            <option value="300">VLAN 300</option>
+                                        </select>
+                                        <button type="button" class="epon-vlan-remove hidden flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#162a45] bg-[#060c17] text-slate-500 hover:text-[#ff3366] hover:border-[#ff3366]/40 cursor-pointer" aria-label="Remove VLAN ID">×</button>
+                                    </div>
+                                </div>
+                                <button id="addEponVlan" type="button" class="mt-2 rounded bg-[#060c17] border border-[#162a45] px-2.5 py-1 text-[10px] font-bold uppercase text-slate-300 hover:text-white cursor-pointer">+ ADD VLAN</button>
+                                
+                                <div id="qinqVlanIds" class="mt-3 hidden space-y-2 border-l-2 border-[#162a45] pl-4">
+                                    <div class="qinq-vlan-row flex items-end gap-2">
+                                        <label class="block w-full text-[10px] font-bold uppercase text-slate-500">VLAN ID
+                                            <input class="qinq-vlan-id mt-1 w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff]" type="number" min="1" max="4094" placeholder="100">
+                                        </label>
+                                        <button type="button" class="qinq-vlan-remove hidden mb-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#162a45] bg-[#060c17] text-slate-500 hover:text-[#ff3366] cursor-pointer" aria-label="Remove VLAN ID">×</button>
+                                    </div>
+                                </div>
+                                <button id="addQinqVlanId" type="button" class="mt-2 hidden rounded bg-[#060c17] border border-[#162a45] px-2.5 py-1 text-[10px] font-bold uppercase text-slate-300 hover:text-white cursor-pointer">+ ADD QINQ ID</button>
+                            </div>
+                        </div>
+
+                        <div class="grid gap-2 md:grid-cols-[140px_1fr] md:items-center">
+                            <label for="eponSla" class="text-[10px] font-bold uppercase text-slate-500">SLA PROFILE</label>
+                            <select id="eponSla" class="w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff] cursor-pointer">
+                                <option value="">SELECT SLA PROFILE</option>
+                                <option>Residential 100M</option>
+                                <option>Residential 300M</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TR069 PROFILE BINDING -->
+                <section id="tr069Section" class="grid gap-5 md:grid-cols-[220px_1fr]">
+                    <div class="border-l-2 border-[#00e5ff] pl-3">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">TR069 ACS</h3>
+                        <p class="mt-1 text-[10px] text-slate-500">Template konfigurasi otomatis</p>
+                    </div>
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center text-xs">
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-white shrink-0">
+                            <input id="tr069Toggle" type="checkbox" class="accent-[#00e5ff]">
+                            <span>Use TR069</span>
+                        </label>
+                        <select id="tr069Select" disabled class="w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff] disabled:opacity-40 cursor-pointer sm:max-w-xl">
+                            <option value="DEFAULT">SELECT PROFILE</option>
+                            <option value="DEFAULT">Default TR-069</option>
+                        </select>
+                        <button id="openTr069QuickAdd" type="button" class="inline-flex h-9 w-10 shrink-0 items-center justify-center rounded-lg bg-[#0e223b] border border-[#00e5ff]/40 text-[#00e5ff] hover:bg-[#133054] transition cursor-pointer" title="Tambah TR069 Profile">＋</button>
+                    </div>
+                </section>
+
+                <!-- Feedback Toast -->
+                <div id="saveMessage" class="hidden rounded-lg border p-3 text-xs font-mono"></div>
+            </div>
+        </form>
+    </section>
+
+</div>
+
+<!-- FEEDBACK MODAL DIALOG -->
+<dialog id="saveFeedbackDialog" class="w-[min(92vw,480px)] rounded-xl border border-[#162a45] p-0 shadow-[0_0_50px_rgba(0,0,0,0.95)] bg-[#091322] backdrop:bg-black/75">
+    <div class="p-5 font-mono text-slate-200">
+        <div class="flex items-start gap-3.5">
+            <div id="saveFeedbackIcon" class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#ff3366]/20 border border-[#ff3366]/40 text-base font-bold text-[#ff3366]">!</div>
+            <div class="min-w-0 flex-1">
+                <h2 id="saveFeedbackTitle" class="text-xs font-bold uppercase tracking-wider text-[#ff3366]">TIDAK DAPAT MENYIMPAN</h2>
+                <p id="saveFeedbackText" class="mt-2 whitespace-pre-line break-words text-xs leading-relaxed text-slate-400"></p>
+            </div>
+            <button type="button" id="closeSaveFeedback" class="text-slate-500 hover:text-white text-lg leading-none cursor-pointer">×</button>
         </div>
-        <div class="mt-6 flex justify-end"><button type="button" id="confirmSaveFeedback" class="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700">Mengerti</button></div>
+        <div class="mt-5 flex justify-end pt-3 border-t border-[#162a45]">
+            <button type="button" id="confirmSaveFeedback" class="rounded-lg bg-[#00e5ff] px-4 py-2 text-xs font-bold uppercase tracking-wider text-black hover:bg-[#00c8e0] cursor-pointer">DISMISS</button>
+        </div>
     </div>
 </dialog>
 
+<!-- ========================================================= -->
+<!-- 3. JAVASCRIPT GLOBAL LOGIC (100% PRESERVED FUNCTIONALITY) -->
+<!-- ========================================================= -->
 <script>
 const unconfiguredPage = document.getElementById('unconfiguredPage');
 const preRegisterPage = document.getElementById('preRegisterPage');
@@ -222,6 +515,7 @@ const saveButton = document.getElementById('saveConfig');
 const form = document.getElementById('preRegisterForm');
 saveButton.addEventListener('click', () => form.requestSubmit());
 const saveFeedbackDialog = document.getElementById('saveFeedbackDialog');
+
 function showSaveFeedback(text, title = 'Tidak dapat menyimpan') {
     document.getElementById('saveFeedbackTitle').textContent = title;
     document.getElementById('saveFeedbackText').textContent = text;
@@ -237,6 +531,7 @@ document.getElementById('openPreRegister').addEventListener('click', () => {
 document.getElementById('backToUnconfigured').addEventListener('click', () => {
     preRegisterPage.classList.add('hidden'); unconfiguredPage.classList.remove('hidden');
 });
+
 function updateStartState() {
     const ready = Boolean(document.getElementById('oltSelect').value && selectedPonType());
     configSections.classList.toggle('hidden', !ready);
@@ -245,16 +540,17 @@ function updateStartState() {
     else document.getElementById('ponSelect').disabled = true;
 }
 document.getElementById('oltSelect').addEventListener('change', updateStartState);
+
 function renderConfigType() {
     const type = selectedPonType();
     if (!type || configSections.classList.contains('hidden')) return;
-    document.getElementById('pageTitle').textContent = `${type} Pre-Register`;
-    document.getElementById('configTitle').textContent = `${type} Pre-Register`;
+    document.getElementById('pageTitle').textContent = `${type} PRE-REGISTER`;
+    document.getElementById('configTitle').textContent = `${type} PRE-REGISTER`;
     document.getElementById('formPonType').value = type;
     document.getElementById('gponWanSection').classList.toggle('hidden', type !== 'GPON');
     document.getElementById('eponConfigSection').classList.toggle('hidden', type !== 'EPON');
     document.getElementById('tr069Section').classList.toggle('hidden', type === 'EPON');
-    document.getElementById('serialLabel').textContent = type === 'EPON' ? 'MAC' : 'Serial Number';
+    document.getElementById('serialLabel').textContent = type === 'EPON' ? 'MAC IDENT' : 'SERIAL NUMBER';
     document.getElementById('serialInput').placeholder = type === 'EPON' ? 'e.g. C0:FD:84:6C:CA:5A' : 'E.G. ZTEG12AB3CD4';
     document.getElementById('customerName').maxLength = type === 'EPON' ? 64 : 127;
     const cardSelect = document.getElementById('cardSelect');
@@ -275,13 +571,14 @@ function renderConfigType() {
         ponSelect.disabled = true;
     }
 }
+
 function updateGponWanFields(card = document.querySelector('[data-service-content="1"]')) {
     if (!card) return;
     const serviceNumber = card.dataset.serviceContent;
     const field = id => card.querySelector(`[id="${id}${serviceNumber === '1' ? '' : `-${serviceNumber}`}"]`);
     const method = document.querySelector('#gponConfigMethods [data-gpon-group="method"].border-b-2')?.dataset.method || 'OMCI WAN-IP';
-    const selectedService = card.querySelector('[id^="gponServiceTypes"] [data-gpon-group="service"].bg-slate-600')?.textContent || 'Internet';
-    const selectedVlanMode = card.querySelector('[id^="gponVlanModes"] [data-gpon-group="vlan"].bg-slate-600')?.textContent.trim() || 'Tag';
+    const selectedService = card.querySelector('[id^="gponServiceTypes"] [data-gpon-group="service"].bg-[#0e223b]')?.textContent || 'Internet';
+    const selectedVlanMode = card.querySelector('[id^="gponVlanModes"] [data-gpon-group="vlan"].bg-[#0e223b]')?.textContent.trim() || 'Tag';
     const isUntag = selectedVlanMode === 'Untag';
     const isQinQ = selectedVlanMode === 'QinQ';
     const isTr069 = !isUntag && selectedService.includes('TR069');
@@ -297,10 +594,11 @@ function updateGponWanFields(card = document.querySelector('[data-service-conten
         if (preferredButton) {
             wanButtons.forEach(button => {
                 const selected = button === preferredButton;
-                button.classList.toggle('bg-slate-600', selected);
-                button.classList.toggle('text-white', selected);
-                button.classList.toggle('font-medium', selected);
-                button.classList.toggle('text-slate-600', !selected);
+                button.classList.toggle('bg-[#0e223b]', selected);
+                button.classList.toggle('text-[#00e5ff]', selected);
+                button.classList.toggle('font-bold', selected);
+                button.classList.toggle('border-[#00e5ff]/40', selected);
+                button.classList.toggle('text-slate-400', !selected);
                 button.setAttribute('aria-pressed', selected ? 'true' : 'false');
             });
         }
@@ -309,18 +607,19 @@ function updateGponWanFields(card = document.querySelector('[data-service-conten
     if (method === 'OMCI PPPoE NAT' && isTr069 && setupOntButton) {
         wanButtons.forEach(button => {
             const selected = button === setupOntButton;
-            button.classList.toggle('bg-slate-600', selected);
-            button.classList.toggle('text-white', selected);
-            button.classList.toggle('font-medium', selected);
-            button.classList.toggle('text-slate-600', !selected);
+            button.classList.toggle('bg-[#0e223b]', selected);
+            button.classList.toggle('text-[#00e5ff]', selected);
+            button.classList.toggle('font-bold', selected);
+            button.classList.toggle('border-[#00e5ff]/40', selected);
+            button.classList.toggle('text-slate-400', !selected);
             button.setAttribute('aria-pressed', selected ? 'true' : 'false');
         });
     }
     wanIpButton?.classList.toggle('hidden', restrictedService || (method === 'OMCI PPPoE NAT' && isTr069));
     const wanModeWrap = field('gponWanModeWrap');
     wanModeWrap.classList.toggle('hidden', method === 'Setup via ONT' || restrictedService);
-    const activeWanMode = card.querySelector('[id^="gponWanModes"] [data-gpon-group="wan"].bg-slate-600')?.textContent.trim() || 'WAN-IP';
-    const ipMode = card.querySelector('[id^="gponIpModes"] [data-gpon-group="ip-mode"].bg-slate-600')?.textContent.trim() || 'DHCP';
+    const activeWanMode = card.querySelector('[id^="gponWanModes"] [data-gpon-group="wan"].bg-[#0e223b]')?.textContent.trim() || 'WAN-IP';
+    const ipMode = card.querySelector('[id^="gponIpModes"] [data-gpon-group="ip-mode"].bg-[#0e223b]')?.textContent.trim() || 'DHCP';
     const useWanIp = method === 'OMCI WAN-IP' && activeWanMode.includes('WAN-IP');
     const usePppoeNat = method === 'OMCI PPPoE NAT' && activeWanMode.includes('PPPoE NAT');
     field('gponServiceTypeWrap').classList.toggle('hidden', isUntag);
@@ -346,14 +645,16 @@ function updateGponWanFields(card = document.querySelector('[data-service-conten
     field('gponPppoeFields').classList.toggle('hidden', !useWanIp || isTr069 || ipMode !== 'PPPoE');
     field('gponStaticFields').classList.toggle('hidden', !useWanIp || isTr069 || ipMode !== 'STATIC');
 }
+
 const serviceOneContent = document.querySelector('[data-service-content="1"]');
 document.querySelector('[data-service-toggle="1"]').addEventListener('change', event => serviceOneContent.classList.toggle('hidden', !event.target.checked));
+
 for (let serviceNumber = 2; serviceNumber <= 4; serviceNumber++) {
     const card = document.createElement('article');
-    card.className = 'rounded-lg border border-slate-200';
+    card.className = 'rounded-xl border border-[#162a45] bg-[#060c17] overflow-hidden';
     const header = document.createElement('label');
-    header.className = 'flex cursor-pointer items-center gap-3 rounded-lg bg-slate-50 px-3 py-3';
-    header.innerHTML = `<input type="checkbox" data-service-toggle="${serviceNumber}" class="service-switch"><span class="text-sm font-medium">Service ${serviceNumber}</span><span class="ml-auto text-xs text-slate-400">#0${serviceNumber}</span>`;
+    header.className = 'flex cursor-pointer items-center gap-3 bg-[#091322] px-4 py-3 border-b border-[#162a45]';
+    header.innerHTML = `<input type="checkbox" data-service-toggle="${serviceNumber}" class="service-switch"><span class="text-xs font-bold text-slate-200 uppercase tracking-wider">Service ${serviceNumber}</span><span class="ml-auto text-[10px] font-mono text-[#00e5ff]">#0${serviceNumber}</span>`;
     const content = serviceOneContent.cloneNode(true);
     content.dataset.serviceContent = String(serviceNumber);
     content.classList.add('hidden');
@@ -362,6 +663,7 @@ for (let serviceNumber = 2; serviceNumber <= 4; serviceNumber++) {
     document.getElementById('additionalGponServices').appendChild(card);
     header.querySelector('input').addEventListener('change', event => content.classList.toggle('hidden', !event.target.checked));
 }
+
 document.querySelectorAll('[data-service-content]').forEach(updateGponWanFields);
 document.querySelectorAll('input[name="ponType"]').forEach(input => input.addEventListener('change', updateStartState));
 
@@ -370,27 +672,31 @@ document.getElementById('cardSelect').addEventListener('change', event => {
 });
 document.getElementById('ponSelect').addEventListener('change', event => document.getElementById('formPort').value = event.target.value || '1');
 document.getElementById('oltSelect').addEventListener('change', event => document.getElementById('formOltIp').value = event.target.value);
+
 document.getElementById('onuIdAuto').addEventListener('click', () => {
     document.getElementById('customIdWrap').classList.add('hidden'); document.getElementById('customId').required = false;
     document.getElementById('formOnuId').value = '';
-    document.getElementById('onuIdAuto').className = 'rounded-l-md bg-slate-600 px-3 py-1.5 text-xs text-white';
-    document.getElementById('onuIdCustom').className = 'rounded-r-md border border-slate-300 px-3 py-1.5 text-xs text-slate-600';
+    document.getElementById('onuIdAuto').className = 'rounded-l-md bg-[#00e5ff] px-2.5 py-1 text-[10px] font-bold text-black cursor-pointer';
+    document.getElementById('onuIdCustom').className = 'rounded-r-md border border-[#162a45] bg-[#060c17] px-2.5 py-1 text-[10px] font-bold text-slate-400 hover:text-white cursor-pointer';
 });
+
 document.getElementById('onuIdCustom').addEventListener('click', () => {
     document.getElementById('customIdWrap').classList.remove('hidden'); document.getElementById('customId').required = true;
-    document.getElementById('onuIdCustom').className = 'rounded-r-md bg-slate-600 px-3 py-1.5 text-xs text-white';
-    document.getElementById('onuIdAuto').className = 'rounded-l-md border border-slate-300 px-3 py-1.5 text-xs text-slate-600';
+    document.getElementById('onuIdCustom').className = 'rounded-r-md bg-[#00e5ff] px-2.5 py-1 text-[10px] font-bold text-black cursor-pointer';
+    document.getElementById('onuIdAuto').className = 'rounded-l-md border border-[#162a45] bg-[#060c17] px-2.5 py-1 text-[10px] font-bold text-slate-400 hover:text-white cursor-pointer';
 });
+
 document.getElementById('customId').addEventListener('input', event => document.getElementById('formOnuId').value = event.target.value);
 document.getElementById('tr069Toggle').addEventListener('change', event => document.getElementById('tr069Select').disabled = !event.target.checked);
 document.getElementById('openTr069QuickAdd').addEventListener('click', () => document.getElementById('quickAddTr069')?.click());
+
 async function loadTr069Profiles(selectProfile = '') {
     const select = document.getElementById('tr069Select');
     try {
         const response = await fetch('/api/olt-settings/data?category=tr069_profile');
         if (!response.ok) throw new Error('Gagal memuat TR069 Profile');
         const profiles = await response.json();
-        select.replaceChildren(new Option('Select Profile', 'DEFAULT'), new Option('Default TR-069', 'DEFAULT'));
+        select.replaceChildren(new Option('SELECT PROFILE', 'DEFAULT'), new Option('Default TR-069', 'DEFAULT'));
         profiles.forEach(profile => select.add(new Option(profile.name, profile.name)));
         if (selectProfile) {
             select.value = selectProfile;
@@ -401,10 +707,12 @@ async function loadTr069Profiles(selectProfile = '') {
 }
 loadTr069Profiles();
 window.addEventListener('tr069-profile-saved', event => loadTr069Profiles(event.detail?.name || ''));
+
 document.querySelectorAll('.iptv-port-button').forEach(button => button.addEventListener('click', () => {
     const selected = button.classList.toggle('is-selected');
     button.setAttribute('aria-pressed', selected ? 'true' : 'false');
 }));
+
 document.querySelectorAll('#gponWanSection [data-gpon-group]').forEach(button => button.addEventListener('click', () => {
     const group = button.dataset.gponGroup;
     const card = button.closest('[data-service-content]');
@@ -414,21 +722,23 @@ document.querySelectorAll('#gponWanSection [data-gpon-group]').forEach(button =>
         const selected = option === button;
         if (group === 'method') {
             option.classList.toggle('border-b-2', selected);
-            option.classList.toggle('border-blue-600', selected);
-            option.classList.toggle('font-medium', selected);
-            option.classList.toggle('text-blue-600', selected);
+            option.classList.toggle('border-[#00e5ff]', selected);
+            option.classList.toggle('font-bold', selected);
+            option.classList.toggle('text-[#00e5ff]', selected);
             option.classList.toggle('text-slate-500', !selected);
         } else {
-            option.classList.toggle('bg-slate-600', selected);
-            option.classList.toggle('text-white', selected);
-            option.classList.toggle('font-medium', selected);
-            option.classList.toggle('text-slate-600', !selected);
+            option.classList.toggle('bg-[#0e223b]', selected);
+            option.classList.toggle('text-[#00e5ff]', selected);
+            option.classList.toggle('font-bold', selected);
+            option.classList.toggle('border-[#00e5ff]/40', selected);
+            option.classList.toggle('text-slate-400', !selected);
         }
         option.setAttribute('aria-pressed', selected ? 'true' : 'false');
     });
     if (group === 'method') document.querySelectorAll('[data-service-content]').forEach(updateGponWanFields);
     else if (card && (group === 'wan' || group === 'ip-mode' || group === 'service' || group === 'vlan')) updateGponWanFields(card);
 }));
+
 document.getElementById('addEponVlan').addEventListener('click', () => {
     const template = document.getElementById('eponVlan');
     const row = document.createElement('div');
@@ -436,16 +746,17 @@ document.getElementById('addEponVlan').addEventListener('click', () => {
     const select = template.cloneNode(true);
     select.removeAttribute('id');
     select.value = '';
-    select.className = 'epon-vlan-id w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm';
+    select.className = 'epon-vlan-id w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff]';
     const removeButton = document.createElement('button');
     removeButton.type = 'button';
-    removeButton.className = 'epon-vlan-remove flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-300 text-lg text-slate-500 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600';
+    removeButton.className = 'epon-vlan-remove flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#162a45] bg-[#060c17] text-slate-500 hover:text-[#ff3366] cursor-pointer';
     removeButton.setAttribute('aria-label', 'Remove VLAN ID');
     removeButton.textContent = '×';
     row.append(select, removeButton);
     document.getElementById('eponVlanList').appendChild(row);
     refreshVlanRemoveButtons();
 });
+
 document.querySelectorAll('[id^="addGponBridgeVlan"]').forEach(addButton => addButton.addEventListener('click', () => {
     const card = addButton.closest('[data-service-content]');
     const serviceNumber = card.dataset.serviceContent;
@@ -453,29 +764,31 @@ document.querySelectorAll('[id^="addGponBridgeVlan"]').forEach(addButton => addB
     const row = document.createElement('div');
     row.className = 'flex items-center gap-2';
     const vlan = document.createElement('select');
-    vlan.className = 'gpon-bridge-vlan w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm';
+    vlan.className = 'gpon-bridge-vlan w-full rounded-lg bg-[#08111e] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff]';
     vlan.required = !field('gponBridgeVlanWrap').classList.contains('hidden');
     vlan.disabled = !vlan.required;
-    vlan.add(new Option('Select VLAN', ''));
+    vlan.add(new Option('SELECT VLAN', ''));
     vlan.add(new Option('VLAN 100', '100'));
     vlan.add(new Option('VLAN 200', '200'));
     const removeButton = document.createElement('button');
     removeButton.type = 'button';
-    removeButton.className = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-300 text-lg text-slate-500 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600';
+    removeButton.className = 'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#162a45] bg-[#08111e] text-slate-500 hover:text-[#ff3366] cursor-pointer';
     removeButton.setAttribute('aria-label', 'Remove VLAN ID');
     removeButton.textContent = '×';
     removeButton.addEventListener('click', () => row.remove());
     row.append(vlan, removeButton);
     field('gponBridgeVlanList').appendChild(row);
 }));
+
 document.querySelectorAll('#eponVlanModes [data-vlan-mode]').forEach(button => button.addEventListener('click', () => {
     const mode = button.dataset.vlanMode;
     document.querySelectorAll('#eponVlanModes [data-vlan-mode]').forEach(option => {
         const selected = option === button;
-        option.classList.toggle('bg-slate-600', selected);
-        option.classList.toggle('text-white', selected);
-        option.classList.toggle('font-medium', selected);
-        option.classList.toggle('text-slate-600', !selected);
+        option.classList.toggle('bg-[#0e223b]', selected);
+        option.classList.toggle('text-[#00e5ff]', selected);
+        option.classList.toggle('font-bold', selected);
+        option.classList.toggle('border-[#00e5ff]/40', selected);
+        option.classList.toggle('text-slate-400', !selected);
     });
     const qinq = mode === 'QinQ';
     document.getElementById('eponVlanLabel').textContent = qinq ? 'VLAN QINQ' : 'VLAN ID';
@@ -485,12 +798,14 @@ document.querySelectorAll('#eponVlanModes [data-vlan-mode]').forEach(button => b
     document.querySelectorAll('.epon-vlan-id').forEach(select => { select.required = mode !== 'Untag'; select.disabled = mode === 'Untag'; });
     document.querySelectorAll('.qinq-vlan-id').forEach(input => { input.required = qinq; input.disabled = !qinq; });
 }));
+
 function refreshVlanRemoveButtons() {
     const eponRows = [...document.querySelectorAll('#eponVlanList .epon-vlan-row')];
     eponRows.forEach(row => row.querySelector('.epon-vlan-remove').classList.toggle('hidden', eponRows.length < 2));
     const qinqRows = [...document.querySelectorAll('#qinqVlanIds .qinq-vlan-row')];
     qinqRows.forEach(row => row.querySelector('.qinq-vlan-remove').classList.toggle('hidden', qinqRows.length < 2));
 }
+
 document.getElementById('eponVlanList').addEventListener('click', event => {
     const removeButton = event.target.closest('.epon-vlan-remove');
     if (removeButton && document.querySelectorAll('#eponVlanList .epon-vlan-row').length > 1) {
@@ -498,16 +813,18 @@ document.getElementById('eponVlanList').addEventListener('click', event => {
         refreshVlanRemoveButtons();
     }
 });
+
 document.getElementById('addQinqVlanId').addEventListener('click', () => {
     const row = document.createElement('div');
     row.className = 'qinq-vlan-row flex items-end gap-2';
-    row.innerHTML = '<label class="block w-full text-xs font-medium uppercase tracking-wide text-slate-700">VLAN ID<input class="qinq-vlan-id mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm normal-case tracking-normal" type="number" min="1" max="4094" placeholder="e.g. 100"></label><button type="button" class="qinq-vlan-remove mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-300 text-lg text-slate-500 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600" aria-label="Remove VLAN ID">×</button>';
+    row.innerHTML = '<label class="block w-full text-[10px] font-bold uppercase text-slate-500">VLAN ID<input class="qinq-vlan-id mt-1 w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3 py-2 text-xs text-slate-200 outline-none focus:border-[#00e5ff]" type="number" min="1" max="4094" placeholder="100"></label><button type="button" class="qinq-vlan-remove mb-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#162a45] bg-[#060c17] text-slate-500 hover:text-[#ff3366] cursor-pointer" aria-label="Remove VLAN ID">×</button>';
     const input = row.querySelector('input');
     input.required = !document.getElementById('qinqVlanIds').classList.contains('hidden');
     input.disabled = !input.required;
     document.getElementById('qinqVlanIds').appendChild(row);
     refreshVlanRemoveButtons();
 });
+
 document.getElementById('qinqVlanIds').addEventListener('click', event => {
     const removeButton = event.target.closest('.qinq-vlan-remove');
     if (removeButton && document.querySelectorAll('#qinqVlanIds .qinq-vlan-row').length > 1) {
@@ -532,8 +849,8 @@ form.addEventListener('submit', async event => {
     const type = selectedPonType();
     const serial = document.getElementById('serialInput').value.trim();
     const name = document.getElementById('customerName').value.trim();
-    const serviceType = document.querySelector('#gponServiceTypes [data-gpon-group="service"].bg-slate-600')?.textContent || '';
-    const selectedGpon = group => document.querySelector(`#gponWanSection [data-gpon-group="${group}"].bg-slate-600, #gponWanSection [data-gpon-group="${group}"].border-b-2`)?.textContent.trim() || '';
+    const serviceType = document.querySelector('#gponServiceTypes [data-gpon-group="service"].bg-[#0e223b]')?.textContent || '';
+    const selectedGpon = group => document.querySelector(`#gponWanSection [data-gpon-group="${group}"].bg-[#0e223b], #gponWanSection [data-gpon-group="${group}"].border-b-2`)?.textContent.trim() || '';
     const gponVlanMode = selectedGpon('vlan') || 'Tag';
     const vlan = type === 'GPON'
         ? (gponVlanMode === 'Untag' ? document.getElementById('gponUntagVlan').value : serviceType.includes('IPTV') ? document.getElementById('gponMvlan').value : serviceType.includes('Bridge') ? document.getElementById('gponBridgeVlan').value : document.getElementById('gponVlan').value)
@@ -547,22 +864,24 @@ form.addEventListener('submit', async event => {
     const username = useGponPppoe ? document.getElementById(useGponNat ? 'gponNatPppoeUser' : 'gponPppoeUser').value : '';
     const password = useGponPppoe ? document.getElementById(useGponNat ? 'gponNatPppoePass' : 'gponPppoePass').value : '';
     const message = document.getElementById('saveMessage');
-    const vlanMode = document.querySelector('#eponVlanModes [data-vlan-mode].bg-slate-600')?.dataset.vlanMode || 'Tag';
+    const vlanMode = document.querySelector('#eponVlanModes [data-vlan-mode].bg-[#0e223b]')?.dataset.vlanMode || 'Tag';
     const eponVlans = [...document.querySelectorAll('.epon-vlan-id')].filter(select => select.value).map(select => select.value);
     const extraVlans = [...document.querySelectorAll('.qinq-vlan-id, .gpon-qinq-vlan-id')].filter(input => input.value).map(input => input.value);
     const gponQinqNames = [...document.querySelectorAll('.gpon-qinq-vlan-name')].map(input => input.value.trim()).filter(Boolean);
     const bridgeVlans = [...document.querySelectorAll('.gpon-bridge-vlan')].map(select => select.value).filter(Boolean);
     const missingLocation = !document.getElementById('formSlot').value || !document.getElementById('formPort').value || (type === 'GPON' && !document.getElementById('cardSelect').value);
+    
     if (!serial || !name || missingLocation) {
         const errorText = type === 'GPON'
             ? 'Lengkapi OLT, Card, Serial Number, dan Name terlebih dahulu.'
             : 'Lengkapi OLT, Serial Number, dan Name terlebih dahulu.';
         message.textContent = errorText;
-        message.className = 'rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800';
+        message.className = 'rounded-lg border border-amber-500/30 bg-[#251704]/40 p-3 text-xs text-amber-300';
         message.classList.remove('hidden');
         showSaveFeedback(errorText, 'Periksa data ONU');
         return;
     }
+    
     const data = {
         olt_ip: document.getElementById('formOltIp').value,
         slot: Number(document.getElementById('formSlot').value),
@@ -576,7 +895,8 @@ form.addEventListener('submit', async event => {
             ? (document.getElementById('eponSla').value || 'DEFAULT')
             : (document.getElementById('tr069Toggle').checked ? document.getElementById('tr069Select').value : 'DEFAULT')
     };
-    saveButton.disabled = true; saveButton.textContent = 'Saving…';
+
+    saveButton.disabled = true; saveButton.textContent = 'SAVING...';
     try {
         const response = await fetch('/api/v1/register-onu', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
         let result = {};
@@ -587,12 +907,19 @@ form.addEventListener('submit', async event => {
                 : result.detail;
             throw new Error(detail || `Gagal menyimpan konfigurasi (HTTP ${response.status}).`);
         }
-        message.textContent = result.message; message.className = 'rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800'; message.classList.remove('hidden');
+        message.textContent = result.message; 
+        message.className = 'rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-400'; 
+        message.classList.remove('hidden');
         setTimeout(() => { window.location.href = '/all-onus'; }, 900);
     } catch (error) {
-        message.textContent = error.message; message.className = 'rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800'; message.classList.remove('hidden');
+        message.textContent = error.message; 
+        message.className = 'rounded-lg border border-[#ff3366]/30 bg-[#ff3366]/10 p-3 text-xs text-[#ff3366]'; 
+        message.classList.remove('hidden');
         showSaveFeedback(error.message, 'Gagal menyimpan konfigurasi');
-    } finally { saveButton.disabled = false; saveButton.textContent = '▣ Save Config'; }
+    } finally { 
+        saveButton.disabled = false; 
+        saveButton.textContent = '💾 SAVE CONFIG'; 
+    }
 });
 </script>
 {% endblock %}

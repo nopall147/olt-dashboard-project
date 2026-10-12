@@ -1,68 +1,495 @@
 {% extends "base.html" %}
 {% block title %}Customization - OLT Monitoring System{% endblock %}
 {% block content %}
-<div class="space-y-6">
-  <header><h1 class="text-xl font-bold text-slate-900">Customization</h1><p class="mt-1 text-xs text-slate-400"><a href="/" class="hover:text-blue-600">Home</a><span class="mx-2">/</span>Customization</p></header>
-  <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-    <h2 class="text-xl font-medium text-blue-950">All ONUs Custom Page</h2>
-    <div class="mt-6 border-b border-slate-200" role="tablist" aria-label="Pengaturan customization">
-      <button class="custom-tab border-b-2 border-blue-600 px-4 py-3 text-sm font-medium text-blue-800" data-tab="desktop" role="tab" aria-selected="true">Desktop Table</button>
-      <button class="custom-tab border-b-2 border-transparent px-4 py-3 text-sm text-slate-500 hover:text-blue-700" data-tab="mobile" role="tab" aria-selected="false">Mobile Table</button>
-      <button class="custom-tab border-b-2 border-transparent px-4 py-3 text-sm text-slate-500 hover:text-blue-700" data-tab="signal" role="tab" aria-selected="false">ONU Signal Filter</button>
+<div class="space-y-6 font-mono text-slate-300">
+
+    <!-- ========================================================= -->
+    <!-- 1. TOP HEADER & TELEMETRY CALIBRATION STRIP -->
+    <!-- ========================================================= -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-[#162a45] gap-4">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2.5">
+                <span class="inline-block h-2 w-2 rounded-full bg-[#00e5ff] shadow-[0_0_8px_#00e5ff]"></span>
+                <h1 class="text-base font-bold tracking-wider text-slate-100 uppercase neon-glow-cyan">TELEMETRY CUSTOMIZATION CONSOLE</h1>
+            </div>
+            <p class="text-[10px] text-slate-500 tracking-widest uppercase">TABLE SCHEMAS // OPTICAL SIGNAL CALIBRATION & THRESHOLDS</p>
+        </div>
+        <div class="flex items-center gap-2 text-xs">
+            <a href="/" class="text-slate-500 hover:text-[#00e5ff] transition">CORE</a>
+            <span class="text-slate-600">/</span>
+            <span class="text-[#00e5ff]">CUSTOMIZATION</span>
+        </div>
     </div>
 
-    <div id="panel-desktop" class="custom-panel">
-      <div class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border-l-4 border-blue-500 bg-slate-50 px-4 py-4 shadow-sm"><div class="flex items-center gap-3 font-medium text-slate-700"><svg class="h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4m-6-6 3-3 2 2 4-4 3 3"/></svg><span>Desktop ONUs Table</span></div><button type="button" class="save-customization rounded-md border border-blue-500 px-3 py-2 text-sm text-blue-700 hover:bg-blue-50">⇩ Save Changes</button></div>
-      <details class="mt-4 rounded-lg border border-slate-200 p-4"><summary class="cursor-pointer text-sm font-medium text-slate-700">Pilih kolom desktop</summary><div class="mt-3 flex flex-wrap gap-x-5 gap-y-3">{% for key,label in columns %}<label class="flex items-center gap-2 text-xs text-slate-600"><input class="desktop-column accent-blue-600" type="checkbox" value="{{ key }}" {% if key in settings.desktop_columns %}checked{% endif %}>{{ label }}</label>{% endfor %}</div></details>
-      <div class="mt-5 overflow-x-auto"><table class="w-full min-w-[1320px] border-collapse text-left text-sm"><thead><tr class="text-blue-950">{% for key,label in columns %}<th data-col="{{ key }}" class="whitespace-nowrap px-4 py-3 font-semibold">{{ label }}</th>{% endfor %}<th class="whitespace-nowrap px-4 py-3 font-semibold">Action</th></tr></thead><tbody class="divide-y divide-slate-100">{% for onu in onus %}{% set rx = onu.rx_onu %}{% set signal = 'Good' if rx is not none and rx >= settings.good_threshold else 'Warning' if rx is not none and rx >= settings.warning_threshold else 'Critical' if rx is not none else 'Other' %}<tr class="custom-onu-row hover:bg-blue-50/50" data-signal="{{ signal }}" data-name="{{ onu.customer_name }} {{ onu.gpon_port }} {{ onu.sn_mac }}">{% for key,label in columns %}<td data-col="{{ key }}" class="px-4 py-3 text-slate-800 {% if key == 'description' %}max-w-[260px] truncate{% else %}whitespace-nowrap{% endif %}">{% if key == 'olt' %}{{ onu.olt_name }}{% elif key == 'name' %}<span class="font-medium">{{ onu.customer_name }}</span>{% elif key == 'description' %}{{ onu.description or '—' }}{% elif key == 'pppoe' %}{{ onu.pppoe_user or '—' }}{% elif key == 'port' %}<span class="rounded-lg bg-amber-100 px-2 py-1 font-semibold">{{ onu.gpon_port }}</span>{% elif key == 'status' %}<span class="status-tooltip-trigger rounded-full px-2.5 py-1 text-xs {% if onu.status == 'Online' %}bg-emerald-100 text-emerald-700{% elif onu.status == 'LOS' %}bg-rose-100 text-rose-700{% elif onu.status == 'DyingGasp' %}bg-amber-100 text-amber-700{% else %}bg-slate-100 text-slate-600{% endif %}" data-tooltip="{{ onu.status }}">{{ onu.status }}</span>{% elif key == 'rx_olt' %}<span class="rounded-md px-2 py-1 text-xs {% if onu.rx_olt is none %}bg-slate-100 text-slate-500{% elif onu.rx_olt >= settings.good_threshold %}bg-emerald-100 text-emerald-700{% elif onu.rx_olt >= settings.warning_threshold %}bg-amber-100 text-amber-700{% else %}bg-rose-100 text-rose-700{% endif %}">{{ ('%.2f dBm'|format(onu.rx_olt)) if onu.rx_olt is not none else 'N/A' }}</span>{% elif key == 'rx_onu' %}<span class="rounded-md px-2 py-1 text-xs {% if onu.rx_onu is none %}bg-slate-100 text-slate-500{% elif onu.rx_onu >= settings.good_threshold %}bg-emerald-100 text-emerald-700{% elif onu.rx_onu >= settings.warning_threshold %}bg-amber-100 text-amber-700{% else %}bg-rose-100 text-rose-700{% endif %}">{{ ('%.2f dBm'|format(onu.rx_onu)) if onu.rx_onu is not none else 'N/A' }}</span>{% elif key == 'serial' %}<span class="font-mono text-xs">{{ onu.sn_mac or '—' }}</span>{% elif key == 'type' %}{{ onu.actual_type or 'GPON' }}{% endif %}</td>{% endfor %}<td class="px-3 py-3"><button type="button" class="row-setting rounded-md bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700" data-details="{{ onu.olt_name }} · {{ onu.gpon_port }} · {{ onu.sn_mac or '—' }}">⚙ Detail</button></td></tr>{% else %}<tr><td colspan="11" class="p-10 text-center text-sm text-slate-500">Belum ada ONU di database.</td></tr>{% endfor %}</tbody></table></div>
-      <p class="mt-3 text-xs text-slate-400">{{ onus|length }} ONU dari database</p>
-    </div>
+    <!-- ========================================================= -->
+    <!-- 2. MAIN CUSTOMIZATION CHASSIS -->
+    <!-- ========================================================= -->
+    <section class="rounded-xl border border-[#162a45] bg-[#08111e] p-5 shadow-xl md:p-6">
+        
+        <!-- Tab Navigation Ribbon -->
+        <div class="flex flex-wrap items-center gap-2 border-b border-[#162a45] pb-3" role="tablist" aria-label="Pengaturan customization">
+            <button class="custom-tab px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border border-[#00e5ff]/50 bg-[#0e223b] text-[#00e5ff] shadow-[0_0_12px_rgba(0,229,255,0.2)] transition cursor-pointer" data-tab="desktop" role="tab" aria-selected="true">
+                <span>DESKTOP SCHEMA</span>
+            </button>
+            <button class="custom-tab px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border border-transparent text-slate-400 hover:text-slate-200 hover:bg-[#0d1d33] transition cursor-pointer" data-tab="mobile" role="tab" aria-selected="false">
+                <span>MOBILE SCHEMA</span>
+            </button>
+            <button class="custom-tab px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border border-transparent text-slate-400 hover:text-slate-200 hover:bg-[#0d1d33] transition cursor-pointer" data-tab="signal" role="tab" aria-selected="false">
+                <span>SIGNAL CALIBRATION</span>
+            </button>
+        </div>
 
-    <div id="panel-mobile" class="custom-panel hidden">
-      <div class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border-l-4 border-blue-500 bg-slate-50 px-4 py-4 shadow-sm"><div class="flex items-center gap-3 font-medium text-slate-700"><svg class="h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10 5h4m-3 13h2"/></svg><span>Mobile ONUs Table</span></div><button type="button" class="save-customization rounded-md border border-blue-500 px-3 py-2 text-sm text-blue-700 hover:bg-blue-50">⇩ Save Changes</button></div>
-      <details class="mt-4 rounded-lg border border-slate-200 p-4" open><summary class="cursor-pointer text-sm font-medium text-slate-700">Pilih kolom mobile</summary><div class="mt-3 flex flex-wrap gap-x-5 gap-y-3">{% for key,label in columns %}<label class="flex items-center gap-2 text-xs text-slate-600"><input class="mobile-column accent-blue-600" type="checkbox" value="{{ key }}" {% if key in settings.mobile_columns %}checked{% endif %}>{{ label }}</label>{% endfor %}</div></details>
-      <div class="mt-5 overflow-x-auto rounded-lg"><table class="w-full min-w-[1320px] text-left text-sm"><thead><tr><th class="px-3 py-3 font-semibold text-blue-950">Action</th>{% for key,label in columns %}<th data-mobile-col="{{ key }}" class="px-3 py-3 font-semibold text-blue-950">{{ label }}</th>{% endfor %}</tr></thead><tbody class="divide-y divide-slate-100">{% for onu in onus %}<tr class="odd:bg-white even:bg-slate-100/80"><td class="px-3 py-3"><button type="button" class="row-setting grid h-10 w-10 place-items-center rounded-full bg-blue-50 text-lg text-blue-600 hover:bg-blue-100" data-details="{{ onu.olt_name }} · {{ onu.gpon_port }} · {{ onu.sn_mac or '—' }}" aria-label="Detail ONU">⚙</button></td>{% for key,label in columns %}<td data-mobile-col="{{ key }}" class="whitespace-nowrap px-3 py-3">{% if key == 'olt' %}{{ onu.olt_name }}{% elif key == 'name' %}{{ onu.customer_name }}{% elif key == 'description' %}{{ onu.description or '—' }}{% elif key == 'pppoe' %}{{ onu.pppoe_user or '—' }}{% elif key == 'port' %}<span class="rounded-lg bg-amber-100 px-2.5 py-1.5 font-semibold">{{ onu.gpon_port }}</span>{% elif key == 'status' %}<span tabindex="0" role="img" aria-label="{{ onu.status }}" class="status-tooltip-trigger grid h-10 w-10 place-items-center rounded-full {% if onu.status == 'Online' %}bg-emerald-100 text-emerald-600{% elif onu.status == 'LOS' %}bg-rose-100 text-rose-600{% elif onu.status == 'DyingGasp' %}bg-slate-200 text-slate-500{% else %}bg-slate-200 text-slate-500{% endif %}" data-tooltip="{{ onu.status }}">{% if onu.status == 'Online' %}&#10003;{% elif onu.status == 'LOS' %}&#128263;{% elif onu.status == 'DyingGasp' %}&#128268;{% else %}!{% endif %}</span>{% elif key == 'rx_olt' %}<span class="rounded-lg px-3 py-2 {% if onu.rx_olt is none %}bg-slate-100 text-slate-500{% elif onu.rx_olt >= settings.good_threshold %}bg-emerald-100 text-emerald-700{% elif onu.rx_olt >= settings.warning_threshold %}bg-amber-100 text-amber-700{% else %}bg-rose-100 text-rose-700{% endif %}">{{ ('▥ %.1f dBm'|format(onu.rx_olt)) if onu.rx_olt is not none else 'N/A' }}</span>{% elif key == 'rx_onu' %}<span class="rounded-lg px-3 py-2 {% if onu.rx_onu is none %}bg-slate-100 text-slate-500{% elif onu.rx_onu >= settings.good_threshold %}bg-emerald-100 text-emerald-700{% elif onu.rx_onu >= settings.warning_threshold %}bg-amber-100 text-amber-700{% else %}bg-rose-100 text-rose-700{% endif %}">{{ ('▥ %.1f dBm'|format(onu.rx_onu)) if onu.rx_onu is not none else 'N/A' }}</span>{% elif key == 'serial' %}<span class="font-mono text-xs">{{ onu.sn_mac or '—' }}</span>{% elif key == 'type' %}{{ onu.actual_type or 'GPON' }}{% endif %}</td>{% endfor %}</tr>{% else %}<tr><td colspan="11" class="p-8 text-center text-slate-500">Belum ada ONU di database.</td></tr>{% endfor %}</tbody></table></div>
-    </div>
+        <!-- ===================================================== -->
+        <!-- PANEL 1: DESKTOP TABLE SETTINGS -->
+        <!-- ===================================================== -->
+        <div id="panel-desktop" class="custom-panel">
+            <div class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#162a45] bg-[#091322] px-4 py-3 shadow-md">
+                <div class="flex items-center gap-3 text-xs font-bold text-slate-200">
+                    <svg class="h-4 w-4 text-[#00e5ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4m-6-6 3-3 2 2 4-4 3 3"/>
+                    </svg>
+                    <span>DESKTOP ONUS TELEMETRY TABLE</span>
+                </div>
+                <button type="button" class="save-customization inline-flex items-center gap-2 rounded-lg bg-[#00e5ff] hover:bg-[#00c8e0] px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-black shadow-[0_0_12px_rgba(0,229,255,0.3)] transition cursor-pointer">
+                    <span>💾 SAVE CHANGES</span>
+                </button>
+            </div>
 
-    <div id="panel-signal" class="custom-panel hidden">
-      <div class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border-l-4 border-blue-500 bg-slate-50 px-4 py-4 shadow-sm"><div class="flex items-center gap-3 font-medium text-slate-700"><svg class="h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18V6m4 12V6m4 12V6m4 12V6m4 12V6"/><path d="M2 20h20"/></svg><span>ONU Signal Filter</span></div><div class="flex gap-2"><button id="resetThreshold" type="button" title="Kembalikan nilai slider ke default −30 dan −27 dBm" class="rounded-md border border-slate-400 px-3 py-2 text-sm text-slate-600 hover:bg-white">↻ Default</button><button id="applyThreshold" type="button" title="Simpan ambang dan terapkan warna status sinyal" class="rounded-md border border-blue-500 px-3 py-2 text-sm text-blue-700 hover:bg-blue-50">✓ Apply Threshold</button></div></div>
-      <p class="mt-3 text-xs text-slate-500">Atur batas Warning dan Good, lalu pilih <b>Apply Threshold</b> untuk menyimpan dan menerapkannya ke klasifikasi sinyal di All ONUs.</p>
-      <div class="px-1 pb-2 pt-12">
-        <div class="relative h-12"><div id="thresholdTrack" class="absolute inset-x-1 top-5 h-1.5 rounded-full"></div><div class="absolute -top-1 left-0 right-0 flex justify-between px-[6%] text-sm font-medium"><span class="text-rose-500">Critical</span><span class="text-amber-500">Warning</span><span class="text-emerald-500">Good</span></div><input id="warningThreshold" aria-label="Critical to warning threshold" type="range" min="-32" max="-20" step="0.1" value="{{ settings.warning_threshold }}" class="threshold-range warning-range"><input id="goodThreshold" aria-label="Warning to good threshold" type="range" min="-32" max="-20" step="0.1" value="{{ settings.good_threshold }}" class="threshold-range good-range"></div>
-        <div class="flex justify-between border-t border-slate-200 pt-2 text-xs text-slate-500">{% for tick in [-32,-30,-28,-26,-24,-22,-20] %}<span>{{ tick }} dBm</span>{% endfor %}</div>
-      </div>
-      <div class="mt-7 grid gap-4 md:grid-cols-2"><div class="rounded-lg border border-slate-200 p-4 text-center text-sm"><span class="mr-2 inline-block h-3 w-3 rounded-full bg-rose-500"></span><span id="warningValue">{{ settings.warning_threshold }}</span> dBm</div><div class="rounded-lg border border-slate-200 p-4 text-center text-sm"><span class="mr-2 inline-block h-3 w-3 rounded-full bg-emerald-500"></span><span id="goodValue">{{ settings.good_threshold }}</span> dBm</div></div>
-      <div class="mt-6 grid gap-5 md:grid-cols-3"><article class="rounded-lg border-t-4 border-emerald-500 p-5 shadow-sm"><h3 class="font-medium text-emerald-600">▥ &nbsp; Good</h3><p class="mt-4 text-sm leading-6 text-slate-500">Signal power is optimal when it's greater than or equal to <b id="goodDescription" class="text-slate-800">{{ settings.good_threshold }}</b> dBm.</p></article><article class="rounded-lg border-t-4 border-amber-500 p-5 shadow-sm"><h3 class="font-medium text-amber-600">▥ &nbsp; Warning</h3><p class="mt-4 text-sm leading-6 text-slate-500">Signal is acceptable but needs monitoring when between <b id="warningDescription" class="text-slate-800">{{ settings.warning_threshold }}</b> dBm and <b id="goodDescription2" class="text-slate-800">{{ settings.good_threshold }}</b> dBm.</p></article><article class="rounded-lg border-t-4 border-rose-500 p-5 shadow-sm"><h3 class="font-medium text-rose-600">▥ &nbsp; Critical</h3><p class="mt-4 text-sm leading-6 text-slate-500">Signal is poor and needs attention when less than <b id="warningDescription2" class="text-slate-800">{{ settings.warning_threshold }}</b> dBm.</p></article></div>
-    </div>
-    <div id="customMessage" class="mt-4 hidden rounded-lg px-4 py-3 text-sm"></div>
-  </section>
+            <details class="mt-4 rounded-lg border border-[#162a45] bg-[#060c17]/60 p-4">
+                <summary class="cursor-pointer text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-[#00e5ff] transition flex items-center gap-2">
+                    <span class="text-[#00e5ff]">▼</span> SELECT VISIBLE DESKTOP COLUMNS
+                </summary>
+                <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-3 border-t border-[#162a45]/60">
+                    {% for key,label in columns %}
+                    <label class="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-200 cursor-pointer">
+                        <input class="desktop-column accent-[#00e5ff] h-3.5 w-3.5 rounded" type="checkbox" value="{{ key }}" {% if key in settings.desktop_columns %}checked{% endif %}>
+                        <span>{{ label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </details>
+
+            <div class="mt-5 overflow-x-auto rounded-lg border border-[#162a45]">
+                <table class="w-full min-w-[1320px] border-collapse text-left text-xs bg-[#08111e]">
+                    <thead>
+                        <tr class="bg-[#091322] border-b border-[#162a45] text-slate-400 text-[10px] uppercase tracking-wider">
+                            {% for key,label in columns %}
+                            <th data-col="{{ key }}" class="whitespace-nowrap px-4 py-3 font-bold">{{ label }}</th>
+                            {% endfor %}
+                            <th class="whitespace-nowrap px-4 py-3 font-bold text-center">ACTION</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#162a45]/60">
+                        {% for onu in onus %}
+                        {% set rx = onu.rx_onu %}
+                        {% set signal = 'Good' if rx is not none and rx >= settings.good_threshold else 'Warning' if rx is not none and rx >= settings.warning_threshold else 'Critical' if rx is not none else 'Other' %}
+                        <tr class="custom-onu-row hover:bg-[#0d1d33]/50 transition duration-150" data-signal="{{ signal }}" data-name="{{ onu.customer_name }} {{ onu.gpon_port }} {{ onu.sn_mac }}">
+                            {% for key,label in columns %}
+                            <td data-col="{{ key }}" class="px-4 py-3 text-slate-300 {% if key == 'description' %}max-w-[260px] truncate{% else %}whitespace-nowrap{% endif %}">
+                                {% if key == 'olt' %}
+                                    <span class="font-bold text-slate-200">{{ onu.olt_name }}</span>
+                                {% elif key == 'name' %}
+                                    <span class="font-bold text-[#00e5ff]">{{ onu.customer_name }}</span>
+                                {% elif key == 'description' %}
+                                    {{ onu.description or '—' }}
+                                {% elif key == 'pppoe' %}
+                                    <span class="font-mono text-slate-400">{{ onu.pppoe_user or '—' }}</span>
+                                {% elif key == 'port' %}
+                                    <span class="rounded bg-[#060c17] border border-[#162a45] px-2 py-0.5 font-mono text-[#00e5ff] font-semibold text-[11px]">{{ onu.gpon_port }}</span>
+                                {% elif key == 'status' %}
+                                    <span class="status-tooltip-trigger inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider {% if onu.status == 'Online' %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/30{% elif onu.status == 'LOS' %}bg-[#ff3366]/10 text-[#ff3366] border border-[#ff3366]/30{% elif onu.status == 'DyingGasp' %}bg-amber-500/10 text-amber-400 border border-amber-500/30{% else %}bg-slate-800 text-slate-400 border border-slate-700{% endif %}" data-tooltip="{{ onu.status }}">{{ onu.status }}</span>
+                                {% elif key == 'rx_olt' %}
+                                    <span class="rounded px-2 py-0.5 text-[11px] font-mono {% if onu.rx_olt is none %}bg-slate-800 text-slate-500 border border-slate-700{% elif onu.rx_olt >= settings.good_threshold %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/30{% elif onu.rx_olt >= settings.warning_threshold %}bg-amber-500/10 text-amber-400 border border-amber-500/30{% else %}bg-[#ff3366]/10 text-[#ff3366] border border-[#ff3366]/30{% endif %}">{{ ('%.2f dBm'|format(onu.rx_olt)) if onu.rx_olt is not none else 'N/A' }}</span>
+                                {% elif key == 'rx_onu' %}
+                                    <span class="rounded px-2 py-0.5 text-[11px] font-mono {% if onu.rx_onu is none %}bg-slate-800 text-slate-500 border border-slate-700{% elif onu.rx_onu >= settings.good_threshold %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/30{% elif onu.rx_onu >= settings.warning_threshold %}bg-amber-500/10 text-amber-400 border border-amber-500/30{% else %}bg-[#ff3366]/10 text-[#ff3366] border border-[#ff3366]/30{% endif %}">{{ ('%.2f dBm'|format(onu.rx_onu)) if onu.rx_onu is not none else 'N/A' }}</span>
+                                {% elif key == 'serial' %}
+                                    <span class="font-mono text-xs text-slate-400">{{ onu.sn_mac or '—' }}</span>
+                                {% elif key == 'type' %}
+                                    <span class="text-[11px] text-slate-400">{{ onu.actual_type or 'GPON' }}</span>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                            <td class="px-3 py-3 text-center">
+                                <button type="button" class="row-setting rounded-lg bg-[#0e223b] hover:bg-[#133054] border border-[#00e5ff]/40 px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#00e5ff] shadow-[0_0_8px_rgba(0,229,255,0.15)] transition cursor-pointer" data-details="{{ onu.olt_name }} · {{ onu.gpon_port }} · {{ onu.sn_mac or '—' }}">
+                                    <span>⚙ DETAILS</span>
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="11" class="p-8 text-center text-xs text-slate-500">Belum ada ONU di database sistem.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="mt-3 text-[10px] text-slate-500 tracking-wide uppercase">{{ onus|length }} TOTAL ONU OBJECTS IN MATRIX</p>
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- PANEL 2: MOBILE TABLE SETTINGS -->
+        <!-- ===================================================== -->
+        <div id="panel-mobile" class="custom-panel hidden">
+            <div class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#162a45] bg-[#091322] px-4 py-3 shadow-md">
+                <div class="flex items-center gap-3 text-xs font-bold text-slate-200">
+                    <svg class="h-4 w-4 text-[#00e5ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10 5h4m-3 13h2"/>
+                    </svg>
+                    <span>MOBILE COMPACT ONUS TABLE</span>
+                </div>
+                <button type="button" class="save-customization inline-flex items-center gap-2 rounded-lg bg-[#00e5ff] hover:bg-[#00c8e0] px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-black shadow-[0_0_12px_rgba(0,229,255,0.3)] transition cursor-pointer">
+                    <span>💾 SAVE CHANGES</span>
+                </button>
+            </div>
+
+            <details class="mt-4 rounded-lg border border-[#162a45] bg-[#060c17]/60 p-4" open>
+                <summary class="cursor-pointer text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-[#00e5ff] transition flex items-center gap-2">
+                    <span class="text-[#00e5ff]">▼</span> SELECT VISIBLE MOBILE COLUMNS
+                </summary>
+                <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pt-3 border-t border-[#162a45]/60">
+                    {% for key,label in columns %}
+                    <label class="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-200 cursor-pointer">
+                        <input class="mobile-column accent-[#00e5ff] h-3.5 w-3.5 rounded" type="checkbox" value="{{ key }}" {% if key in settings.mobile_columns %}checked{% endif %}>
+                        <span>{{ label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </details>
+
+            <div class="mt-5 overflow-x-auto rounded-lg border border-[#162a45]">
+                <table class="w-full min-w-[1320px] text-left text-xs bg-[#08111e]">
+                    <thead>
+                        <tr class="bg-[#091322] border-b border-[#162a45] text-slate-400 text-[10px] uppercase tracking-wider">
+                            <th class="px-3 py-3 font-bold text-center">ACTION</th>
+                            {% for key,label in columns %}
+                            <th data-mobile-col="{{ key }}" class="px-3 py-3 font-bold">{{ label }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#162a45]/60">
+                        {% for onu in onus %}
+                        <tr class="hover:bg-[#0d1d33]/50 transition duration-150">
+                            <td class="px-3 py-3 text-center">
+                                <button type="button" class="row-setting grid h-8 w-8 mx-auto place-items-center rounded-lg bg-[#0e223b] border border-[#00e5ff]/40 text-xs font-bold text-[#00e5ff] hover:bg-[#00e5ff]/20 transition" data-details="{{ onu.olt_name }} · {{ onu.gpon_port }} · {{ onu.sn_mac or '—' }}" aria-label="Detail ONU">
+                                    ⚙
+                                </button>
+                            </td>
+                            {% for key,label in columns %}
+                            <td data-mobile-col="{{ key }}" class="whitespace-nowrap px-3 py-3 text-slate-300">
+                                {% if key == 'olt' %}
+                                    <span class="font-bold text-slate-200">{{ onu.olt_name }}</span>
+                                {% elif key == 'name' %}
+                                    <span class="font-bold text-[#00e5ff]">{{ onu.customer_name }}</span>
+                                {% elif key == 'description' %}
+                                    {{ onu.description or '—' }}
+                                {% elif key == 'pppoe' %}
+                                    <span class="font-mono text-slate-400">{{ onu.pppoe_user or '—' }}</span>
+                                {% elif key == 'port' %}
+                                    <span class="rounded bg-[#060c17] border border-[#162a45] px-2 py-0.5 font-mono text-[#00e5ff] font-semibold text-[11px]">{{ onu.gpon_port }}</span>
+                                {% elif key == 'status' %}
+                                    <span tabindex="0" role="img" aria-label="{{ onu.status }}" class="status-tooltip-trigger inline-flex items-center justify-center h-7 w-7 rounded-lg text-xs font-bold {% if onu.status == 'Online' %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/30{% elif onu.status == 'LOS' %}bg-[#ff3366]/10 text-[#ff3366] border border-[#ff3366]/30{% elif onu.status == 'DyingGasp' %}bg-amber-500/10 text-amber-400 border border-amber-500/30{% else %}bg-slate-800 text-slate-500 border border-slate-700{% endif %}" data-tooltip="{{ onu.status }}">
+                                        {% if onu.status == 'Online' %}✓{% elif onu.status == 'LOS' %}✕{% elif onu.status == 'DyingGasp' %}⚡{% else %}!{% endif %}
+                                    </span>
+                                {% elif key == 'rx_olt' %}
+                                    <span class="rounded px-2.5 py-1 text-xs font-mono {% if onu.rx_olt is none %}bg-slate-800 text-slate-500 border border-slate-700{% elif onu.rx_olt >= settings.good_threshold %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/30{% elif onu.rx_olt >= settings.warning_threshold %}bg-amber-500/10 text-amber-400 border border-amber-500/30{% else %}bg-[#ff3366]/10 text-[#ff3366] border border-[#ff3366]/30{% endif %}">
+                                        {{ ('%.1f dBm'|format(onu.rx_olt)) if onu.rx_olt is not none else 'N/A' }}
+                                    </span>
+                                {% elif key == 'rx_onu' %}
+                                    <span class="rounded px-2.5 py-1 text-xs font-mono {% if onu.rx_onu is none %}bg-slate-800 text-slate-500 border border-slate-700{% elif onu.rx_onu >= settings.good_threshold %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/30{% elif onu.rx_onu >= settings.warning_threshold %}bg-amber-500/10 text-amber-400 border border-amber-500/30{% else %}bg-[#ff3366]/10 text-[#ff3366] border border-[#ff3366]/30{% endif %}">
+                                        {{ ('%.1f dBm'|format(onu.rx_onu)) if onu.rx_onu is not none else 'N/A' }}
+                                    </span>
+                                {% elif key == 'serial' %}
+                                    <span class="font-mono text-xs text-slate-400">{{ onu.sn_mac or '—' }}</span>
+                                {% elif key == 'type' %}
+                                    <span class="text-[11px] text-slate-400">{{ onu.actual_type or 'GPON' }}</span>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="11" class="p-8 text-center text-xs text-slate-500">Belum ada ONU di database sistem.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- PANEL 3: OPTICAL SIGNAL THRESHOLD CALIBRATOR -->
+        <!-- ===================================================== -->
+        <div id="panel-signal" class="custom-panel hidden">
+            <div class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#162a45] bg-[#091322] px-4 py-3 shadow-md">
+                <div class="flex items-center gap-3 text-xs font-bold text-slate-200">
+                    <svg class="h-4 w-4 text-[#00e5ff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 18V6m4 12V6m4 12V6m4 12V6m4 12V6"/><path d="M2 20h20"/>
+                    </svg>
+                    <span>OPTICAL POWER SENSITIVITY CALIBRATION</span>
+                </div>
+                <div class="flex gap-2">
+                    <button id="resetThreshold" type="button" title="Kembalikan nilai slider ke default −30 dan −27 dBm" class="rounded-lg border border-[#162a45] px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-slate-200 hover:bg-[#0d1d33] transition cursor-pointer">
+                        <span>↺ DEFAULTS</span>
+                    </button>
+                    <button id="applyThreshold" type="button" title="Simpan ambang dan terapkan warna status sinyal" class="rounded-lg bg-[#00e5ff] hover:bg-[#00c8e0] px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-black shadow-[0_0_12px_rgba(0,229,255,0.3)] transition cursor-pointer">
+                        <span>✓ APPLY THRESHOLD</span>
+                    </button>
+                </div>
+            </div>
+
+            <p class="mt-3 text-[10px] text-slate-400 uppercase tracking-wide">
+                Konfigurasikan batas rentang Warning dan Good untuk telemetry sinyal optik ONU secara real-time.
+            </p>
+
+            <!-- Dual Range Track Slider Bar -->
+            <div class="px-2 pb-2 pt-12">
+                <div class="relative h-12">
+                    <div id="thresholdTrack" class="absolute inset-x-1 top-5 h-2 rounded-full border border-[#162a45]"></div>
+                    <div class="absolute -top-1 left-0 right-0 flex justify-between px-[6%] text-xs font-bold uppercase tracking-wider">
+                        <span class="text-[#ff3366]">CRITICAL</span>
+                        <span class="text-amber-400">WARNING</span>
+                        <span class="text-emerald-400">GOOD</span>
+                    </div>
+                    <input id="warningThreshold" aria-label="Critical to warning threshold" type="range" min="-32" max="-20" step="0.1" value="{{ settings.warning_threshold }}" class="threshold-range warning-range">
+                    <input id="goodThreshold" aria-label="Warning to good threshold" type="range" min="-32" max="-20" step="0.1" value="{{ settings.good_threshold }}" class="threshold-range good-range">
+                </div>
+                <div class="flex justify-between border-t border-[#162a45] pt-2 text-[10px] text-slate-500 font-mono">
+                    {% for tick in [-32,-30,-28,-26,-24,-22,-20] %}
+                    <span>{{ tick }} dBm</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Digital Readout Meters -->
+            <div class="mt-6 grid gap-4 md:grid-cols-2">
+                <div class="rounded-xl border border-[#ff3366]/30 bg-[#250d18]/40 p-4 text-center shadow-lg">
+                    <span class="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-[#ff3366] shadow-[0_0_8px_#ff3366]"></span>
+                    <span class="text-xs uppercase text-slate-400">WARNING THRESHOLD: </span>
+                    <strong id="warningValue" class="text-lg text-[#ff3366] font-mono ml-1">{{ settings.warning_threshold }}</strong>
+                    <span class="text-xs text-slate-400 font-mono">dBm</span>
+                </div>
+                <div class="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-4 text-center shadow-lg">
+                    <span class="mr-2 inline-block h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]"></span>
+                    <span class="text-xs uppercase text-slate-400">GOOD THRESHOLD: </span>
+                    <strong id="goodValue" class="text-lg text-emerald-400 font-mono ml-1">{{ settings.good_threshold }}</strong>
+                    <span class="text-xs text-slate-400 font-mono">dBm</span>
+                </div>
+            </div>
+
+            <!-- Signal Specification Cards -->
+            <div class="mt-6 grid gap-4 md:grid-cols-3">
+                <article class="rounded-xl border border-emerald-500/30 bg-[#091322] p-5 shadow-lg relative overflow-hidden">
+                    <div class="h-1 bg-emerald-400 w-full absolute top-0 left-0"></div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                        <span>■</span> OPTIMAL SIGNAL (GOOD)
+                    </h3>
+                    <p class="mt-3 text-xs leading-relaxed text-slate-400">
+                        Daya optik prima saat RX lebih besar atau sama dengan <b id="goodDescription" class="text-emerald-300 font-mono">{{ settings.good_threshold }}</b> dBm.
+                    </p>
+                </article>
+
+                <article class="rounded-xl border border-amber-500/30 bg-[#091322] p-5 shadow-lg relative overflow-hidden">
+                    <div class="h-1 bg-amber-400 w-full absolute top-0 left-0"></div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                        <span>■</span> MARGINAL SIGNAL (WARNING)
+                    </h3>
+                    <p class="mt-3 text-xs leading-relaxed text-slate-400">
+                        Sinyal dapat diterima namun perlu monitoring saat berada di antara <b id="warningDescription" class="text-amber-300 font-mono">{{ settings.warning_threshold }}</b> dBm dan <b id="goodDescription2" class="text-amber-300 font-mono">{{ settings.good_threshold }}</b> dBm.
+                    </p>
+                </article>
+
+                <article class="rounded-xl border border-[#ff3366]/30 bg-[#091322] p-5 shadow-lg relative overflow-hidden">
+                    <div class="h-1 bg-[#ff3366] w-full absolute top-0 left-0"></div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-[#ff3366] flex items-center gap-1.5">
+                        <span>■</span> CRITICAL SIGNAL (ATTENTION)
+                    </h3>
+                    <p class="mt-3 text-xs leading-relaxed text-slate-400">
+                        Kualitas optik buruk berisiko putus jika nilai sinyal berada di bawah <b id="warningDescription2" class="text-rose-300 font-mono">{{ settings.warning_threshold }}</b> dBm.
+                    </p>
+                </article>
+            </div>
+        </div>
+
+        <!-- Notification Message Banner -->
+        <div id="customMessage" class="mt-4 hidden rounded-lg px-4 py-3 text-xs font-mono border"></div>
+    </section>
+
 </div>
-<dialog id="settingDialog" class="w-full max-w-md rounded-xl p-0 shadow-2xl backdrop:bg-slate-900/30"><div class="p-6"><div class="flex items-center justify-between"><h2 class="text-lg font-semibold text-blue-950">Detail ONU</h2><button type="button" id="closeSetting" aria-label="Tutup" class="text-xl text-slate-400">×</button></div><p id="settingDetail" class="mt-4 text-sm text-slate-600"></p><p class="mt-2 text-xs text-slate-400">Detail ini berasal dari data ONU yang tersimpan di aplikasi.</p></div></dialog>
+
+<!-- ========================================================= -->
+<!-- 3. CYBER MODAL: DETAIL ONU -->
+<!-- ========================================================= -->
+<dialog id="settingDialog" class="w-full max-w-md rounded-2xl p-0 shadow-[0_0_50px_rgba(0,0,0,0.9)] bg-[#091322] border border-[#162a45] backdrop:bg-black/75">
+    <div class="p-6 font-mono text-slate-200">
+        <div class="flex items-center justify-between border-b border-[#162a45] pb-3">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-[#00e5ff] flex items-center gap-2">
+                <span class="inline-block w-2 h-2 rounded-full bg-[#00e5ff] shadow-[0_0_6px_#00e5ff]"></span>
+                ONU ATTRIBUTES DETAIL
+            </h2>
+            <button type="button" id="closeSetting" aria-label="Tutup" class="text-slate-400 hover:text-white transition">✕</button>
+        </div>
+        <div class="mt-4 p-3 rounded-lg bg-[#060c17] border border-[#162a45]">
+            <p id="settingDetail" class="text-xs text-slate-300 font-mono break-all leading-relaxed"></p>
+        </div>
+        <p class="mt-3 text-[10px] text-slate-500 uppercase tracking-wide">TELEMETRY RECORD EXTRACTED FROM RUNTIME REPOSITORY</p>
+    </div>
+</dialog>
+
+<!-- ========================================================= -->
+<!-- 4. STYLING RANGE SLIDERS & TOOLTIPS (CYBER THEME) -->
+<!-- ========================================================= -->
 <style>
 .status-tooltip-trigger{position:relative;cursor:default}
-.status-tooltip-trigger::after{content:attr(data-tooltip);position:absolute;z-index:20;left:50%;bottom:calc(100% + 7px);transform:translate(-50%,4px);padding:5px 10px;border-radius:7px;background:#050505;color:#fff;font-size:12px;line-height:1.2;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s ease,transform .12s ease}
-.status-tooltip-trigger::before{content:"";position:absolute;z-index:20;left:50%;bottom:calc(100% + 2px);transform:translate(-50%,4px);border:5px solid transparent;border-top-color:#050505;opacity:0;pointer-events:none;transition:opacity .12s ease,transform .12s ease}
+.status-tooltip-trigger::after{content:attr(data-tooltip);position:absolute;z-index:20;left:50%;bottom:calc(100% + 7px);transform:translate(-50%,4px);padding:4px 8px;border-radius:5px;background:#060c17;color:#00e5ff;border:1px solid #162a45;font-size:10px;line-height:1.2;font-family:'JetBrains Mono',monospace;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s ease,transform .12s ease;box-shadow:0 0 10px rgba(0,0,0,0.8)}
+.status-tooltip-trigger::before{content:"";position:absolute;z-index:20;left:50%;bottom:calc(100% + 2px);transform:translate(-50%,4px);border:5px solid transparent;border-top-color:#162a45;opacity:0;pointer-events:none;transition:opacity .12s ease,transform .12s ease}
 .status-tooltip-trigger:hover::after,.status-tooltip-trigger:focus-visible::after,.status-tooltip-trigger:hover::before,.status-tooltip-trigger:focus-visible::before{opacity:1;transform:translate(-50%,0)}
 
 .threshold-range{position:absolute;inset:12px 0 auto;width:100%;height:24px;margin:0;background:transparent;appearance:none;-webkit-appearance:none;pointer-events:none}
-.threshold-range::-webkit-slider-runnable-track{height:6px;background:transparent}
-.threshold-range::-moz-range-track{height:6px;background:transparent}
-.threshold-range::-webkit-slider-thumb{width:20px;height:20px;margin-top:-7px;border:3px solid #f43f5e;border-radius:50%;background:#fff;appearance:none;-webkit-appearance:none;pointer-events:auto;cursor:grab}
-.threshold-range::-moz-range-thumb{width:14px;height:14px;border:3px solid #f43f5e;border-radius:50%;background:#fff;pointer-events:auto;cursor:grab}
-.good-range::-webkit-slider-thumb{border-color:#22c55e}.good-range::-moz-range-thumb{border-color:#22c55e}
+.threshold-range::-webkit-slider-runnable-track{height:8px;background:transparent}
+.threshold-range::-moz-range-track{height:8px;background:transparent}
+.threshold-range::-webkit-slider-thumb{width:22px;height:22px;margin-top:-7px;border:2px solid #ff3366;border-radius:50%;background:#091322;box-shadow:0 0 10px rgba(255,51,102,0.6);appearance:none;-webkit-appearance:none;pointer-events:auto;cursor:grab}
+.threshold-range::-moz-range-thumb{width:16px;height:16px;border:2px solid #ff3366;border-radius:50%;background:#091322;box-shadow:0 0 10px rgba(255,51,102,0.6);pointer-events:auto;cursor:grab}
+.good-range::-webkit-slider-thumb{border-color:#10b981;box-shadow:0 0 10px rgba(16,185,129,0.6)}.good-range::-moz-range-thumb{border-color:#10b981;box-shadow:0 0 10px rgba(16,185,129,0.6)}
 </style>
+
+<!-- ========================================================= -->
+<!-- 5. LOGIKA JAVASCRIPT GLOBAL (PRESERVED FUNCTIONALITY) -->
+<!-- ========================================================= -->
 <script>
 const defaults={desktop:[...document.querySelectorAll('.desktop-column:checked')].map(item=>item.value),mobile:[...document.querySelectorAll('.mobile-column:checked')].map(item=>item.value)};
-function applyColumns(selector,attribute,selected){document.querySelectorAll(selector).forEach(cell=>cell.classList.toggle('hidden',!selected.includes(cell.getAttribute(attribute))))}
-function updateColumns(){applyColumns('[data-col]','data-col',[...document.querySelectorAll('.desktop-column:checked')].map(item=>item.value));applyColumns('[data-mobile-col]','data-mobile-col',[...document.querySelectorAll('.mobile-column:checked')].map(item=>item.value))}
-document.querySelectorAll('.custom-tab').forEach(tab=>tab.addEventListener('click',()=>{document.querySelectorAll('.custom-tab').forEach(item=>{item.classList.remove('border-blue-600','text-blue-800','font-medium');item.classList.add('border-transparent','text-slate-500');item.setAttribute('aria-selected','false')});tab.classList.add('border-blue-600','text-blue-800','font-medium');tab.classList.remove('border-transparent','text-slate-500');tab.setAttribute('aria-selected','true');document.querySelectorAll('.custom-panel').forEach(panel=>panel.classList.add('hidden'));document.getElementById(`panel-${tab.dataset.tab}`).classList.remove('hidden')}));
-document.querySelectorAll('.desktop-column,.mobile-column').forEach(item=>item.addEventListener('change',()=>{const selector=item.classList.contains('desktop-column')?'.desktop-column:checked':'.mobile-column:checked';if(!document.querySelector(selector)){item.checked=true;const message=document.getElementById('customMessage');message.textContent='Pilih minimal satu kolom untuk ditampilkan.';message.className='mt-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700';message.classList.remove('hidden');return}updateColumns()}));
+
+function applyColumns(selector,attribute,selected){
+    document.querySelectorAll(selector).forEach(cell=>cell.classList.toggle('hidden',!selected.includes(cell.getAttribute(attribute))));
+}
+
+function updateColumns(){
+    applyColumns('[data-col]','data-col',[...document.querySelectorAll('.desktop-column:checked')].map(item=>item.value));
+    applyColumns('[data-mobile-col]','data-mobile-col',[...document.querySelectorAll('.mobile-column:checked')].map(item=>item.value));
+}
+
+document.querySelectorAll('.custom-tab').forEach(tab=>tab.addEventListener('click',()=>{
+    document.querySelectorAll('.custom-tab').forEach(item=>{
+        item.classList.remove('border-[#00e5ff]/50','bg-[#0e223b]','text-[#00e5ff]','shadow-[0_0_12px_rgba(0,229,255,0.2)]');
+        item.classList.add('border-transparent','text-slate-400');
+        item.setAttribute('aria-selected','false');
+    });
+    tab.classList.add('border-[#00e5ff]/50','bg-[#0e223b]','text-[#00e5ff]','shadow-[0_0_12px_rgba(0,229,255,0.2)]');
+    tab.classList.remove('border-transparent','text-slate-400');
+    tab.setAttribute('aria-selected','true');
+    document.querySelectorAll('.custom-panel').forEach(panel=>panel.classList.add('hidden'));
+    document.getElementById(`panel-${tab.dataset.tab}`).classList.remove('hidden');
+}));
+
+document.querySelectorAll('.desktop-column,.mobile-column').forEach(item=>item.addEventListener('change',()=>{
+    const selector=item.classList.contains('desktop-column')?'.desktop-column:checked':'.mobile-column:checked';
+    if(!document.querySelector(selector)){
+        item.checked=true;
+        const message=document.getElementById('customMessage');
+        message.textContent='Pilih minimal satu kolom untuk ditampilkan.';
+        message.className='mt-4 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/30 px-4 py-3 text-xs';
+        message.classList.remove('hidden');
+        return;
+    }
+    updateColumns();
+}));
+
 const goodThreshold=document.getElementById('goodThreshold'),warningThreshold=document.getElementById('warningThreshold');
-function applyRxColors(){const good=Number(goodThreshold.value),warning=Number(warningThreshold.value),colors=['bg-emerald-100','text-emerald-700','bg-amber-100','text-amber-700','bg-rose-100','text-rose-700','bg-slate-100','text-slate-500'];document.querySelectorAll('#panel-desktop [data-col="rx_olt"] span,#panel-desktop [data-col="rx_onu"] span,#panel-mobile [data-mobile-col="rx_olt"] span,#panel-mobile [data-mobile-col="rx_onu"] span').forEach(badge=>{badge.classList.remove(...colors);const match=badge.textContent.match(/-?\d+(?:\.\d+)?/),rx=match?Number(match[0]):NaN;if(!Number.isFinite(rx))badge.classList.add('bg-slate-100','text-slate-500');else if(rx>=good)badge.classList.add('bg-emerald-100','text-emerald-700');else if(rx>=warning)badge.classList.add('bg-amber-100','text-amber-700');else badge.classList.add('bg-rose-100','text-rose-700')})}
-function updateThresholdVisual(changed){let good=Number(goodThreshold.value),warning=Number(warningThreshold.value);if(warning>=good){if(changed==='warning')warning=Math.max(-32,good-0.1);else good=Math.min(-20,warning+0.1);goodThreshold.value=good;warningThreshold.value=warning}const leftWarning=((warning+32)/12)*100,leftGood=((good+32)/12)*100;document.getElementById('thresholdTrack').style.background=`linear-gradient(to right,#f43f5e 0%,#f43f5e ${leftWarning}%,#f59e0b ${leftWarning}%,#f59e0b ${leftGood}%,#22c55e ${leftGood}%,#22c55e 100%)`;document.getElementById('warningValue').textContent=warning.toFixed(1);document.getElementById('goodValue').textContent=good.toFixed(1);document.getElementById('goodDescription').textContent=good.toFixed(1);document.getElementById('goodDescription2').textContent=good.toFixed(1);document.getElementById('warningDescription').textContent=warning.toFixed(1);document.getElementById('warningDescription2').textContent=warning.toFixed(1);warningThreshold.style.zIndex=warning>good-1?'3':'4';goodThreshold.style.zIndex=warning>good-1?'4':'3';applyRxColors()}
-warningThreshold.addEventListener('input',()=>updateThresholdVisual('warning'));goodThreshold.addEventListener('input',()=>updateThresholdVisual('good'));
+
+function applyRxColors(){
+    const good=Number(goodThreshold.value),warning=Number(warningThreshold.value),
+          colors=['bg-emerald-500/10','text-emerald-400','border-emerald-500/30','bg-amber-500/10','text-amber-400','border-amber-500/30','bg-[#ff3366]/10','text-[#ff3366]','border-[#ff3366]/30','bg-slate-800','text-slate-500','border-slate-700'];
+    
+    document.querySelectorAll('#panel-desktop [data-col="rx_olt"] span,#panel-desktop [data-col="rx_onu"] span,#panel-mobile [data-mobile-col="rx_olt"] span,#panel-mobile [data-mobile-col="rx_onu"] span').forEach(badge=>{
+        badge.classList.remove(...colors);
+        const match=badge.textContent.match(/-?\d+(?:\.\d+)?/),rx=match?Number(match[0]):NaN;
+        if(!Number.isFinite(rx)) badge.classList.add('bg-slate-800','text-slate-500','border','border-slate-700');
+        else if(rx>=good) badge.classList.add('bg-emerald-500/10','text-emerald-400','border','border-emerald-500/30');
+        else if(rx>=warning) badge.classList.add('bg-amber-500/10','text-amber-400','border','border-amber-500/30');
+        else badge.classList.add('bg-[#ff3366]/10','text-[#ff3366]','border','border-[#ff3366]/30');
+    });
+}
+
+function updateThresholdVisual(changed){
+    let good=Number(goodThreshold.value),warning=Number(warningThreshold.value);
+    if(warning>=good){
+        if(changed==='warning') warning=Math.max(-32,good-0.1);
+        else good=Math.min(-20,warning+0.1);
+        goodThreshold.value=good;
+        warningThreshold.value=warning;
+    }
+    const leftWarning=((warning+32)/12)*100,leftGood=((good+32)/12)*100;
+    document.getElementById('thresholdTrack').style.background=`linear-gradient(to right,#ff3366 0%,#ff3366 ${leftWarning}%,#f59e0b ${leftWarning}%,#f59e0b ${leftGood}%,#10b981 ${leftGood}%,#10b981 100%)`;
+    document.getElementById('warningValue').textContent=warning.toFixed(1);
+    document.getElementById('goodValue').textContent=good.toFixed(1);
+    document.getElementById('goodDescription').textContent=good.toFixed(1);
+    document.getElementById('goodDescription2').textContent=good.toFixed(1);
+    document.getElementById('warningDescription').textContent=warning.toFixed(1);
+    document.getElementById('warningDescription2').textContent=warning.toFixed(1);
+    warningThreshold.style.zIndex=warning>good-1?'3':'4';
+    goodThreshold.style.zIndex=warning>good-1?'4':'3';
+    applyRxColors();
+}
+
+warningThreshold.addEventListener('input',()=>updateThresholdVisual('warning'));
+goodThreshold.addEventListener('input',()=>updateThresholdVisual('good'));
+
 let messageTimer;
-async function saveCustomization(button){const message=document.getElementById('customMessage'),payload={desktop_columns:[...document.querySelectorAll('.desktop-column:checked')].map(item=>item.value),mobile_columns:[...document.querySelectorAll('.mobile-column:checked')].map(item=>item.value),good_threshold:Number(document.getElementById('goodThreshold').value),warning_threshold:Number(document.getElementById('warningThreshold').value)};clearTimeout(messageTimer);message.classList.add('hidden');button.disabled=true;try{const response=await fetch('/api/customization',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),result=await response.json();if(!response.ok)throw new Error(result.detail||'Tidak dapat menyimpan perubahan');if(result.status!=='success'||result.persisted!==true||!result.id)throw new Error('Database belum mengonfirmasi penyimpanan. Coba lagi.');message.textContent='Customization berhasil disimpan.';message.className='mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700';updateColumns();updateThresholdVisual();message.classList.remove('hidden');messageTimer=setTimeout(()=>message.classList.add('hidden'),3000)}catch(error){message.textContent=error.message;message.className='mt-4 rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700';message.classList.remove('hidden')}finally{button.disabled=false}}
-document.querySelectorAll('.save-customization').forEach(button=>button.addEventListener('click',()=>saveCustomization(button)));document.getElementById('applyThreshold').addEventListener('click',event=>saveCustomization(event.currentTarget));document.getElementById('resetThreshold').addEventListener('click',()=>{warningThreshold.value=-30;goodThreshold.value=-27;updateThresholdVisual();const message=document.getElementById('customMessage');message.textContent='Nilai default dipulihkan di halaman ini. Klik Apply Threshold untuk menyimpan dan menerapkannya.';message.className='mt-4 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-700';message.classList.remove('hidden')});document.querySelectorAll('.row-setting').forEach(button=>button.addEventListener('click',()=>{document.getElementById('settingDetail').textContent=button.dataset.details;document.getElementById('settingDialog').showModal()}));document.getElementById('closeSetting').addEventListener('click',()=>document.getElementById('settingDialog').close());document.getElementById('settingDialog').addEventListener('click',event=>{if(event.target===event.currentTarget)event.currentTarget.close()});updateColumns();updateThresholdVisual();
+async function saveCustomization(button){
+    const message=document.getElementById('customMessage'),
+          payload={
+              desktop_columns:[...document.querySelectorAll('.desktop-column:checked')].map(item=>item.value),
+              mobile_columns:[...document.querySelectorAll('.mobile-column:checked')].map(item=>item.value),
+              good_threshold:Number(document.getElementById('goodThreshold').value),
+              warning_threshold:Number(document.getElementById('warningThreshold').value)
+          };
+    clearTimeout(messageTimer);
+    message.classList.add('hidden');
+    button.disabled=true;
+    try{
+        const response=await fetch('/api/customization',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify(payload)
+        }),result=await response.json();
+        
+        if(!response.ok) throw new Error(result.detail||'Tidak dapat menyimpan perubahan');
+        if(result.status!=='success'||result.persisted!==true||!result.id) throw new Error('Database belum mengonfirmasi penyimpanan. Coba lagi.');
+        
+        message.textContent='Customization configuration committed to database successfully.';
+        message.className='mt-4 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-4 py-3 text-xs';
+        updateColumns();
+        updateThresholdVisual();
+        message.classList.remove('hidden');
+        messageTimer=setTimeout(()=>message.classList.add('hidden'),3000);
+    }catch(error){
+        message.textContent=error.message;
+        message.className='mt-4 rounded-lg bg-[#ff3366]/10 text-[#ff3366] border border-[#ff3366]/30 px-4 py-3 text-xs';
+        message.classList.remove('hidden');
+    }finally{
+        button.disabled=false;
+    }
+}
+
+document.querySelectorAll('.save-customization').forEach(button=>button.addEventListener('click',()=>saveCustomization(button)));
+document.getElementById('applyThreshold').addEventListener('click',event=>saveCustomization(event.currentTarget));
+
+document.getElementById('resetThreshold').addEventListener('click',()=>{
+    warningThreshold.value=-30;
+    goodThreshold.value=-27;
+    updateThresholdVisual();
+    const message=document.getElementById('customMessage');
+    message.textContent='Nilai default dipulihkan di panel ini. Klik Apply Threshold untuk menyimpan dan menerapkannya.';
+    message.className='mt-4 rounded-lg bg-[#00e5ff]/10 text-[#00e5ff] border border-[#00e5ff]/30 px-4 py-3 text-xs';
+    message.classList.remove('hidden');
+});
+
+document.querySelectorAll('.row-setting').forEach(button=>button.addEventListener('click',()=>{
+    document.getElementById('settingDetail').textContent=button.dataset.details;
+    document.getElementById('settingDialog').showModal();
+}));
+
+document.getElementById('closeSetting').addEventListener('click',()=>document.getElementById('settingDialog').close());
+document.getElementById('settingDialog').addEventListener('click',event=>{
+    if(event.target===event.currentTarget) event.currentTarget.close();
+});
+
+updateColumns();
+updateThresholdVisual();
 </script>
 {% endblock %}

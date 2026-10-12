@@ -1,16 +1,56 @@
 <!DOCTYPE html>
-<html lang="id" class="h-full bg-slate-50">
+<html lang="id" class="h-full bg-[#050b14]">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}OLT Monitoring System{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { 
+            font-family: 'JetBrains Mono', monospace; 
+            background-color: #050b14;
+            color: #94a3b8;
+        }
+
+        .bg-cyber-grid {
+            background-image: 
+                linear-gradient(to right, rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #060c17;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #162a45;
+            border-radius: 2px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00e5ff;
+        }
+
+        .neon-glow-cyan {
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.65);
+        }
+
         @media (max-width: 1279px) {
             body .app-layout { overflow: visible; }
-            #appSidebar { display: none; position: fixed; inset: 4rem auto 0 0; z-index: 60; width: min(18rem, 86vw); box-shadow: 0 12px 28px rgba(15, 23, 42, .18); }
+            #appSidebar { 
+                display: none; 
+                position: fixed; 
+                inset: 5.5rem auto 0 0; 
+                z-index: 60; 
+                width: min(18rem, 86vw); 
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.9); 
+            }
             #appSidebar.mobile-open { display: block; }
             body .app-main { width: 100%; min-width: 0; overflow-x: hidden; padding: 1rem; }
             header .topbar-inner { gap: .5rem; padding-left: .75rem; padding-right: .75rem; }
@@ -25,206 +65,307 @@
         }
     </style>
 </head>
-<body class="h-full flex flex-col font-sans text-slate-800 bg-[#f4f6f9]">
-    <!-- ========================================================= -->
-    <!-- TOP NAVIGATION BAR (LENGKAP DENGAN SEARCH & CART) -->
-    <!-- ========================================================= -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shrink-0">
-        <div class="topbar-inner px-6 h-16 flex items-center justify-between">
-            <!-- LEFT: LOGO & SEARCH -->
-<div class="topbar-left flex items-center space-x-6">
-    <button type="button" id="mobileNavToggle" class="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 xl:hidden" aria-label="Buka navigasi" aria-expanded="false">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-    </button>
-    
-    <!-- LOGO GAMBAR & TEKS NSC CONFIG -->
-    <a href="/" class="flex items-center space-x-2.5 shrink-0">
-        <img 
-            src="/static/img/agak gelap.png" 
-            alt="NSC CONFIG Logo" 
-            class="h-8 w-auto object-contain"
-        >
-        <span class="text-lg font-bold tracking-tight text-slate-900">
-            NSC CONFIG
-        </span>
-    </a>
+<body class="h-full flex flex-col font-mono text-slate-300 bg-[#050b14] bg-cyber-grid selection:bg-[#00e5ff]/20 selection:text-[#00e5ff]">
 
-    <div class="topbar-search relative">
-        <input
-            type="text"
-            placeholder="Search ONU"
-            class="w-72 pl-9 pr-4 py-1.5 text-xs bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-        >
-        <svg class="w-4 h-4 absolute left-3 top-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-        </svg>
-    </div>
-</div>
+    {# Global safe variables handling #}
+    {% set safe_profile = account_profile if (account_profile is defined and account_profile) else {} %}
+    {% set role = safe_profile.role|default('Viewer') %}
+    {% set profile_name = safe_profile.full_name|default('Operator') %}
 
-            <!-- RIGHT: NOTIFIKASI & CART & PROFIL -->
+    <!-- ========================================================= -->
+    <!-- TACTICAL TWO-TIER TOPBAR -->
+    <!-- ========================================================= -->
+    <header class="bg-[#08111e]/95 backdrop-blur-md border-b border-[#162a45] sticky top-0 z-50 shrink-0 shadow-lg">
+        <!-- ROW 1: PRIMARY SYSTEM IDENTIFIER & USER BAR -->
+        <div class="topbar-inner px-4 lg:px-6 h-12 flex items-center justify-between border-b border-[#162a45]/60">
+            <!-- LEFT: MOBILE TOGGLE, LOGO CHIP & SYS SCOPE -->
+            <div class="topbar-left flex items-center gap-3">
+                <button type="button" id="mobileNavToggle" class="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 hover:text-[#00e5ff] hover:bg-[#0d1d33] border border-[#162a45] xl:hidden transition" aria-label="Buka navigasi" aria-expanded="false">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+                
+                <a href="/" class="flex items-center gap-2.5 shrink-0 group">
+                    <div class="h-7 w-7 rounded bg-[#0b223d] border border-[#00e5ff]/40 flex items-center justify-center p-0.5 shadow-[0_0_8px_rgba(0,229,255,0.25)]">
+                        <img src="/static/img/agak gelap.png" alt="NSC Logo" class="h-5 w-auto object-contain">
+                    </div>
+                    <span class="text-xs font-bold tracking-widest text-[#00e5ff] group-hover:neon-glow-cyan uppercase">
+                        NSC CONFIG <span class="text-[9px] text-slate-500 font-normal">v2.4</span>
+                    </span>
+                </a>
+
+                <div class="hidden sm:flex items-center gap-2 pl-3 border-l border-[#162a45] text-[10px] text-slate-500">
+                    <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <span class="tracking-wider uppercase">CORE CHASSIS // ACTIVE LINK</span>
+                </div>
+            </div>
+
+            <!-- RIGHT: SEARCH & PROFIL MENU -->
             <div class="topbar-right flex items-center gap-3">
-                <!-- DyingGasp -->
-                <a href="/all-onus?status=DyingGasp" title="ONU DyingGasp" class="relative p-2 rounded-lg text-amber-600 hover:bg-amber-50" aria-label="ONU DyingGasp">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v10m6.36-6.36a9 9 0 1 1-12.72 0"/></svg>
-                    <span data-status-count="DyingGasp" class="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-amber-500 text-white text-[9px] font-bold text-center">{{ nav_counts.dying_gasp|default(0) }}</span>
-                </a>
+                <div class="topbar-search relative hidden md:block">
+                    <input
+                        type="text"
+                        placeholder="FILTER ONU / MAC / SN..."
+                        class="w-64 pl-8 pr-3 py-1 text-[11px] bg-[#060c17] text-slate-200 placeholder-slate-600 border border-[#162a45] rounded-md focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff] outline-none transition"
+                    >
+                    <svg class="w-3.5 h-3.5 absolute left-2.5 top-2 text-[#00e5ff]/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
 
-                <!-- LOS -->
-                <a href="/all-onus?status=LOS" title="ONU LOS" class="relative p-2 rounded-lg text-rose-600 hover:bg-rose-50" aria-label="ONU LOS">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18M8.5 8.5a5 5 0 0 0 7 7M5.6 5.6a9 9 0 0 0 12.8 12.8M12 2v2m0 16v2"/></svg>
-                    <span data-status-count="LOS" class="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold text-center">{{ nav_counts.los|default(0) }}</span>
-                </a>
-
-                <!-- CART / UNREGISTERED ONUS -->
-                <a href="/unregistered-onus" title="ONU belum dikonfigurasi" class="p-2 rounded-lg text-blue-600 hover:bg-blue-50" aria-label="ONU belum dikonfigurasi">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l2.2 11.2a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 2-1.6L22 7H6m6-4v6m-3-3h6"/></svg>
-                </a>
-
-                <!-- PROFIL USER -->
+                <!-- USER ACCOUNT CHIP (DENGAN SAFE FALLBACK) -->
                 <div class="relative" id="profileMenu">
-                    <button type="button" id="profileButton" aria-expanded="false" class="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50">
-                        {% if account_profile.image %}
-                            <img src="{{ account_profile.image }}" alt="" class="h-8 w-8 rounded-full object-cover">
+                    <button type="button" id="profileButton" aria-expanded="false" class="flex items-center gap-2 rounded-md px-2 py-1 bg-[#060c17] hover:bg-[#0d1d33] border border-[#162a45] hover:border-[#00e5ff]/40 transition group">
+                        {% if safe_profile.image %}
+                            <img src="{{ safe_profile.image }}" alt="" class="h-6 w-6 rounded object-cover border border-[#00e5ff]/40">
                         {% else %}
-                            <span class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
-                                {{ account_profile.full_name[:1]|upper }}{{ account_profile.full_name.split(' ')[-1][:1]|upper }}
+                            <span class="w-6 h-6 rounded bg-[#0b223d] border border-[#00e5ff]/40 text-[#00e5ff] flex items-center justify-center font-bold text-[10px]">
+                                {{ profile_name[:2]|upper }}
                             </span>
                         {% endif %}
-                        <span class="profile-name text-left">
-                            <span class="block text-xs text-slate-700 font-semibold">{{ account_profile.full_name }}</span>
-                            <span class="block text-[10px] text-slate-400 font-mono">{{ account_profile.role }}</span>
+                        <span class="profile-name text-left leading-none">
+                            <span class="block text-[11px] text-slate-200 font-semibold group-hover:text-white">{{ profile_name }}</span>
+                            <span class="block text-[8px] text-[#00e5ff] uppercase tracking-wider mt-0.5">{{ role }}</span>
                         </span>
-                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
+                        <svg class="w-3 h-3 text-slate-500 group-hover:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
                     </button>
-                    <div id="profileDropdown" class="hidden absolute right-0 mt-2 w-44 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-50">
-                        <a href="/my-account" class="block px-4 py-2 text-xs text-slate-700 hover:bg-slate-50">My Account</a>
-                        <hr class="border-slate-100 my-1">
-                        <a href="/logout" class="block px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 font-semibold">Logout</a>
+                    <div id="profileDropdown" class="hidden absolute right-0 mt-2 w-44 bg-[#091322] border border-[#162a45] rounded-lg shadow-2xl py-1 z-50 backdrop-blur-md">
+                        <a href="/my-account" class="block px-3.5 py-1.5 text-xs text-slate-300 hover:text-[#00e5ff] hover:bg-[#0d1d33] transition">My Account</a>
+                        <hr class="border-[#162a45] my-1">
+                        <a href="/logout" class="block px-3.5 py-1.5 text-xs text-[#ff3366] hover:bg-[#ff3366]/10 font-semibold transition">Logout</a>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- ROW 2: TACTICAL METRIC STATUS RIBBON -->
+        <div class="px-4 lg:px-6 h-9 flex items-center justify-between text-[10px] bg-[#060c17]/80">
+            <div class="flex items-center gap-3 overflow-x-auto no-scrollbar py-1">
+                <span class="text-slate-500 font-bold uppercase tracking-wider shrink-0">STATUS:</span>
+
+                <!-- DyingGasp Pill -->
+                <a href="/all-onus?status=DyingGasp" title="ONU DyingGasp" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#ffb020]/10 hover:bg-[#ffb020]/20 border border-[#ffb020]/30 text-[#ffb020] transition shrink-0">
+                    <span class="h-1.5 w-1.5 rounded-full bg-[#ffb020] shadow-[0_0_6px_#ffb020]"></span>
+                    <span>D-GASP</span>
+                    <span data-status-count="DyingGasp" class="font-extrabold">{{ nav_counts.dying_gasp|default(0) if nav_counts is defined else 0 }}</span>
+                </a>
+
+                <!-- LOS Pill -->
+                <a href="/all-onus?status=LOS" title="ONU LOS" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#ff3366]/10 hover:bg-[#ff3366]/20 border border-[#ff3366]/30 text-[#ff3366] transition shrink-0">
+                    <span class="h-1.5 w-1.5 rounded-full bg-[#ff3366] shadow-[0_0_6px_#ff3366]"></span>
+                    <span>LOS CRITICAL</span>
+                    <span data-status-count="LOS" class="font-extrabold">{{ nav_counts.los|default(0) if nav_counts is defined else 0 }}</span>
+                </a>
+
+                <!-- Cart / Unregistered ONUs Pill -->
+                <a href="/unregistered-onus" title="ONU belum dikonfigurasi" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#00e5ff]/10 hover:bg-[#00e5ff]/20 border border-[#00e5ff]/30 text-[#00e5ff] transition shrink-0">
+                    <span class="h-1.5 w-1.5 rounded-full bg-[#00e5ff] shadow-[0_0_6px_#00e5ff]"></span>
+                    <span>UNCONFIGURED ONU</span>
+                </a>
+            </div>
+
+            <div class="hidden md:flex items-center gap-2 text-slate-500 shrink-0">
+                <span>TELEMETRY SYNC:</span>
+                <span class="text-emerald-400 font-bold">LIVE (15s)</span>
             </div>
         </div>
     </header>
 
     <!-- ========================================================= -->
-    <!-- MAIN LAYOUT -->
+    <!-- MAIN WORKSPACE LAYOUT -->
     <!-- ========================================================= -->
     <div class="app-layout flex-1 flex overflow-hidden">
-        <!-- SIDEBAR -->
-        <aside id="appSidebar" class="w-72 bg-white border-r border-slate-200 p-4 space-y-6 shrink-0 overflow-y-auto">
-            {% set role = account_profile.role %}
+        
+        <!-- SIDEBAR: SEGMENTED CONSOLE PANEL -->
+        <aside id="appSidebar" class="w-64 bg-[#08111e] border-r border-[#162a45] p-3 space-y-4 shrink-0 overflow-y-auto">
             <nav class="space-y-1">
-                <!-- 1. DASHBOARD (Semua Role) -->
-                <a href="/" class="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium text-base transition {% if request.url.path == '/' %}bg-blue-50 text-sky-600{% else %}text-blue-950 hover:bg-slate-50{% endif %}">
-                    <svg class="w-5 h-5 {% if request.url.path == '/' %}text-sky-600{% else %}text-slate-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z M14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z M4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z M14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
-                    </svg>
-                    <span>Dashboard</span>
+                <!-- 1. DASHBOARD -->
+                <a href="/" class="flex items-center justify-between px-3 py-2 rounded-lg font-medium text-xs tracking-wider transition {% if request.url.path == '/' %}bg-[#0e223b] text-[#00e5ff] border border-[#00e5ff]/40 shadow-[0_0_10px_rgba(0,229,255,0.15)]{% else %}text-slate-400 hover:bg-[#0d1d33] hover:text-slate-200 border border-transparent{% endif %}">
+                    <div class="flex items-center gap-2.5">
+                        <svg class="w-3.5 h-3.5 {% if request.url.path == '/' %}text-[#00e5ff]{% else %}text-slate-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z M14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z M4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z M14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                        </svg>
+                        <span>DASHBOARD</span>
+                    </div>
+                    {% if request.url.path == '/' %}<span class="h-1.5 w-1.5 rounded-full bg-[#00e5ff]"></span>{% endif %}
                 </a>
 
                 <!-- SECTION: FTTH -->
-                <div class="pt-4 pb-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wide px-4">
-                    FTTH
+                <div class="pt-3 pb-1 text-[9px] font-bold text-slate-500 uppercase tracking-widest px-3">
+                    FTTH PROVISIONING
                 </div>
 
-                <!-- 2. ONU (Semua Role) -->
-                <button id="onuMenuToggle" type="button" class="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path in ['/unregistered-onus', '/all-onus', '/add-onu'] %}bg-blue-50 text-sky-600{% endif %}">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="6" rx="2" stroke-width="2"/><rect x="3" y="13" width="18" height="6" rx="2" stroke-width="2"/><circle cx="7" cy="8" r=".8" fill="currentColor"/><circle cx="7" cy="16" r=".8" fill="currentColor"/></svg>
-                    <span>ONU</span>
-                    <svg class="ml-auto h-4 w-4 transition-transform" data-chevron="onu" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
+                <!-- 2. ONU -->
+                <button id="onuMenuToggle" type="button" class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-medium tracking-wider transition hover:bg-[#0d1d33] border border-transparent {% if request.url.path in ['/unregistered-onus', '/all-onus', '/add-onu'] %}bg-[#0e223b] text-[#00e5ff] border-[#00e5ff]/40{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                    <div class="flex items-center gap-2.5">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="6" rx="2" stroke-width="2"/><rect x="3" y="13" width="18" height="6" rx="2" stroke-width="2"/><circle cx="7" cy="8" r=".8" fill="currentColor"/><circle cx="7" cy="16" r=".8" fill="currentColor"/></svg>
+                        <span>ONU MATRIX</span>
+                    </div>
+                    <svg class="h-3 w-3 transition-transform text-slate-500" data-chevron="onu" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
                 </button>
-                <div id="onuSubmenu" class="space-y-1 pb-1 pl-10 {% if request.url.path not in ['/unregistered-onus', '/all-onus', '/add-onu'] %}hidden{% endif %}">
+                <div id="onuSubmenu" class="space-y-1 pb-1 pl-6 {% if request.url.path not in ['/unregistered-onus', '/all-onus', '/add-onu'] %}hidden{% endif %}">
                     {% if role in ['Super Admin', 'NOC'] %}
-                    <a href="/unregistered-onus" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/unregistered-onus' %}text-sky-600{% endif %}"><span class="text-slate-400">○</span><span>Unregistered ONU</span></a>
+                    <a href="/unregistered-onus" class="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium tracking-wide transition hover:bg-[#0d1d33] {% if request.url.path == '/unregistered-onus' %}text-[#00e5ff] bg-[#0e223b]/50{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                        <span class="text-[#00e5ff] text-[8px]">■</span>
+                        <span>Unregistered ONU</span>
+                    </a>
                     {% endif %}
-                    <a href="/all-onus" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/all-onus' %}text-sky-600{% endif %}"><span class="text-slate-400">○</span><span>All ONUs</span></a>
+                    <a href="/all-onus" class="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium tracking-wide transition hover:bg-[#0d1d33] {% if request.url.path == '/all-onus' %}text-[#00e5ff] bg-[#0e223b]/50{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                        <span class="text-[#00e5ff] text-[8px]">■</span>
+                        <span>All ONUs</span>
+                    </a>
                 </div>
 
-                <!-- 3. TEMPLATE TR069 (Semua Role) -->
-                <button id="templateMenuToggle" type="button" class="mt-2 flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/tr069-profiles' %}bg-blue-50 text-sky-600{% endif %}">
-                    <svg class="h-5 w-5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" stroke-width="1.8"/><path d="M9 8h6M9 12h6M9 16h4" stroke-width="1.8" stroke-linecap="round"/></svg>
-                    <span>Template</span>
-                    <svg class="ml-auto h-4 w-4 transition-transform" data-chevron="template" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
+                <!-- 3. TEMPLATE TR069 -->
+                <button id="templateMenuToggle" type="button" class="mt-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-medium tracking-wider transition hover:bg-[#0d1d33] border border-transparent {% if request.url.path == '/tr069-profiles' %}bg-[#0e223b] text-[#00e5ff] border-[#00e5ff]/40{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                    <div class="flex items-center gap-2.5">
+                        <svg class="h-3.5 w-3.5 text-[#00e5ff]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" stroke-width="1.8"/><path d="M9 8h6M9 12h6M9 16h4" stroke-width="1.8" stroke-linecap="round"/></svg>
+                        <span>TEMPLATE</span>
+                    </div>
+                    <svg class="h-3 w-3 transition-transform text-slate-500" data-chevron="template" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg>
                 </button>
-                <div id="templateSubmenu" class="space-y-1 pb-1 pl-10 {% if request.url.path != '/tr069-profiles' %}hidden{% endif %}">
+                <div id="templateSubmenu" class="space-y-1 pb-1 pl-6 {% if request.url.path != '/tr069-profiles' %}hidden{% endif %}">
                     <div class="flex items-center gap-1">
-                        <a href="/tr069-profiles" class="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/tr069-profiles' %}text-sky-600{% endif %}"><span class="text-slate-400">○</span><span>TR069 Profile</span></a>
-                        {% if role in ['Super Admin', 'NOC'] %}<button type="button" id="quickAddTr069" class="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-lg font-semibold text-blue-600 hover:bg-blue-50" title="Tambah TR069 Profile" aria-label="Tambah TR069 Profile">+</button>{% endif %}
+                        <a href="/tr069-profiles" class="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium tracking-wide transition hover:bg-[#0d1d33] {% if request.url.path == '/tr069-profiles' %}text-[#00e5ff] bg-[#0e223b]/50{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                            <span class="text-[#00e5ff] text-[8px]">■</span>
+                            <span>TR069 Profile</span>
+                        </a>
+                        {% if role in ['Super Admin', 'NOC'] %}
+                        <button type="button" id="quickAddTr069" class="grid h-6 w-6 shrink-0 place-items-center rounded text-xs font-bold text-[#00e5ff] hover:bg-[#00e5ff]/20 border border-[#00e5ff]/30 transition" title="Tambah TR069 Profile" aria-label="Tambah TR069 Profile">+</button>
+                        {% endif %}
                     </div>
                 </div>
 
-                <!-- 4. TRAFFIC GRAPHS (Semua Role) -->
-                <div class="pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 px-4">Graphs</div>
-                <a href="/graphs" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/graphs' %}bg-blue-50 text-sky-600{% endif %}">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 3v18h18M7 15l4-4 4 3 6-8"/></svg>
-                    <span>Traffic</span>
+                <!-- 4. GRAPHS -->
+                <div class="pt-3 pb-1 text-[9px] font-bold text-slate-500 uppercase tracking-widest px-3">
+                    MONITORING
+                </div>
+                <a href="/graphs" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium tracking-wider transition hover:bg-[#0d1d33] border border-transparent {% if request.url.path == '/graphs' %}bg-[#0e223b] text-[#00e5ff] border-[#00e5ff]/40{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                    <div class="flex items-center gap-2.5">
+                        <svg class="h-3.5 w-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 3v18h18M7 15l4-4 4 3 6-8"/></svg>
+                        <span>TRAFFIC</span>
+                    </div>
+                    {% if request.url.path == '/graphs' %}<span class="h-1.5 w-1.5 rounded-full bg-[#00e5ff]"></span>{% endif %}
                 </a>
 
-                <!-- 5. OLT SETTINGS (Super Admin & NOC Saja) -->
+                <!-- 5. OLT SETTINGS -->
                 {% if role in ['Super Admin', 'NOC'] %}
-                <div class="pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 px-4">Infrastructure</div>
-                <a href="/olt-management" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium transition {% if request.url.path in ['/olt-management', '/olt-settings'] %}bg-blue-50 text-sky-600{% else %}text-blue-950 hover:bg-slate-50{% endif %}">
-                    <svg class="h-5 w-5 {% if request.url.path in ['/olt-management', '/olt-settings'] %}text-sky-600{% else %}text-slate-400{% endif %}" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="6" rx="2"/><rect x="3" y="13" width="18" height="6" rx="2"/><circle cx="7" cy="8" r=".8" fill="white"/><circle cx="7" cy="16" r=".8" fill="white"/><path d="M10 8h7M10 16h7" stroke="white" stroke-width="1.2"/></svg>
-                    <span>OLT Settings</span>
+                <div class="pt-3 pb-1 text-[9px] font-bold text-slate-500 uppercase tracking-widest px-3">
+                    INFRASTRUCTURE
+                </div>
+                <a href="/olt-management" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium tracking-wider transition hover:bg-[#0d1d33] border border-transparent {% if request.url.path.startswith('/olt-management') or request.url.path.startswith('/olt-settings') %}bg-[#0e223b] text-[#00e5ff] border-[#00e5ff]/40{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                    <div class="flex items-center gap-2.5">
+                        <svg class="h-3.5 w-3.5 {% if request.url.path.startswith('/olt-management') or request.url.path.startswith('/olt-settings') %}text-[#00e5ff]{% else %}text-slate-500{% endif %}" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="6" rx="2"/><rect x="3" y="13" width="18" height="6" rx="2"/><circle cx="7" cy="8" r=".8" fill="#08111e"/><circle cx="7" cy="16" r=".8" fill="#08111e"/><path d="M10 8h7M10 16h7" stroke="#08111e" stroke-width="1.2"/></svg>
+                        <span>OLT CONFIG</span>
+                    </div>
+                    {% if request.url.path.startswith('/olt-management') or request.url.path.startswith('/olt-settings') %}<span class="h-1.5 w-1.5 rounded-full bg-[#00e5ff]"></span>{% endif %}
                 </a>
                 {% endif %}
 
                 <!-- SECTION: ACCOUNT & SYSTEM -->
-                <div class="pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 px-4">Account</div>
+                <div class="pt-3 pb-1 text-[9px] font-bold text-slate-500 uppercase tracking-widest px-3">
+                    ACCESS & AUDIT
+                </div>
                 <!-- 6. MY ACCOUNT -->
-                <a href="/my-account" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium transition {% if request.url.path == '/my-account' %}bg-blue-50 text-sky-600{% else %}text-blue-950 hover:bg-slate-50{% endif %}">
-                    <svg class="h-5 w-5 {% if request.url.path == '/my-account' %}text-sky-600{% else %}text-slate-400{% endif %}" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="4"/><path d="M2 20a7 7 0 0 1 14 0v1H2z"/><path d="M17 5h5M17 9h5M17 13h5" stroke="currentColor" stroke-width="1.5"/></svg>
-                    <span>My Account</span>
+                <a href="/my-account" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium tracking-wider transition hover:bg-[#0d1d33] border border-transparent {% if request.url.path == '/my-account' %}bg-[#0e223b] text-[#00e5ff] border-[#00e5ff]/40{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                    <div class="flex items-center gap-2.5">
+                        <svg class="h-3.5 w-3.5 {% if request.url.path == '/my-account' %}text-[#00e5ff]{% else %}text-slate-500{% endif %}" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="4"/><path d="M2 20a7 7 0 0 1 14 0v1H2z"/><path d="M17 5h5M17 9h5M17 13h5" stroke="currentColor" stroke-width="1.5"/></svg>
+                        <span>MY PROFILE</span>
+                    </div>
+                    {% if request.url.path == '/my-account' %}<span class="h-1.5 w-1.5 rounded-full bg-[#00e5ff]"></span>{% endif %}
                 </a>
 
                 {% if role in ['Super Admin', 'NOC'] %}
-                <div class="pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 px-4">System</div>
                 <!-- 7. ACTIVITY LOG -->
-                <a href="/activity-log" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/activity-log' %}bg-blue-50 text-sky-600{% endif %}">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span>Activity Log</span>
+                <a href="/activity-log" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium tracking-wider transition hover:bg-[#0d1d33] border border-transparent {% if request.url.path == '/activity-log' %}bg-[#0e223b] text-[#00e5ff] border-[#00e5ff]/40{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                    <div class="flex items-center gap-2.5">
+                        <svg class="h-3.5 w-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>ACTIVITY LOG</span>
+                    </div>
+                    {% if request.url.path == '/activity-log' %}<span class="h-1.5 w-1.5 rounded-full bg-[#00e5ff]"></span>{% endif %}
                 </a>
                 {% endif %}
 
-                <!-- 8. USER MANAGEMENT & CUSTOMIZATION (Khusus Super Admin Saja) -->
+                <!-- 8. USER MANAGEMENT & CUSTOMIZATION -->
                 {% if role == 'Super Admin' %}
-                <a href="/customization" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/customization' %}bg-blue-50 text-sky-600{% endif %}">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
-                    <span>Customization</span>
+                <a href="/customization" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium tracking-wider transition hover:bg-[#0d1d33] border border-transparent {% if request.url.path == '/customization' %}bg-[#0e223b] text-[#00e5ff] border-[#00e5ff]/40{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                    <div class="flex items-center gap-2.5">
+                        <svg class="h-3.5 w-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+                        <span>CUSTOMIZATION</span>
+                    </div>
+                    {% if request.url.path == '/customization' %}<span class="h-1.5 w-1.5 rounded-full bg-[#00e5ff]"></span>{% endif %}
                 </a>
-                <a href="/user-management" class="flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium text-blue-950 transition hover:bg-slate-50 {% if request.url.path == '/user-management' %}bg-blue-50 text-sky-600{% endif %}">
-                    <svg class="h-5 w-5 text-slate-400" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><circle cx="18" cy="9" r="3"/><path d="M1 21a8 8 0 0 1 16 0v1H1zM17 15a6 6 0 0 1 6 6h-4a9 9 0 0 0-3-6z"/></svg>
-                    <span>User Management</span>
+                <a href="/user-management" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium tracking-wider transition hover:bg-[#0d1d33] border border-transparent {% if request.url.path == '/user-management' %}bg-[#0e223b] text-[#00e5ff] border-[#00e5ff]/40{% else %}text-slate-400 hover:text-slate-200{% endif %}">
+                    <div class="flex items-center gap-2.5">
+                        <svg class="h-3.5 w-3.5 text-slate-500" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><circle cx="18" cy="9" r="3"/><path d="M1 21a8 8 0 0 1 16 0v1H1zM17 15a6 6 0 0 1 6 6h-4a9 9 0 0 0-3-6z"/></svg>
+                        <span>USER REGISTRY</span>
+                    </div>
+                    {% if request.url.path == '/user-management' %}<span class="h-1.5 w-1.5 rounded-full bg-[#00e5ff]"></span>{% endif %}
                 </a>
                 {% endif %}
             </nav>
         </aside>
 
-        <!-- CONTENT -->
-        <main class="app-main flex-1 min-w-0 p-8 space-y-6 overflow-y-auto">
+        <!-- CONTENT STAGE -->
+        <main class="app-main flex-1 min-w-0 p-6 space-y-6 overflow-y-auto bg-[#050b14]">
             {% block content %}{% endblock %}
         </main>
     </div>
 
+    <!-- ========================================================= -->
+    <!-- DIALOG TR069 (CYBER MODAL THEME) -->
+    <!-- ========================================================= -->
     {% if role in ['Super Admin', 'NOC'] %}
-    <dialog id="quickTr069Dialog" class="w-[min(94vw,640px)] rounded-xl border border-slate-200 p-0 shadow-2xl backdrop:bg-slate-900/50">
-        <form id="quickTr069Form" class="bg-white">
-            <header class="flex items-center justify-between border-b border-slate-200 px-5 py-4"><h2 class="text-lg font-semibold text-blue-950">Add TR069 Profile</h2><button type="button" id="quickTr069Close" class="rounded p-1 text-2xl leading-none text-slate-500 hover:bg-slate-100" aria-label="Tutup">×</button></header>
-            <div class="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-5">
-                <label class="block text-sm font-medium text-blue-950">Profile Name<input id="quickTr069Name" required maxlength="120" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" placeholder="e.g. ACS-SVR-MAIN"></label>
-                <label class="block text-sm font-medium text-blue-950">ACS URL<input id="quickTr069Url" type="url" required class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" placeholder="http://acs.example.com:7547"></label>
-                <label class="block text-sm font-medium text-blue-950">Username<input id="quickTr069Username" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"></label>
-                <label class="block text-sm font-medium text-blue-950">Password<input id="quickTr069Password" type="password" autocomplete="new-password" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"></label>
-                <fieldset><legend class="mb-2 text-sm font-medium text-blue-950">VLAN</legend><div class="flex gap-5 text-sm text-slate-600"><label class="flex items-center gap-2"><input type="radio" name="quickVlanMode" value="tag" checked>Tag</label><label class="flex items-center gap-2"><input type="radio" name="quickVlanMode" value="untag">Untag</label></div><input id="quickTr069Vlan" type="number" min="1" max="4094" required class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5" placeholder="VLAN ID"></fieldset>
-                <fieldset><legend class="mb-2 text-sm font-medium text-blue-950">Default OLT <span class="font-normal text-slate-400">(optional)</span></legend><div id="quickTr069Olts" class="space-y-2 text-sm text-slate-600">Memuat daftar OLT...</div></fieldset>
-                <p id="quickTr069Message" class="hidden text-sm text-rose-600" role="alert"></p>
+    <dialog id="quickTr069Dialog" class="w-[min(94vw,640px)] rounded-xl border border-[#162a45] p-0 shadow-[0_0_50px_rgba(0,0,0,0.9)] bg-[#091322] backdrop:bg-black/75">
+        <form id="quickTr069Form" class="bg-[#091322] text-slate-200 font-mono">
+            <header class="flex items-center justify-between border-b border-[#162a45] px-5 py-4">
+                <h2 class="text-xs font-bold text-[#00e5ff] tracking-wider uppercase flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-[#00e5ff] shadow-[0_0_6px_#00e5ff]"></span>
+                    ADD TR069 PROFILE
+                </h2>
+                <button type="button" id="quickTr069Close" class="rounded p-1 text-2xl leading-none text-slate-400 hover:text-white hover:bg-[#0d1d33] transition" aria-label="Tutup">×</button>
+            </header>
+            <div class="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-5 text-xs">
+                <label class="block font-medium text-slate-300">PROFILE NAME
+                    <input id="quickTr069Name" required maxlength="120" class="mt-1 w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3 py-2 text-slate-200 focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff] outline-none transition" placeholder="e.g. ACS-SVR-MAIN">
+                </label>
+                <label class="block font-medium text-slate-300">ACS URL
+                    <input id="quickTr069Url" type="url" required class="mt-1 w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3 py-2 text-slate-200 focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff] outline-none transition" placeholder="http://acs.example.com:7547">
+                </label>
+                <label class="block font-medium text-slate-300">USERNAME
+                    <input id="quickTr069Username" class="mt-1 w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3 py-2 text-slate-200 focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff] outline-none transition">
+                </label>
+                <label class="block font-medium text-slate-300">PASSWORD
+                    <input id="quickTr069Password" type="password" autocomplete="new-password" class="mt-1 w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3 py-2 text-slate-200 focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff] outline-none transition">
+                </label>
+                <fieldset>
+                    <legend class="mb-2 font-medium text-slate-300">VLAN MODE</legend>
+                    <div class="flex gap-5 text-slate-400">
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-slate-200">
+                            <input type="radio" name="quickVlanMode" value="tag" checked class="accent-[#00e5ff]"> Tag
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-slate-200">
+                            <input type="radio" name="quickVlanMode" value="untag" class="accent-[#00e5ff]"> Untag
+                        </label>
+                    </div>
+                    <input id="quickTr069Vlan" type="number" min="1" max="4094" required class="mt-2 w-full rounded-lg bg-[#060c17] border border-[#162a45] px-3 py-2 text-slate-200 focus:border-[#00e5ff] focus:ring-1 focus:ring-[#00e5ff] outline-none transition" placeholder="VLAN ID">
+                </fieldset>
+                <fieldset>
+                    <legend class="mb-2 font-medium text-slate-300">DEFAULT OLT <span class="font-normal text-slate-500">(optional)</span></legend>
+                    <div id="quickTr069Olts" class="space-y-2 text-slate-400">Memuat daftar OLT...</div>
+                </fieldset>
+                <p id="quickTr069Message" class="hidden text-xs text-[#ff3366]" role="alert"></p>
             </div>
-            <footer class="flex justify-end gap-2 border-t border-slate-200 px-5 py-4"><button type="button" id="quickTr069Cancel" class="rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700">Cancel</button><button id="quickTr069Save" type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Save</button></footer>
+            <footer class="flex justify-end gap-2 border-t border-[#162a45] px-5 py-4">
+                <button type="button" id="quickTr069Cancel" class="rounded-lg border border-[#162a45] px-4 py-2 text-xs text-slate-400 hover:text-slate-200 hover:bg-[#0d1d33] transition cursor-pointer">CANCEL</button>
+                <button id="quickTr069Save" type="submit" class="rounded-lg bg-[#00e5ff] hover:bg-[#00c8e0] px-4 py-2 text-xs font-bold text-black shadow-[0_0_12px_rgba(0,229,255,0.4)] transition cursor-pointer">SAVE</button>
+            </footer>
         </form>
     </dialog>
     {% endif %}
 
+    <!-- ========================================================= -->
     <!-- SCRIPT JAVASCRIPT GLOBAL -->
+    <!-- ========================================================= -->
     <script>
         function bindSidebarGroup(buttonId, submenuId, groupName) {
             const button = document.getElementById(buttonId);
@@ -235,9 +376,10 @@
                 button.setAttribute('aria-expanded', String(!isExpanded));
                 submenu?.classList.toggle('hidden', isExpanded);
                 chevron?.classList.toggle('-rotate-90', isExpanded);
-                button.classList.toggle('bg-blue-50', !isExpanded);
-                button.classList.toggle('text-sky-600', !isExpanded);
-                button.classList.toggle('text-blue-950', isExpanded);
+                button.classList.toggle('bg-[#0e223b]', !isExpanded);
+                button.classList.toggle('text-[#00e5ff]', !isExpanded);
+                button.classList.toggle('border-[#00e5ff]/40', !isExpanded);
+                button.classList.toggle('text-slate-400', isExpanded);
             });
         }
         bindSidebarGroup('onuMenuToggle', 'onuSubmenu', 'onu');
@@ -286,9 +428,10 @@
                     if (!olts.length) quickOltList.textContent = 'Belum ada OLT terdaftar.';
                     olts.forEach((olt) => {
                         const label = document.createElement('label');
-                        label.className = 'flex items-center gap-2';
+                        label.className = 'flex items-center gap-2 cursor-pointer hover:text-slate-200';
                         const checkbox = document.createElement('input');
                         checkbox.type = 'checkbox'; checkbox.name = 'quickDefaultOlt'; checkbox.value = olt.name;
+                        checkbox.className = 'accent-[#00e5ff]';
                         label.append(checkbox, document.createTextNode(olt.name));
                         quickOltList.append(label);
                     });
@@ -318,10 +461,10 @@
                     if (location.pathname === '/tr069-profiles') location.reload();
                     else {
                         window.dispatchEvent(new CustomEvent('tr069-profile-saved', {detail: {name: document.getElementById('quickTr069Name').value.trim()}}));
-                        quickMessage.textContent = 'TR069 Profile berhasil disimpan.'; quickMessage.className = 'text-sm text-emerald-700';
+                        quickMessage.textContent = 'TR069 Profile berhasil disimpan.'; quickMessage.className = 'text-xs text-[#00ff88]';
                     }
                 } catch (error) {
-                    quickMessage.textContent = error.message; quickMessage.className = 'text-sm text-rose-600';
+                    quickMessage.textContent = error.message; quickMessage.className = 'text-xs text-[#ff3366]';
                 } finally { saveButton.disabled = false; saveButton.textContent = 'Save'; }
             });
         }
@@ -340,13 +483,16 @@
             }
         });
 
+        // REFRESH METRIC STATUS DENGAN MULTI-KEY SUPPORT (dying_gasp / DyingGasp & los / LOS)
         async function refreshStatusBadges() {
             try {
                 const response = await fetch('/api/summary');
                 if (!response.ok) return;
                 const counts = await response.json();
                 document.querySelectorAll('[data-status-count]').forEach((badge) => {
-                    badge.textContent = counts[badge.dataset.statusCount] ?? 0;
+                    const key = badge.dataset.statusCount;
+                    const val = counts[key] ?? counts[key.toLowerCase()] ?? counts[key.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')] ?? 0;
+                    badge.textContent = val;
                 });
             } catch (error) {}
         }

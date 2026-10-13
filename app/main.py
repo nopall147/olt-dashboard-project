@@ -103,7 +103,6 @@ def format_uptime(ticks):
 # ==============================================================================
 # INISIALISASI DATA AWAL (OLT & ADMIN DEFAULT)
 # ==============================================================================
-# 1. Pastikan seluruh tabel terbuat sebelum query dijalankan
 Base.metadata.create_all(bind=engine)
 
 with SessionLocal() as startup_db:
@@ -114,7 +113,11 @@ with SessionLocal() as startup_db:
         if not existing_seed_olt:
             startup_db.add(OLTConfig(name=name, ip_address=ip, model="ZTE C300/C320"))
     
-    admin_user = startup_db.query(User).filter(User.username == "admin").first()
+    # PERBAIKAN: Cek berdasarkan email dan username sekaligus secara aman
+    admin_user = startup_db.query(User).filter(
+        (User.email == "admin@olt.local") | (User.username == "hari")
+    ).first()
+
     if not admin_user:
         startup_db.add(User(
             fullname="Hari Pujianto",
@@ -127,6 +130,9 @@ with SessionLocal() as startup_db:
             is_verified=True
         ))
     else:
+        # Perbarui role/password jika diperlukan tanpa INSERT baru
+        admin_user.fullname = "Hari Pujianto"
+        admin_user.username = "hari"
         if admin_user.role in ["admin", "operator", "Viewer"]:
             admin_user.role = "Super Admin"
         if not admin_user.plain_password:

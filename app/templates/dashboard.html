@@ -3,186 +3,301 @@
 {% block title %}Dashboard - OLT Monitoring System{% endblock %}
 
 {% block content %}
-<!-- Breadcrumb -->
-<div>
-    <h1 class="text-xl font-bold text-slate-900">Dashboard</h1>
-    <p class="text-xs text-slate-400">Home / Monitoring</p>
-</div>
-
-<!-- TOP STATS CARDS SUMMARY -->
-<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
-    <!-- OLTs Total -->
-    <a {% if data.summary.selected_olt_id %}href="/olt-management?olt_id={{ data.summary.selected_olt_id }}"{% else %}href="/olt-management"{% endif %} class="block h-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Buka OLT Management">
-    <div class="h-full min-h-[116px] bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between hover:border-blue-300 hover:shadow-md transition">
-        <div>
-            <p class="text-xs text-slate-500 font-semibold">OLTs</p>
-            <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.total_olts }}</h2>
-            <p class="text-[10px] text-blue-600 font-medium mt-1">{{ data.summary.total_onus }} ONUs Total</p>
-        </div>
-        <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
-            </svg>
-        </div>
-    </div>
-    </a>
-
-    <!-- Online Summary -->
-    <a href="/all-onus?status=Online" class="block h-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Lihat ONU Online">
-    <div class="h-full min-h-[116px] bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between relative overflow-hidden transition hover:border-blue-300 hover:shadow-md">
-        <div>
-            <div class="flex items-center space-x-2">
-                <p class="text-xs text-slate-500 font-semibold">Online</p>
-                <span class="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">{{ data.summary.online_percentage }}%</span>
-            </div>
-            <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.online_onus }}</h2>
-        </div>
-        <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-            </svg>
-        </div>
-    </div>
-    </a>
-
-    <!-- DyingGasp Summary -->
-    <a href="/all-onus?status=DyingGasp" class="block h-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Lihat ONU DyingGasp">
-    <div class="h-full min-h-[116px] bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between transition hover:border-blue-300 hover:shadow-md">
-        <div>
-            <div class="flex items-center space-x-2">
-                <p class="text-xs text-slate-500 font-semibold">DyingGasp</p>
-                <span class="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold">{{ data.summary.dying_gasp_percentage }}%</span>
-            </div>
-            <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.dying_gasp_onus }}</h2>
-        </div>
-        <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-        </div>
-    </div>
-    </a>
-
-    <!-- LOS Summary -->
-    <a href="/all-onus?status=LOS" class="block h-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Lihat ONU LOS">
-    <div class="h-full min-h-[116px] bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between transition hover:border-blue-300 hover:shadow-md">
-        <div>
-            <div class="flex items-center space-x-2">
-                <p class="text-xs text-slate-500 font-semibold">LOS</p>
-                <span class="text-[9px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold">{{ data.summary.los_percentage }}%</span>
-            </div>
-            <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.los_onus }}</h2>
-        </div>
-        <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-        </div>
-    </div>
-    </a>
-
-    <!-- Offline Summary -->
-    <a href="/all-onus?status=Offline" class="block h-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Lihat ONU Offline">
-    <div class="h-full min-h-[116px] bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between transition hover:border-blue-300 hover:shadow-md">
-        <div>
-            <div class="flex items-center space-x-2">
-                <p class="text-xs text-slate-500 font-semibold">Offline</p>
-                <span class="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold">{{ data.summary.offline_percentage }}%</span>
-            </div>
-            <h2 class="text-2xl font-bold text-slate-800 mt-1">{{ data.summary.offline_onus }}</h2>
-        </div>
-        <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-            </svg>
-        </div>
-    </div>
-    </a>
-</div>
-
-<!-- INDIVIDUAL OLT CARDS LIST -->
 <div class="space-y-6">
-    {% for olt in data.olts %}
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="p-5 flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 gap-4">
-            <div class="flex items-center space-x-4">
-                <div class="w-16 h-12 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-xs font-mono text-slate-400">
-                    [OLT]
-                </div>
-                <div>
-                    <div class="flex items-center space-x-3">
-                        <h3 class="text-base font-bold text-slate-900">{{ olt.name }}</h3>
-                        <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">● {{ olt.status }}</span>
-                    </div>
-                    <p class="text-xs text-slate-400 mt-0.5">{{ olt.model }} &bull; Uptime: {{ olt.uptime }}</p>
-                </div>
-            </div>
 
-            <div class="flex items-center space-x-6 text-center text-xs">
-                <div>
-                    <p class="text-slate-400 text-[10px]">Total Fan</p>
-                    <p class="font-bold text-slate-700">{{ olt.total_fan }}</p>
+    <!-- ========================================================= -->
+    <!-- 1. TOP TELEMETRY STRIP (NOC COMMAND BAR) -->
+    <!-- ========================================================= -->
+    <div class="flex flex-col xl:flex-row xl:items-center justify-between bg-white dark:bg-[#08111e] border border-slate-200 dark:border-[#162a45] rounded-xl px-4 py-3 gap-3 shadow-sm dark:shadow-lg transition-colors duration-300">
+        <div class="flex items-center gap-3">
+            <span class="relative flex h-3 w-3">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 dark:bg-[#00e5ff] opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-600 dark:bg-[#00e5ff]"></span>
+            </span>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-xs font-bold tracking-widest text-blue-700 dark:text-[#00e5ff] uppercase dark:neon-glow-cyan">NOC ORCHESTRATOR // TELEMETRY HUB</h1>
+                    <span class="px-1.5 py-0.2 text-[9px] font-bold rounded bg-blue-100 dark:bg-[#00e5ff]/10 text-blue-700 dark:text-[#00e5ff] border border-blue-200 dark:border-[#00e5ff]/30 uppercase">LIVE</span>
                 </div>
-                <div>
-                    <p class="text-slate-400 text-[10px]">Total ONU</p>
-                    <p class="font-bold text-slate-900">{{ olt.total_onu }}</p>
-                </div>
-                <div>
-                    <p class="text-emerald-600 text-[10px]">Online</p>
-                    <p class="font-bold text-emerald-600">{{ olt.online }}</p>
-                </div>
-                <div>
-                    <p class="text-rose-500 text-[10px]">LOS</p>
-                    <p class="font-bold text-rose-500">{{ olt.los }}</p>
-                </div>
-                <div>
-                    <p class="text-amber-500 text-[10px]">Dyinggaps</p>
-                    <p class="font-bold text-amber-500">{{ olt.dying_gasp }}</p>
-                </div>
-                <div>
-                    <p class="text-slate-500 text-[10px]">Offline</p>
-                    <p class="font-bold text-slate-600">{{ olt.offline }}</p>
-                </div>
-                <div class="pl-4 border-l border-slate-200">
-                    <span class="inline-flex items-center gap-1 text-xs font-semibold text-slate-600">
-                        <svg class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-2 0v10a3 3 0 102 0z" />
-                        </svg>
-                        {{ olt.temperature }}°C
-                    </span>
-                </div>
+                <p class="text-[10px] text-slate-500 font-mono tracking-wide">TOPOLOGY MONITORING & GPON PROVISIONING MATRIX</p>
             </div>
-            {% if olt.id %}
-            <div class="md:ml-4">
-                <a href="/olt-management?olt_id={{ olt.id }}" class="inline-flex items-center justify-center rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100" aria-label="Buka OLT Management untuk {{ olt.name }}">
-                    ⚙ Menu OLT
-                </a>
-            </div>
-            {% endif %}
         </div>
 
-        {% if olt.fans %}
-        <div class="p-4 bg-slate-50/50 grid grid-cols-1 md:grid-cols-3 gap-4">
-            {% for fan in olt.fans %}
-            <div class="bg-white p-3 rounded-lg border border-slate-200 flex items-center justify-between">
-                <div>
-                    <div class="flex items-center space-x-2">
-                        <span class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                            <svg class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            {{ fan.name }}
-                        </span>
-                        <span class="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.2 rounded font-bold">● {{ fan.status }}</span>
-                    </div>
-                    <p class="text-xs font-bold text-slate-900 mt-1">{{ fan.rpm }} <span class="text-[10px] text-slate-400 font-normal">RPM</span></p>
-                    <p class="text-[10px] text-slate-400">Speed Level: {{ fan.level }}</p>
-                </div>
+        <!-- Quick Telemetry Pills -->
+        <div class="flex flex-wrap items-center gap-2 text-[10px] font-mono">
+            <div class="px-2.5 py-1 rounded-md bg-slate-50 dark:bg-[#060c17] border border-slate-200 dark:border-[#162a45] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 transition-colors">
+                <span class="text-slate-500">CHASSIS:</span>
+                <span class="text-blue-700 dark:text-[#00e5ff] font-bold">{{ data.summary.total_olts }} ACTIVE</span>
             </div>
-            {% endfor %}
+            <div class="px-2.5 py-1 rounded-md bg-slate-50 dark:bg-[#060c17] border border-slate-200 dark:border-[#162a45] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 transition-colors">
+                <span class="text-slate-500">OPTICAL POOL:</span>
+                <span class="text-slate-800 dark:text-slate-200 font-bold">{{ data.summary.total_onus }} NODES</span>
+            </div>
+            <div class="px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-[#060c17] border border-emerald-200 dark:border-[#162a45] text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5 transition-colors">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
+                <span class="font-bold">HEALTH: {{ data.summary.online_percentage }}%</span>
+            </div>
         </div>
-        {% endif %}
     </div>
-    {% endfor %}
+
+    <!-- ========================================================= -->
+    <!-- 2. TELEMETRY KPI MATRIX (5-SLOT HUD CARDS) -->
+    <!-- ========================================================= -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+        <!-- CARD 1: TOTAL OLTS -->
+        <a {% if data.summary.selected_olt_id %}href="/olt-management?olt_id={{ data.summary.selected_olt_id }}"{% else %}href="/olt-management"{% endif %} class="group block focus:outline-none" aria-label="Buka OLT Management">
+            <div class="h-full bg-white dark:bg-[#08111e] rounded-xl border border-slate-200 dark:border-[#162a45] p-3.5 relative overflow-hidden group-hover:border-blue-400 dark:group-hover:border-[#00e5ff]/60 shadow-sm dark:shadow-none group-hover:shadow-md dark:group-hover:shadow-[0_0_18px_rgba(0,229,255,0.18)] transition-all">
+                <div class="flex justify-between items-center text-[10px] font-mono uppercase text-slate-500 dark:text-slate-400">
+                    <span class="group-hover:text-blue-600 dark:group-hover:text-[#00e5ff] transition tracking-wider">CHASSIS OLT</span>
+                    <span class="text-blue-600 dark:text-[#00e5ff] font-bold">TOTAL</span>
+                </div>
+                <div class="mt-2.5 flex items-baseline justify-between font-mono">
+                    <span class="text-3xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">{{ data.summary.total_olts }}</span>
+                    <span class="text-[11px] text-blue-600 dark:text-[#00e5ff] font-medium">{{ data.summary.total_onus }} ONUs</span>
+                </div>
+                <div class="mt-3 flex items-center gap-1">
+                    <div class="h-1 flex-1 bg-blue-500 dark:bg-[#00e5ff] rounded-full"></div>
+                    <div class="h-1 w-2 bg-blue-200 dark:bg-[#00e5ff]/40 rounded-full"></div>
+                </div>
+            </div>
+        </a>
+
+        <!-- CARD 2: ONLINE ONUS -->
+        <a href="/all-onus?status=Online" class="group block focus:outline-none" aria-label="Lihat ONU Online">
+            <div class="h-full bg-white dark:bg-[#08111e] rounded-xl border border-slate-200 dark:border-[#162a45] p-3.5 relative overflow-hidden group-hover:border-emerald-400 dark:group-hover:border-emerald-500/60 shadow-sm dark:shadow-none group-hover:shadow-md dark:group-hover:shadow-[0_0_18px_rgba(16,185,129,0.18)] transition-all">
+                <div class="flex justify-between items-center text-[10px] font-mono uppercase text-emerald-600 dark:text-emerald-400">
+                    <span class="tracking-wider">OPTICAL ONLINE</span>
+                    <span class="px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/30 font-bold text-[9px]">{{ data.summary.online_percentage }}%</span>
+                </div>
+                <div class="mt-2.5 flex items-baseline justify-between font-mono">
+                    <span class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight">{{ data.summary.online_onus }}</span>
+                    <span class="text-[10px] text-slate-500 uppercase tracking-widest">CARRIER OK</span>
+                </div>
+                <div class="mt-3 w-full bg-slate-100 dark:bg-[#060c17] h-1 rounded-full overflow-hidden">
+                    <div class="bg-emerald-500 dark:bg-emerald-400 h-full rounded-full transition-all" style="width: {{ data.summary.online_percentage }}%"></div>
+                </div>
+            </div>
+        </a>
+
+        <!-- CARD 3: DYING GASP -->
+        <a href="/all-onus?status=DyingGasp" class="group block focus:outline-none" aria-label="Lihat ONU DyingGasp">
+            <div class="h-full bg-white dark:bg-[#08111e] rounded-xl border border-slate-200 dark:border-[#162a45] p-3.5 relative overflow-hidden group-hover:border-amber-400 dark:group-hover:border-amber-500/60 shadow-sm dark:shadow-none group-hover:shadow-md dark:group-hover:shadow-[0_0_18px_rgba(245,158,11,0.18)] transition-all">
+                <div class="flex justify-between items-center text-[10px] font-mono uppercase text-amber-600 dark:text-amber-400">
+                    <span class="tracking-wider">DYING GASP</span>
+                    <span class="px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 font-bold text-[9px]">{{ data.summary.dying_gasp_percentage }}%</span>
+                </div>
+                <div class="mt-2.5 flex items-baseline justify-between font-mono">
+                    <span class="text-3xl font-extrabold text-amber-600 dark:text-amber-400 tracking-tight">{{ data.summary.dying_gasp_onus }}</span>
+                    <span class="text-[10px] text-amber-600/70 dark:text-amber-500/70 uppercase tracking-widest">PWR DOWN</span>
+                </div>
+                <div class="mt-3 w-full bg-slate-100 dark:bg-[#060c17] h-1 rounded-full overflow-hidden">
+                    <div class="bg-amber-500 dark:bg-amber-400 h-full rounded-full transition-all" style="width: {{ data.summary.dying_gasp_percentage }}%"></div>
+                </div>
+            </div>
+        </a>
+
+        <!-- CARD 4: LOS CRITICAL -->
+        <a href="/all-onus?status=LOS" class="group block focus:outline-none" aria-label="Lihat ONU LOS">
+            <div class="h-full bg-white dark:bg-[#08111e] rounded-xl border border-slate-200 dark:border-[#162a45] p-3.5 relative overflow-hidden group-hover:border-rose-400 dark:group-hover:border-rose-500/60 shadow-sm dark:shadow-none group-hover:shadow-md dark:group-hover:shadow-[0_0_18px_rgba(244,63,94,0.18)] transition-all">
+                <div class="flex justify-between items-center text-[10px] font-mono uppercase text-rose-600 dark:text-rose-400">
+                    <span class="tracking-wider">LOS CRITICAL</span>
+                    <span class="px-1.5 py-0.2 rounded bg-rose-100 dark:bg-rose-500/10 border border-rose-300 dark:border-rose-500/30 font-bold text-[9px]">{{ data.summary.los_percentage }}%</span>
+                </div>
+                <div class="mt-2.5 flex items-baseline justify-between font-mono">
+                    <span class="text-3xl font-extrabold text-rose-600 dark:text-rose-400 tracking-tight">{{ data.summary.los_onus }}</span>
+                    <span class="text-[10px] text-rose-600/70 dark:text-rose-500/70 uppercase tracking-widest">FIBER CUT</span>
+                </div>
+                <div class="mt-3 w-full bg-slate-100 dark:bg-[#060c17] h-1 rounded-full overflow-hidden">
+                    <div class="bg-rose-500 h-full rounded-full transition-all" style="width: {{ data.summary.los_percentage }}%"></div>
+                </div>
+            </div>
+        </a>
+
+        <!-- CARD 5: OFFLINE -->
+        <a href="/all-onus?status=Offline" class="group block focus:outline-none" aria-label="Lihat ONU Offline">
+            <div class="h-full bg-white dark:bg-[#08111e] rounded-xl border border-slate-200 dark:border-[#162a45] p-3.5 relative overflow-hidden group-hover:border-slate-400 dark:group-hover:border-slate-500/60 shadow-sm dark:shadow-none transition-all">
+                <div class="flex justify-between items-center text-[10px] font-mono uppercase text-slate-500 dark:text-slate-400">
+                    <span class="tracking-wider">OFFLINE</span>
+                    <span class="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-bold text-[9px] text-slate-600 dark:text-slate-400">{{ data.summary.offline_percentage }}%</span>
+                </div>
+                <div class="mt-2.5 flex items-baseline justify-between font-mono">
+                    <span class="text-3xl font-extrabold text-slate-700 dark:text-slate-400 tracking-tight">{{ data.summary.offline_onus }}</span>
+                    <span class="text-[10px] text-slate-500 dark:text-slate-600 uppercase tracking-widest">NO LINK</span>
+                </div>
+                <div class="mt-3 w-full bg-slate-100 dark:bg-[#060c17] h-1 rounded-full overflow-hidden">
+                    <div class="bg-slate-400 dark:bg-slate-600 h-full rounded-full transition-all" style="width: {{ data.summary.offline_percentage }}%"></div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- 3. CHASSIS BLADE MATRIX (HANYA MUNCUL JIKA OLT SUDAH TERDAFTAR) -->
+    <!-- ========================================================= -->
+    {% if data.olts and data.olts|length > 0 %}
+    <div class="space-y-4">
+        <div class="flex items-center justify-between px-1">
+            <div class="flex items-center gap-2 text-xs font-bold tracking-wider text-slate-700 dark:text-slate-300 uppercase font-mono">
+                <span class="text-blue-600 dark:text-[#00e5ff]">▸</span> CHASSIS TOPOLOGY & BLADE SLOTS
+            </div>
+            <span class="text-[10px] font-mono text-slate-500 uppercase tracking-widest">MODULAR TELEMETRY VIEW</span>
+        </div>
+
+        {% for olt in data.olts %}
+        <div class="bg-white dark:bg-[#08111e] rounded-xl border border-slate-200 dark:border-[#162a45] overflow-hidden shadow-sm dark:shadow-md hover:border-blue-300 dark:hover:border-[#1e3a5f] transition-all duration-300">
+            
+            <!-- BLADE HEADER / RACK STRIP -->
+            <div class="p-4 bg-slate-50 dark:bg-[#091322] border-b border-slate-200 dark:border-[#162a45] flex flex-col xl:flex-row xl:items-center justify-between gap-4 transition-colors">
+                
+                <!-- ZONE A: CHASSIS IDENTITY & STATUS -->
+                <div class="flex items-center space-x-3.5">
+                    <div class="h-10 w-10 rounded-lg bg-white dark:bg-[#060c17] border border-slate-200 dark:border-[#162a45] flex flex-col items-center justify-center font-mono shrink-0 shadow-sm dark:shadow-inner transition-colors">
+                        <span class="text-[8px] text-blue-600 dark:text-[#00e5ff] font-bold">RACK</span>
+                        <span class="text-xs font-extrabold text-slate-700 dark:text-slate-200">0{{ loop.index }}</span>
+                    </div>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2.5">
+                            <h2 class="text-sm font-bold text-slate-800 dark:text-slate-100 font-mono tracking-wide">{{ olt.name }}</h2>
+                            <span class="px-2 py-0.5 text-[9px] font-bold rounded bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30 flex items-center gap-1.5 shadow-none dark:shadow-[0_0_8px_rgba(16,185,129,0.2)] font-mono">
+                                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse"></span>
+                                {{ olt.status }}
+                            </span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span class="text-slate-700 dark:text-slate-300">{{ olt.model }}</span>
+                            <span class="text-slate-400 dark:text-slate-600">•</span>
+                            <span>UPTIME: <span class="text-slate-700 dark:text-slate-300">{{ olt.uptime }}</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ZONE B: TELEMETRY QUICK METRICS & ACTION -->
+                <div class="flex flex-wrap items-center gap-2 font-mono text-xs">
+                    <!-- Sensor Suhu -->
+                    <div class="px-3 py-1.5 rounded-lg bg-white dark:bg-[#060c17] border border-slate-200 dark:border-[#162a45] flex items-center gap-2 transition-colors">
+                        <span class="text-[9px] text-slate-500 uppercase">TEMP</span>
+                        <span class="text-xs font-extrabold text-blue-600 dark:text-[#00e5ff]">{{ olt.temperature }}°C</span>
+                    </div>
+
+                    <!-- Fan Total -->
+                    <div class="px-3 py-1.5 rounded-lg bg-white dark:bg-[#060c17] border border-slate-200 dark:border-[#162a45] flex items-center gap-2 transition-colors">
+                        <span class="text-[9px] text-slate-500 uppercase">FANS</span>
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300">{{ olt.total_fan }} BAY</span>
+                    </div>
+
+                    <!-- Action Menu Button -->
+                    {% if olt.id %}
+                    <a href="/olt-management?olt_id={{ olt.id }}" class="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 dark:bg-[#00e5ff]/10 hover:bg-blue-100 dark:hover:bg-[#00e5ff]/20 border border-blue-200 dark:border-[#00e5ff]/40 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-[#00e5ff] shadow-none dark:shadow-[0_0_10px_rgba(0,229,255,0.15)] hover:shadow-sm dark:hover:shadow-[0_0_15px_rgba(0,229,255,0.3)] transition" aria-label="Buka OLT Management untuk {{ olt.name }}">
+                        <span>MANAGE CHASSIS</span>
+                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- BLADE BODY: SPLIT VIEW (OPTICAL MATRIX & FAN BAY) -->
+            <div class="p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 bg-white dark:bg-[#08111e] transition-colors">
+                
+                <!-- LEFT SECTION (8-COLS): OPTICAL ONU DISTRIBUTION -->
+                <div class="lg:col-span-8 bg-slate-50 dark:bg-[#060c17] rounded-xl border border-slate-200 dark:border-[#162a45] p-3.5 flex flex-col justify-between transition-colors">
+                    <div class="flex items-center justify-between pb-2.5 border-b border-slate-200 dark:border-[#162a45]/60 text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase">
+                        <span class="flex items-center gap-1.5">
+                            <span class="h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-[#00e5ff]"></span>
+                            OPTICAL DISTRIBUTION PORTS
+                        </span>
+                        <span class="text-blue-600 dark:text-[#00e5ff] font-bold">TOTAL: {{ olt.total_onu }} NODES</span>
+                    </div>
+
+                    <!-- ONU Stats Blocks -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-3">
+                        <!-- Online -->
+                        <div class="p-2.5 rounded-lg bg-white dark:bg-[#091322] border border-emerald-200 dark:border-emerald-500/20 text-center transition-colors">
+                            <span class="block text-[9px] font-mono text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">ONLINE</span>
+                            <span class="block text-xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">{{ olt.online }}</span>
+                        </div>
+
+                        <!-- LOS -->
+                        <div class="p-2.5 rounded-lg bg-white dark:bg-[#091322] border border-rose-200 dark:border-rose-500/20 text-center transition-colors">
+                            <span class="block text-[9px] font-mono text-rose-600 dark:text-rose-400 uppercase tracking-widest">LOS</span>
+                            <span class="block text-xl font-extrabold font-mono text-rose-600 dark:text-rose-400 mt-0.5">{{ olt.los }}</span>
+                        </div>
+
+                        <!-- DyingGasp -->
+                        <div class="p-2.5 rounded-lg bg-white dark:bg-[#091322] border border-amber-200 dark:border-amber-500/20 text-center transition-colors">
+                            <span class="block text-[9px] font-mono text-amber-600 dark:text-amber-400 uppercase tracking-widest">DYING GASP</span>
+                            <span class="block text-xl font-extrabold font-mono text-amber-600 dark:text-amber-400 mt-0.5">{{ olt.dying_gasp }}</span>
+                        </div>
+
+                        <!-- Offline -->
+                        <div class="p-2.5 rounded-lg bg-white dark:bg-[#091322] border border-slate-200 dark:border-[#162a45] text-center transition-colors">
+                            <span class="block text-[9px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-widest">OFFLINE</span>
+                            <span class="block text-xl font-extrabold font-mono text-slate-700 dark:text-slate-300 mt-0.5">{{ olt.offline }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT SECTION (4-COLS): MODULAR FAN BAYS -->
+                <div class="lg:col-span-4 bg-slate-50 dark:bg-[#060c17] rounded-xl border border-slate-200 dark:border-[#162a45] p-3.5 flex flex-col justify-between transition-colors">
+                    <div class="flex items-center justify-between pb-2.5 border-b border-slate-200 dark:border-[#162a45]/60 text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase">
+                        <span class="flex items-center gap-1.5">
+                            <span class="h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-[#00e5ff]"></span>
+                            COOLING SUBSYSTEM
+                        </span>
+                        <span class="text-slate-500 font-bold">RPM SENSORS</span>
+                    </div>
+
+                    {% if olt.fans %}
+                    <div class="space-y-2 pt-2.5">
+                        {% for fan in olt.fans %}
+                        <div class="p-2 rounded-lg bg-white dark:bg-[#091322] border border-slate-200 dark:border-[#162a45] flex items-center justify-between transition-colors">
+                            <div class="min-w-0 pr-2">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[11px] font-bold font-mono text-slate-800 dark:text-slate-200 truncate">{{ fan.name }}</span>
+                                    <span class="px-1 py-0.2 text-[8px] font-bold rounded bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 uppercase font-mono">
+                                        {{ fan.status }}
+                                    </span>
+                                </div>
+                                <span class="text-[9px] text-slate-500 font-mono">LEVEL: <strong class="text-blue-600 dark:text-[#00e5ff]">{{ fan.level }}</strong></span>
+                            </div>
+                            <div class="text-right shrink-0 font-mono">
+                                <span class="text-xs font-extrabold text-slate-700 dark:text-slate-100">{{ fan.rpm }}</span>
+                                <span class="block text-[8px] text-slate-500 uppercase">RPM</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="py-6 text-center text-xs text-slate-500 dark:text-slate-600 font-mono">
+                        NO SENSOR DETECTED
+                    </div>
+                    {% endif %}
+                </div>
+
+            </div>
+
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- EMPTY STATE KETIKA BELUM ADA OLT TERDAFTAR -->
+    <div class="bg-white dark:bg-[#08111e] rounded-xl border border-slate-200 dark:border-[#162a45] p-8 text-center shadow-sm dark:shadow-lg font-mono transition-colors">
+        <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 dark:bg-[#0b223d] text-blue-600 dark:text-[#00e5ff] border border-blue-200 dark:border-[#00e5ff]/30 shadow-none dark:shadow-[0_0_15px_rgba(0,229,255,0.2)] mb-3">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <rect x="3" y="5" width="18" height="6" rx="2" stroke-width="2"/>
+                <rect x="3" y="13" width="18" height="6" rx="2" stroke-width="2"/>
+                <circle cx="7" cy="8" r=".8" fill="currentColor"/>
+                <circle cx="7" cy="16" r=".8" fill="currentColor"/>
+            </svg>
+        </div>
+        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">NO OLT CHASSIS CONFIGURED</h3>
+        <p class="mt-1 text-xs text-slate-500 max-w-md mx-auto">Belum ada perangkat OLT yang terdaftar di database sistem monitoring.</p>
+        <div class="mt-4">
+            <a href="/olt-management" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 dark:bg-[#00e5ff] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white dark:text-black shadow-md dark:shadow-[0_0_15px_rgba(0,229,255,0.35)] hover:bg-blue-700 dark:hover:bg-[#00c8e0] transition">
+                <span>+ REGISTER NEW OLT</span>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
 </div>
 {% endblock %}

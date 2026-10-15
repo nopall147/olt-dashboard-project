@@ -1,111 +1,184 @@
 {% extends "base.html" %}
 {% block title %}My Account - OLT Monitoring System{% endblock %}
+
 {% block content %}
-<header class="px-1">
-    <h1 class="text-2xl font-medium text-blue-950">My Account</h1>
-    <p class="mt-1 text-sm text-slate-500"><a href="/" class="hover:text-blue-600">Home</a><span class="px-2">/</span>My Account</p>
-</header>
-<section class="rounded-xl border border-slate-100 bg-white p-5 shadow-sm md:p-6 mt-4">
-    <form id="accountProfileForm">
-        <header class="flex items-center justify-between gap-4 border-b border-slate-200 pb-5">
-            <h2 class="text-lg font-semibold text-blue-950">Edit Profile</h2>
-            <button id="saveAccountProfileButton" type="submit" class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">
-                <span aria-hidden="true">⇩</span> Save Changes
-            </button>
-        </header>
-        <div class="space-y-5 pt-5">
-            <div class="grid gap-3 md:grid-cols-[25%_1fr] md:items-start">
-                <label class="pt-2 text-sm font-medium text-blue-950">Profile Image</label>
-                <div>
-                    <div id="accountAvatar" data-image="{{ profile.image or '' }}" class="grid h-[150px] w-[150px] place-items-center overflow-hidden bg-slate-200 rounded-lg">
-                        {% if profile.image %}
-                            <img src="{{ profile.image }}" alt="Profile image" class="h-full w-full object-cover">
-                        {% else %}
-                            <svg class="mt-5 h-full w-full text-slate-100" viewBox="0 0 150 150" aria-hidden="true"><circle cx="75" cy="54" r="25" fill="currentColor"/><path d="M29 150c3-33 21-52 46-52s43 19 46 52" fill="currentColor"/></svg>
-                        {% endif %}
-                    </div>
-                    <div class="mt-2 flex gap-1">
-                        <label for="profileImageInput" class="grid h-10 w-10 cursor-pointer place-items-center rounded-md bg-blue-600 text-white hover:bg-blue-700" title="Upload profile image">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L7 9m5-5 5 5M4 15v5h16v-5"/></svg>
-                        </label>
-                        <input id="profileImageInput" type="file" accept="image/png,image/jpeg,image/webp" class="sr-only">
-                        <button id="removeProfileImage" type="button" class="grid h-10 w-10 place-items-center rounded-md bg-rose-600 text-white hover:bg-rose-700" title="Remove profile image">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg>
-                        </button>
-                    </div>
-                    <p class="mt-1 text-xs text-slate-400">PNG, JPG, atau WebP (maks. 1 MB)</p>
-                </div>
+<div class="space-y-6">
+
+    <!-- ========================================================= -->
+    <!-- 1. TOP TELEMETRY BREADCRUMB STRIP -->
+    <!-- ========================================================= -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-slate-200 dark:border-[#162a45] gap-4 transition-colors">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2.5">
+                <span class="inline-block h-2 w-2 rounded-full bg-blue-600 dark:bg-[#00e5ff] shadow-sm dark:shadow-[0_0_8px_#00e5ff]"></span>
+                <h1 class="text-base font-bold tracking-wider text-slate-800 dark:text-slate-100 uppercase dark:neon-glow-cyan font-mono">OPERATOR PROFILE & CREDENTIALS</h1>
             </div>
+            <p class="text-[10px] text-slate-500 font-mono tracking-widest uppercase">NOC ACCESS CONTROL // USER CLEARANCE MATRIX</p>
+        </div>
+        <div class="flex items-center gap-2 text-xs font-mono">
+            <a href="/" class="text-slate-500 hover:text-blue-600 dark:hover:text-[#00e5ff] transition">TERMINAL</a>
+            <span class="text-slate-600">/</span>
+            <span class="text-blue-600 dark:text-[#00e5ff]">MY ACCOUNT</span>
+        </div>
+    </div>
 
-            <label class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-center">
-                Full Name
-                <input id="profileFullName" required maxlength="100" value="{{ profile.full_name }}" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal text-slate-700 outline-none focus:border-blue-500">
-            </label>
-
-            <div class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-center">
-                <span>Role</span>
-                <div>
-                    <span class="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold {{ 'bg-purple-100 text-purple-700' if profile.role == 'Super Admin' else ('bg-sky-100 text-sky-700' if profile.role == 'NOC' else 'bg-slate-100 text-slate-700') }}">
+    <!-- ========================================================= -->
+    <!-- 2. SPLIT GRID: IDENTITY CARD & PROFILE FORM -->
+    <!-- ========================================================= -->
+    <form id="accountProfileForm" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- LEFT PANEL (4-COLS): OPERATOR BADGE & AVATAR MATRIX -->
+        <div class="lg:col-span-4 space-y-4">
+            <div class="bg-white dark:bg-[#08111e] rounded-xl border border-slate-200 dark:border-[#162a45] p-6 text-center shadow-sm dark:shadow-lg relative overflow-hidden transition-colors">
+                <!-- Top Badge Strip -->
+                <div class="flex items-center justify-between text-[10px] font-mono border-b border-slate-200 dark:border-[#162a45] pb-3 mb-5">
+                    <span class="text-slate-500 uppercase tracking-wider">CLEARANCE BADGE</span>
+                    <span class="px-2 py-0.5 rounded font-bold uppercase tracking-wider text-[9px] {{ 'bg-purple-100 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-500/30' if profile.role == 'Super Admin' else ('bg-sky-100 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-500/30' if profile.role == 'NOC' else 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700') }}">
                         {{ profile.role }}
                     </span>
                 </div>
+
+                <!-- Avatar Frame with Cyber Glow -->
+                <div class="relative mx-auto w-36 h-36">
+                    <div id="accountAvatar" data-image="{{ profile.image or '' }}" class="w-36 h-36 rounded-2xl overflow-hidden bg-slate-50 dark:bg-[#060c17] border-2 border-blue-200 dark:border-[#00e5ff]/40 shadow-sm dark:shadow-[0_0_20px_rgba(0,229,255,0.2)] flex items-center justify-center transition-colors">
+                        {% if profile.image %}
+                            <img src="{{ profile.image }}" alt="Profile image" class="h-full w-full object-cover">
+                        {% else %}
+                            <svg class="h-24 w-24 text-slate-400 dark:text-slate-700" viewBox="0 0 150 150" aria-hidden="true">
+                                <circle cx="75" cy="54" r="25" fill="currentColor"/>
+                                <path d="M29 150c3-33 21-52 46-52s43 19 46 52" fill="currentColor"/>
+                            </svg>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Action Buttons: Upload & Remove -->
+                <div class="mt-4 flex items-center justify-center gap-2">
+                    <label for="profileImageInput" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-[#00e5ff]/10 hover:bg-blue-100 dark:hover:bg-[#00e5ff]/20 text-blue-600 dark:text-[#00e5ff] border border-blue-200 dark:border-[#00e5ff]/40 text-xs font-mono font-bold cursor-pointer transition shadow-none dark:shadow-[0_0_10px_rgba(0,229,255,0.15)]" title="Upload profile image">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0L7 9m5-5 5 5M4 15v5h16v-5"/></svg>
+                        <span>UPLOAD</span>
+                    </label>
+                    <input id="profileImageInput" type="file" accept="image/png,image/jpeg,image/webp" class="sr-only">
+
+                    <button id="removeProfileImage" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-[#ff3366]/10 hover:bg-rose-100 dark:hover:bg-[#ff3366]/20 text-rose-600 dark:text-[#ff3366] border border-rose-200 dark:border-[#ff3366]/40 text-xs font-mono font-bold transition shadow-none dark:shadow-[0_0_10px_rgba(255,51,102,0.15)]" title="Remove profile image">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg>
+                        <span>PURGE</span>
+                    </button>
+                </div>
+                <p class="mt-2 text-[10px] text-slate-500 font-mono">PNG, JPG, WEBP (MAX 1.0 MB)</p>
+
+                <!-- Sub-info Identity Preview -->
+                <div class="mt-6 pt-4 border-t border-slate-200 dark:border-[#162a45] text-left space-y-2 font-mono text-xs">
+                    <div class="flex justify-between items-center text-slate-500 dark:text-slate-400">
+                        <span class="text-slate-500 text-[10px]">USERNAME</span>
+                        <span class="text-slate-800 dark:text-slate-200 font-bold">{{ profile.username }}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-slate-500 dark:text-slate-400">
+                        <span class="text-slate-500 text-[10px]">AUTH CHANNEL</span>
+                        <span class="text-emerald-600 dark:text-emerald-400 text-[11px] font-bold">SECURE SSL</span>
+                    </div>
+                </div>
             </div>
 
-            <div class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-start">
-                <span class="pt-1">Access Scope</span>
-                <div class="flex flex-wrap gap-1.5">
+            <!-- ACCESS SCOPE / PRIVILEGE MATRIX BADGES -->
+            <div class="bg-white dark:bg-[#08111e] rounded-xl border border-slate-200 dark:border-[#162a45] p-5 shadow-sm dark:shadow-lg font-mono transition-colors">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-[#162a45] mb-3">
+                    <span class="text-xs font-bold text-slate-800 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="text-blue-600 dark:text-[#00e5ff]">■</span> ACCESS SCOPE
+                    </span>
+                    <span class="text-[9px] text-slate-500">ASSIGNED RIGHTS</span>
+                </div>
+                <div class="flex flex-wrap gap-1.5 pt-1">
                     {% if profile.role == 'Super Admin' %}
                         {% for perm in ['All OLT', 'Configure ONU', 'Delete ONU', 'Reboot OLT', 'OLT Settings', 'User Management', 'Activity Log', 'Customization'] %}
-                        <span class="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">{{ perm }}</span>
+                        <span class="rounded px-2 py-0.5 text-[10px] font-mono font-medium bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/20 shadow-none dark:shadow-[0_0_6px_rgba(16,185,129,0.15)]">{{ perm }}</span>
                         {% endfor %}
                     {% elif profile.role == 'NOC' %}
                         {% for perm in ['All OLT', 'Configure ONU', 'Register ONU', 'OLT Settings', 'Activity Log (Read)', 'Traffic Graphs'] %}
-                        <span class="rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-medium text-sky-700">{{ perm }}</span>
+                        <span class="rounded px-2 py-0.5 text-[10px] font-mono font-medium bg-blue-100 dark:bg-[#00e5ff]/10 text-blue-700 dark:text-[#00e5ff] border border-blue-300 dark:border-[#00e5ff]/20 shadow-none dark:shadow-[0_0_6px_rgba(0,229,255,0.15)]">{{ perm }}</span>
                         {% endfor %}
                     {% else %}
                         {% for perm in ['Dashboard (Read)', 'All ONUs (Read)', 'Traffic Graphs (Read)', 'Template TR069 (Read)'] %}
-                        <span class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600">{{ perm }}</span>
+                        <span class="rounded px-2 py-0.5 text-[10px] font-mono font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">{{ perm }}</span>
                         {% endfor %}
                     {% endif %}
                 </div>
             </div>
-
-            <label class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-center">
-                Username
-                <input value="{{ profile.username }}" readonly class="w-full rounded-lg border border-slate-300 bg-slate-200 px-3 py-2.5 font-normal text-slate-700">
-            </label>
-
-            <label class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-center">
-                Email
-                <input value="{{ profile.email }}" readonly class="w-full rounded-lg border border-slate-300 bg-slate-200 px-3 py-2.5 font-normal text-slate-700">
-            </label>
-
-            <label class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-center">
-                Change Password
-                <input id="newAccountPassword" type="password" autocomplete="new-password" placeholder="Leave blank to keep current password" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal text-slate-700 outline-none focus:border-blue-500">
-            </label>
-
-            <label class="grid gap-3 text-sm font-medium text-blue-950 md:grid-cols-[25%_1fr] md:items-center">
-                Re-enter Password
-                <input id="repeatAccountPassword" type="password" autocomplete="new-password" placeholder="Confirm new password" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal text-slate-700 outline-none focus:border-blue-500">
-            </label>
-
-            <p id="accountProfileMessage" class="hidden text-sm"></p>
         </div>
-    </form>
-</section>
 
-<dialog id="accountFeedbackDialog" class="w-[min(92vw,440px)] rounded-xl border border-slate-200 p-0 shadow-2xl backdrop:bg-slate-900/50">
-    <div class="p-5">
-        <div class="flex items-start gap-3">
-            <span id="accountFeedbackIcon" class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-50 text-lg font-bold text-emerald-600" aria-hidden="true">✓</span>
-            <div>
-                <h2 id="accountFeedbackTitle" class="text-base font-semibold text-slate-900">Berhasil</h2>
-                <p id="accountFeedbackText" class="mt-1 text-sm leading-6 text-slate-600"></p>
+        <!-- RIGHT PANEL (8-COLS): EDIT CREDENTIALS HUD -->
+        <div class="lg:col-span-8 bg-white dark:bg-[#08111e] rounded-xl border border-slate-200 dark:border-[#162a45] p-6 shadow-sm dark:shadow-lg font-mono flex flex-col justify-between transition-colors">
+            <div class="space-y-6">
+                <!-- Section Header -->
+                <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-[#162a45]">
+                    <div>
+                        <h2 class="text-sm font-bold text-blue-600 dark:text-[#00e5ff] uppercase tracking-wider dark:neon-glow-cyan">OPERATOR PROFILE INFORMATION</h2>
+                        <p class="text-[10px] text-slate-500 tracking-wide mt-0.5">UPDATE ACCOUNT TELEMETRY AND SECURITY PASSWORDS</p>
+                    </div>
+                    <button id="saveAccountProfileButton" type="submit" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 dark:bg-[#00e5ff] hover:bg-blue-700 dark:hover:bg-[#00c8e0] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white dark:text-black shadow-md dark:shadow-[0_0_12px_rgba(0,229,255,0.35)] transition cursor-pointer">
+                        <span aria-hidden="true">💾</span> SAVE CHANGES
+                    </button>
+                </div>
+
+                <!-- Readonly Identifiers -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1 tracking-wider">SYSTEM USERNAME</label>
+                        <input value="{{ profile.username }}" readonly class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-200 dark:border-[#162a45] px-3.5 py-2 text-xs text-slate-500 dark:text-slate-400 font-mono focus:outline-none cursor-not-allowed transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1 tracking-wider">REGISTERED EMAIL</label>
+                        <input value="{{ profile.email }}" readonly class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-200 dark:border-[#162a45] px-3.5 py-2 text-xs text-slate-500 dark:text-slate-400 font-mono focus:outline-none cursor-not-allowed transition-colors">
+                    </div>
+                </div>
+
+                <!-- Editable Full Name -->
+                <div>
+                    <label class="block text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 mb-1 tracking-wider">OPERATOR FULL NAME</label>
+                    <input id="profileFullName" required maxlength="100" value="{{ profile.full_name }}" class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-mono focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition-colors" placeholder="e.g. Hari Pujianto">
+                </div>
+
+                <!-- Security Credentials Box -->
+                <div class="pt-4 border-t border-slate-200 dark:border-[#162a45]">
+                    <h3 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-2">
+                        <span class="text-amber-500 dark:text-amber-400">⚡</span> ENCRYPTED AUTHENTICATION (PASSWORD)
+                    </h3>
+                    <p class="text-[10px] text-slate-500 mb-4">Kosongkan kolom password jika tidak ingin memperbarui password saat ini.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 mb-1 tracking-wider">NEW PASSWORD</label>
+                            <input id="newAccountPassword" type="password" autocomplete="new-password" placeholder="••••••••" class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-mono focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition-colors placeholder:text-slate-400 dark:placeholder:text-slate-600">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400 mb-1 tracking-wider">CONFIRM PASSWORD</label>
+                            <input id="repeatAccountPassword" type="password" autocomplete="new-password" placeholder="••••••••" class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-200 font-mono focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition-colors placeholder:text-slate-400 dark:placeholder:text-slate-600">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inline Message Alert -->
+                <p id="accountProfileMessage" class="hidden text-xs font-mono p-3 rounded-lg border"></p>
             </div>
         </div>
-        <div class="mt-5 flex justify-end">
-            <button type="button" onclick="document.getElementById('accountFeedbackDialog').close()" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Mengerti</button>
+
+    </form>
+</div>
+
+<!-- ========================================================= -->
+<!-- 3. CYBER FEEDBACK DIALOG MODAL -->
+<!-- ========================================================= -->
+<dialog id="accountFeedbackDialog" class="w-[min(92vw,440px)] rounded-xl border border-slate-200 dark:border-[#162a45] p-0 shadow-xl dark:shadow-[0_0_50px_rgba(0,0,0,0.9)] bg-white dark:bg-[#091322] backdrop:bg-black/20 dark:backdrop:bg-black/75 transition-colors">
+    <div class="p-6 font-mono text-slate-800 dark:text-slate-200">
+        <div class="flex items-start gap-3.5">
+            <span id="accountFeedbackIcon" class="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg font-bold shadow-sm dark:shadow-lg" aria-hidden="true">✓</span>
+            <div>
+                <h2 id="accountFeedbackTitle" class="text-sm font-bold uppercase tracking-wider">NOTIFICATION</h2>
+                <p id="accountFeedbackText" class="mt-1.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400"></p>
+            </div>
+        </div>
+        <div class="mt-6 flex justify-end">
+            <button type="button" onclick="document.getElementById('accountFeedbackDialog').close()" class="rounded-lg bg-blue-600 dark:bg-[#00e5ff] hover:bg-blue-700 dark:hover:bg-[#00c8e0] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white dark:text-black shadow-md dark:shadow-[0_0_12px_rgba(0,229,255,0.35)] transition">DISMISS</button>
         </div>
     </div>
 </dialog>
@@ -119,7 +192,7 @@ function renderAccountAvatar() {
         accountAvatar.innerHTML = `<img src="${accountProfileImage}" alt="Profile image" class="h-full w-full object-cover">`;
         return;
     }
-    accountAvatar.innerHTML = '<svg class="mt-5 h-full w-full text-slate-100" viewBox="0 0 150 150" aria-hidden="true"><circle cx="75" cy="54" r="25" fill="currentColor"/><path d="M29 150c3-33 21-52 46-52s43 19 46 52" fill="currentColor"/></svg>';
+    accountAvatar.innerHTML = '<svg class="h-24 w-24 text-slate-400 dark:text-slate-700" viewBox="0 0 150 150" aria-hidden="true"><circle cx="75" cy="54" r="25" fill="currentColor"/><path d="M29 150c3-33 21-52 46-52s43 19 46 52" fill="currentColor"/></svg>';
 }
 
 document.getElementById('profileImageInput').addEventListener('change', event => {
@@ -147,17 +220,17 @@ document.getElementById('removeProfileImage').addEventListener('click', () => {
 function showAccountMessage(message, error = false) {
     const element = document.getElementById('accountProfileMessage');
     element.textContent = message;
-    element.className = `text-sm ${error ? 'text-rose-600' : 'text-emerald-700'}`;
+    element.className = `text-xs font-mono p-3 rounded-lg border ${error ? 'bg-rose-50 dark:bg-[#ff3366]/10 text-rose-600 dark:text-[#ff3366] border-rose-200 dark:border-[#ff3366]/30' : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30'}`;
     element.classList.remove('hidden');
 }
 
 function showAccountDialog(message, error = false) {
     const dialog = document.getElementById('accountFeedbackDialog');
     const icon = document.getElementById('accountFeedbackIcon');
-    document.getElementById('accountFeedbackTitle').textContent = error ? 'Gagal menyimpan' : 'Perubahan berhasil disimpan';
+    document.getElementById('accountFeedbackTitle').textContent = error ? 'FAILED // ACCESS REJECTED' : 'SUCCESS // PROFILE COMMITTED';
     document.getElementById('accountFeedbackText').textContent = message;
     icon.textContent = error ? '!' : '✓';
-    icon.className = `grid h-9 w-9 shrink-0 place-items-center rounded-full text-lg font-bold ${error ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`;
+    icon.className = `grid h-10 w-10 shrink-0 place-items-center rounded-xl text-lg font-bold ${error ? 'bg-rose-100 dark:bg-[#ff3366]/20 text-rose-600 dark:text-[#ff3366] border border-rose-200 dark:border-[#ff3366]/40 shadow-none dark:shadow-[0_0_12px_rgba(255,51,102,0.3)]' : 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/40 shadow-none dark:shadow-[0_0_12px_rgba(16,185,129,0.3)]'}`;
     if (!dialog.open) dialog.showModal();
 }
 
@@ -181,7 +254,7 @@ document.getElementById('accountProfileForm').addEventListener('submit', async e
     const saveButton = document.getElementById('saveAccountProfileButton');
     const changingPassword = Boolean(password);
     saveButton.disabled = true;
-    saveButton.textContent = 'Menyimpan...';
+    saveButton.textContent = 'COMMITTING...';
     try {
         const response = await fetch('/api/user/profile', {
             method: 'POST',
@@ -207,7 +280,7 @@ document.getElementById('accountProfileForm').addEventListener('submit', async e
         showAccountDialog(error.message, true);
     } finally {
         saveButton.disabled = false;
-        saveButton.innerHTML = '<span aria-hidden="true">⇩</span> Save Changes';
+        saveButton.innerHTML = '<span aria-hidden="true">💾</span> SAVE CHANGES';
     }
 });
 

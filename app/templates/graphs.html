@@ -1,43 +1,337 @@
 {% extends "base.html" %}
 {% block title %}Graphs - OLT Monitoring System{% endblock %}
+
 {% block content %}
-<div><h1 class="text-2xl font-bold text-slate-900">Graphs</h1><p class="mt-1 text-xs text-slate-500">Home <span class="mx-2">/</span> Graphs <span class="mx-2">/</span> Traffic</p></div>
-<section class="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
-  <div class="flex flex-wrap items-center gap-3">
-    <label class="text-xs text-slate-500">OLT<select id="oltSelect" class="ml-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs"><option value="all">All OLTs</option>{% for name in olt_names %}<option>{{ name }}</option>{% endfor %}</select></label>
-    <span class="text-xs text-slate-400">GRAPHS FOR</span>
-    <div class="flex flex-wrap rounded-lg bg-slate-100 p-1" role="tablist" aria-label="Jenis traffic">
-      <button class="graph-tab rounded-md px-4 py-2 text-xs text-slate-500" data-kind="uplink" role="tab">Uplink</button>
-      <button class="graph-tab rounded-md px-4 py-2 text-xs text-slate-500" data-kind="pon" role="tab">PON</button>
-      <button class="graph-tab rounded-md bg-white px-4 py-2 text-xs font-semibold text-blue-800 shadow-sm" data-kind="onu" role="tab" aria-selected="true">ONU</button>
-      <select id="cardSelect" aria-label="Card" class="hidden rounded-md border-l border-slate-200 bg-white px-3 text-xs"><option value="all">All Cards</option>{% for slot in card_slots %}<option>{{ slot }}</option>{% endfor %}</select>
-      <select id="ponSelect" aria-label="PON" class="hidden rounded-md border-l border-slate-200 bg-white px-3 text-xs"><option value="all">All PONs</option>{% for port in pon_ports %}<option>{{ port }}</option>{% endfor %}</select>
+<div class="space-y-6 font-mono text-slate-800 dark:text-slate-300 transition-colors">
+
+    <!-- ========================================================= -->
+    <!-- 1. TOP TELEMETRY STRIP & STATUS HEADER -->
+    <!-- ========================================================= -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-slate-200 dark:border-[#162a45] gap-4 transition-colors">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2.5">
+                <span class="inline-block h-2 w-2 rounded-full bg-blue-600 dark:bg-[#00e5ff] shadow-sm dark:shadow-[0_0_8px_#00e5ff]"></span>
+                <h1 class="text-base font-bold tracking-wider text-slate-800 dark:text-slate-100 uppercase dark:neon-glow-cyan">BANDWIDTH TELEMETRY OSCILLOSCOPE</h1>
+            </div>
+            <p class="text-[10px] text-slate-500 tracking-widest uppercase">REAL-TIME GPON PACKET FLOW // COUNTER STREAM & HISTORICAL SAMPLES</p>
+        </div>
+
+        <div class="flex items-center gap-2 text-xs">
+            <a href="/" class="text-slate-500 hover:text-blue-600 dark:hover:text-[#00e5ff] transition">CORE</a>
+            <span class="text-slate-600">/</span>
+            <span class="text-blue-600 dark:text-[#00e5ff]">TRAFFIC</span>
+        </div>
     </div>
-    <span class="text-xs text-slate-400">PERIOD</span>
-    <div class="flex flex-wrap rounded-lg bg-slate-100 p-1">{% for period in ['3H','6H','1D','3D','7D','30D'] %}<button class="period-tab rounded-md px-3 py-2 text-xs text-slate-500 {% if period == '6H' %}bg-white font-semibold text-blue-800 shadow-sm{% endif %}" data-period="{{ period }}">{{ period }}</button>{% endfor %}</div>
-    <input id="interfaceSearch" placeholder="Search interface / ONU" class="ml-auto w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs sm:w-auto sm:min-w-52" />
-  </div>
-  <div class="flex items-center justify-between border-b border-slate-100 pb-2 text-xs text-slate-400"><span>Show <select class="rounded border px-2 py-1"><option>18</option><option>36</option><option>72</option></select> entries <span class="mx-2">|</span> Total <b id="entryCount" class="font-normal">{{ onus|length }}</b> entries</span><div class="relative"><button id="timezoneToggle" class="flex items-center gap-2 rounded px-1 py-1 text-slate-500 hover:bg-slate-50" aria-expanded="false"><span>◉</span><span id="timezoneCurrent">UTC+7</span><span>⌄</span></button><div id="timezoneMenu" class="absolute right-0 top-full z-20 mt-2 hidden w-60 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"><div class="border-b border-slate-100 px-4 py-3 text-[10px] font-semibold tracking-wide text-slate-400">SELECT TIMEZONE</div><div id="timezoneOptions" class="max-h-64 overflow-y-auto p-1"></div></div></div></div>
-  <div id="trafficCards" class="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-  {% for onu in onus %}<article class="traffic-card rounded-md border border-slate-300 bg-white px-3 pb-3 pt-4" data-kind="onu" data-id="{{ onu.id }}" data-olt="{{ onu.olt_name }}" data-port="{{ onu.gpon_port }}" data-name="{{ onu.customer_name }} {{ onu.sn_mac }} {{ onu.gpon_port }}"><span class="relative -top-6 rounded border border-slate-200 bg-slate-100 px-2 py-1 text-[10px] text-blue-900">{{ onu.olt_name }}</span><div class="-mt-5 flex justify-between"><div><h2 class="font-medium text-blue-950">{{ onu.gpon_port }}{% if onu.customer_name %} - {{ onu.customer_name }}{% endif %}</h2><p class="text-xs text-slate-400">{{ onu.sn_mac or '' }}</p></div><span class="traffic-status text-[10px] text-slate-400">Loading...</span><button class="sample-once hidden" aria-label="Ambil sampel"></button></div><div class="mt-3 flex justify-center gap-4 text-[10px] text-slate-400"><span class="text-rose-400">━ Download <b class="downloadValue"></b></span><span class="text-blue-500">━ Upload <b class="uploadValue"></b></span></div><svg viewBox="0 0 600 190" class="mt-2 h-40 w-full" preserveAspectRatio="none"><path class="downloadLine" d="" fill="none" stroke="#f43f5e" stroke-width="2"/><path class="uploadLine" d="" fill="none" stroke="#1683ff" stroke-width="2"/><path d="M40 25H600M40 90H600M40 155H600" stroke="#e6edf7"/><text x="0" y="29" font-size="12" fill="#94a3b8">1</text><text x="0" y="94" font-size="12" fill="#94a3b8">0.5</text><text x="0" y="159" font-size="12" fill="#94a3b8">0</text></svg><div class="flex justify-between text-[10px] text-slate-400"><span><span class="sampleCount">0 sampel</span></span><span class="periodLabel">6H</span></div></article>{% endfor %}
-  </div>
-  <div id="emptyGraphs" class="hidden rounded-lg border border-slate-200 p-10 text-center text-sm text-slate-500">Belum ada ONU di database.</div>
-  <div id="noGraphs" class="hidden rounded-lg border border-slate-200 p-10 text-center text-sm text-slate-500"></div>
-</section>
-<p class="text-[11px] text-slate-500">Grafik ONU membaca data sampling yang tersimpan. Sampling uplink dan PON belum tersedia karena konektor OLT saat ini hanya menyediakan counter traffic ONU.</p>
+
+    <!-- ========================================================= -->
+    <!-- 2. FILTER & SPECTRUM CONTROL CONSOLE -->
+    <!-- ========================================================= -->
+    <section class="space-y-4 rounded-xl border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#08111e] p-4 shadow-sm dark:shadow-xl transition-colors">
+        <div class="flex flex-wrap items-center gap-3">
+            <!-- OLT Selection Dropdown -->
+            <div class="flex items-center gap-2 bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] rounded-lg px-2.5 py-1.5 text-xs transition-colors">
+                <span class="text-[10px] font-bold text-slate-500 uppercase">CHASSIS:</span>
+                <select id="oltSelect" class="bg-transparent text-slate-700 dark:text-slate-200 outline-none cursor-pointer">
+                    <option value="all">ALL OLTS</option>
+                    {% for name in olt_names %}
+                    <option value="{{ name }}">{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Graph Scope Tabs -->
+            <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-[#060c17] p-1 rounded-lg border border-slate-300 dark:border-[#162a45] transition-colors" role="tablist" aria-label="Jenis traffic">
+                <span class="text-[9px] font-bold text-slate-500 px-1.5 uppercase">SCOPE:</span>
+                <button class="graph-tab rounded-md px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition" data-kind="uplink" role="tab">UPLINK</button>
+                <button class="graph-tab rounded-md px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition" data-kind="pon" role="tab">PON</button>
+                <button class="graph-tab rounded-md bg-blue-100 dark:bg-[#0e223b] border border-blue-300 dark:border-[#00e5ff]/40 text-blue-700 dark:text-[#00e5ff] font-bold shadow-none dark:shadow-[0_0_10px_rgba(0,229,255,0.2)] px-3 py-1.5 text-xs transition-colors" data-kind="onu" role="tab" aria-selected="true">ONU</button>
+                
+                <select id="cardSelect" aria-label="Card" class="hidden rounded-md bg-white dark:bg-[#08111e] border border-slate-300 dark:border-[#162a45] px-2 py-1 text-xs text-slate-700 dark:text-slate-200 outline-none transition-colors">
+                    <option value="all">ALL CARDS</option>
+                    {% for slot in card_slots %}
+                    <option value="{{ slot }}">{{ slot }}</option>
+                    {% endfor %}
+                </select>
+                <select id="ponSelect" aria-label="PON" class="hidden rounded-md bg-white dark:bg-[#08111e] border border-slate-300 dark:border-[#162a45] px-2 py-1 text-xs text-slate-700 dark:text-slate-200 outline-none transition-colors">
+                    <option value="all">ALL PONS</option>
+                    {% for port in pon_ports %}
+                    <option value="{{ port }}">{{ port }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Time Period Filters -->
+            <div class="flex items-center gap-1 bg-slate-50 dark:bg-[#060c17] p-1 rounded-lg border border-slate-300 dark:border-[#162a45] transition-colors">
+                <span class="text-[9px] font-bold text-slate-500 px-1.5 uppercase">PERIOD:</span>
+                {% for period in ['3H','6H','1D','3D','7D','30D'] %}
+                <button class="period-tab rounded px-2.5 py-1 text-xs transition {% if period == '6H' %}bg-blue-100 dark:bg-[#0e223b] border border-blue-300 dark:border-[#00e5ff]/40 text-blue-700 dark:text-[#00e5ff] font-bold shadow-none dark:shadow-[0_0_8px_rgba(0,229,255,0.2)]{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 border border-transparent{% endif %}" data-period="{{ period }}">{{ period }}</button>
+                {% endfor %}
+            </div>
+
+            <!-- Search Field -->
+            <div class="ml-auto w-full sm:w-auto relative">
+                <input id="interfaceSearch" placeholder="SEARCH INTERFACE / SN / ONU..." class="w-full sm:w-64 pl-8 pr-3 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition transition-colors" />
+                <svg class="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400 dark:text-[#00e5ff]/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Meta Strip: Counter & Timezone Selection -->
+        <div class="flex items-center justify-between border-b border-slate-200 dark:border-[#162a45]/60 pb-3 text-xs text-slate-500 transition-colors">
+            <div class="flex items-center gap-2">
+                <span>ACTIVE STREAMS:</span>
+                <span class="rounded bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-2 py-0.5 text-slate-700 dark:text-slate-300 font-bold transition-colors">
+                    <b id="entryCount" class="font-bold text-blue-600 dark:text-[#00e5ff]">{{ onus|length }}</b> TARGETS
+                </span>
+            </div>
+
+            <!-- Timezone Dropdown -->
+            <div class="relative">
+                <button id="timezoneToggle" type="button" class="flex items-center gap-2 rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-2.5 py-1 text-slate-700 dark:text-slate-300 hover:border-blue-300 dark:hover:border-[#00e5ff]/40 transition transition-colors" aria-expanded="false">
+                    <span class="text-emerald-500 dark:text-emerald-400">●</span>
+                    <span id="timezoneCurrent" class="font-bold text-[11px]">UTC+7</span>
+                    <span class="text-slate-400 dark:text-slate-500 text-[10px]">▼</span>
+                </button>
+                <div id="timezoneMenu" class="absolute right-0 top-full z-30 mt-2 hidden w-64 overflow-hidden rounded-xl border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#091322] shadow-lg dark:shadow-[0_0_30px_rgba(0,0,0,0.9)] transition-colors">
+                    <div class="border-b border-slate-200 dark:border-[#162a45] px-4 py-2.5 text-[9px] font-bold tracking-widest text-blue-700 dark:text-[#00e5ff] uppercase bg-slate-50 dark:bg-[#08111e] transition-colors">
+                        SELECT CLOCK OFFSET
+                    </div>
+                    <div id="timezoneOptions" class="max-h-64 overflow-y-auto p-1.5 space-y-0.5"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================================================== -->
+        <!-- 3. TRAFFIC OSCILLOSCOPE CARDS GRID -->
+        <!-- ===================================================== -->
+        <div id="trafficCards" class="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+            {% for onu in onus %}
+            <article class="traffic-card rounded-xl border border-slate-200 dark:border-[#162a45] bg-slate-50 dark:bg-[#091322] p-4 relative overflow-hidden shadow-sm dark:shadow-lg hover:border-blue-300 dark:hover:border-[#1e3a5f] transition duration-200 transition-colors" data-kind="onu" data-id="{{ onu.id }}" data-olt="{{ onu.olt_name }}" data-port="{{ onu.gpon_port }}" data-name="{{ onu.customer_name }} {{ onu.sn_mac }} {{ onu.gpon_port }}">
+                
+                <!-- Card Header -->
+                <div class="flex items-start justify-between pb-3 border-b border-slate-200 dark:border-[#162a45]/60 transition-colors">
+                    <div class="pr-2">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded bg-white dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] text-[9px] font-bold text-blue-700 dark:text-[#00e5ff] uppercase transition-colors">
+                                {{ onu.olt_name }}
+                            </span>
+                            <span class="text-[11px] font-bold text-slate-700 dark:text-slate-200 font-mono">
+                                {{ onu.gpon_port }}
+                            </span>
+                        </div>
+                        <h2 class="font-bold text-sm text-slate-800 dark:text-slate-100 tracking-wide mt-1 truncate max-w-[240px]">
+                            {{ onu.customer_name or 'UNNAMED ONU' }}
+                        </h2>
+                        <p class="text-[10px] text-slate-500 font-mono mt-0.5">{{ onu.sn_mac or 'NO SN' }}</p>
+                    </div>
+
+                    <div class="text-right shrink-0">
+                        <span class="traffic-status block px-2 py-0.5 rounded bg-white dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] text-[9px] font-bold text-slate-500 dark:text-slate-400 font-mono transition-colors">
+                            SYNCING...
+                        </span>
+                        <button class="sample-once hidden" aria-label="Ambil sampel"></button>
+                    </div>
+                </div>
+
+                <!-- Live Bandwidth Readouts -->
+                <div class="mt-3 flex items-center justify-between text-xs font-mono bg-white dark:bg-[#060c17] rounded-lg border border-slate-300 dark:border-[#162a45] px-3 py-2 transition-colors">
+                    <div class="flex items-center gap-1.5">
+                        <span class="h-2 w-2 rounded-full bg-[#ff3366] shadow-[0_0_6px_#ff3366]"></span>
+                        <span class="text-[10px] text-slate-500 dark:text-slate-400 uppercase">DOWN:</span>
+                        <strong class="downloadValue text-[#ff3366] text-xs font-mono">0.00</strong>
+                        <span class="text-[9px] text-slate-500">Mbps</span>
+                    </div>
+
+                    <div class="flex items-center gap-1.5">
+                        <span class="h-2 w-2 rounded-full bg-[#00e5ff] shadow-[0_0_6px_#00e5ff]"></span>
+                        <span class="text-[10px] text-slate-500 dark:text-slate-400 uppercase">UP:</span>
+                        <strong class="uploadValue text-blue-600 dark:text-[#00e5ff] text-xs font-mono">0.00</strong>
+                        <span class="text-[9px] text-slate-500">Mbps</span>
+                    </div>
+                </div>
+
+                <!-- Oscilloscope Screen (SVG) -->
+                <div class="mt-3 relative rounded-lg border border-slate-300 dark:border-[#162a45] bg-white dark:bg-[#060c17] overflow-hidden p-1.5 transition-colors">
+                    <svg viewBox="0 0 600 190" class="h-36 w-full" preserveAspectRatio="none">
+                        <!-- Horizontal Grid Lines -->
+                        <path d="M40 25H600M40 90H600M40 155H600" class="stroke-slate-200 dark:stroke-[#162a45]" stroke-dasharray="4 4" stroke-width="1"/>
+                        <!-- Axis Reference Labels -->
+                        <text x="5" y="29" font-size="11" class="fill-slate-400 dark:fill-[#475569]" font-family="JetBrains Mono">MAX</text>
+                        <text x="5" y="94" font-size="11" class="fill-slate-400 dark:fill-[#475569]" font-family="JetBrains Mono">MID</text>
+                        <text x="5" y="159" font-size="11" class="fill-slate-400 dark:fill-[#475569]" font-family="JetBrains Mono">0</text>
+                        <!-- Dynamic Traffic Path Traces -->
+                        <path class="downloadLine" d="" fill="none" stroke="#ff3366" stroke-width="2.5" stroke-linejoin="round"/>
+                        <path class="uploadLine" d="" fill="none" stroke="#00e5ff" stroke-width="2.5" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+
+                <!-- Footer Metas -->
+                <div class="mt-3 flex justify-between items-center text-[10px] text-slate-500 font-mono">
+                    <span class="sampleCount">0 SAMPLES LOGGED</span>
+                    <span class="periodLabel px-2 py-0.5 rounded bg-white dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] text-blue-600 dark:text-[#00e5ff] font-bold transition-colors">6H WINDOW</span>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        <!-- Empty State Placeholders -->
+        <div id="emptyGraphs" class="hidden rounded-xl border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#091322] p-8 text-center text-xs text-slate-500 font-mono transition-colors">
+            BELUM ADA DATA ONU TERCATAT DI REPOSITORI SISTEM.
+        </div>
+        <div id="noGraphs" class="hidden rounded-xl border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#091322] p-8 text-center text-xs text-slate-500 font-mono transition-colors">
+        </div>
+    </section>
+
+    <p class="text-[10px] text-slate-500 uppercase tracking-wide">
+        Telemetry Note: Grafik ONU membaca runtime sampling telemetry yang tersimpan di database. Interface uplink & PON beroperasi pada interval counter fisik OLT.
+    </p>
+
+</div>
+
 <script>
 const cards=[...document.querySelectorAll('.traffic-card')];
 let kind='onu', period='6H';
 const zones=[...Array(27)].map((_,i)=>i-12), timezoneToggle=document.getElementById('timezoneToggle'),timezoneMenu=document.getElementById('timezoneMenu'),timezoneOptions=document.getElementById('timezoneOptions');
 let timezone=Number(localStorage.getItem('graphsTimezone')||7);
-function zoneLabel(offset){const sign=offset>=0?'+':'−',name=offset===7?' (WIB)':offset===8?' (WITA)':offset===9?' (WIT)':'';return `UTC${sign}${Math.abs(offset)}${name}`}
-function renderZones(){timezoneOptions.innerHTML=zones.map(offset=>`<button type="button" data-offset="${offset}" class="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-xs ${offset===timezone?'bg-slate-100 text-blue-900':'text-slate-600 hover:bg-slate-50'}"><span class="w-4 text-blue-800">${offset===timezone?'✓':'◉'}</span>${zoneLabel(offset)}</button>`).join('');document.getElementById('timezoneCurrent').textContent=zoneLabel(timezone).replace(/ \(.*\)/,'');timezoneOptions.querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>{timezone=Number(button.dataset.offset);localStorage.setItem('graphsTimezone',timezone);timezoneMenu.classList.add('hidden');timezoneToggle.setAttribute('aria-expanded','false');renderZones();cards.forEach(refreshCard)}))}
-timezoneToggle.addEventListener('click',()=>{const open=timezoneMenu.classList.toggle('hidden')===false;timezoneToggle.setAttribute('aria-expanded',String(open))});document.addEventListener('click',event=>{if(!timezoneToggle.contains(event.target)&&!timezoneMenu.contains(event.target)){timezoneMenu.classList.add('hidden');timezoneToggle.setAttribute('aria-expanded','false')}});renderZones();
-function renderLine(path,values){if(!values.length){path.setAttribute('d','');return}const max=Math.max(...values,1);path.setAttribute('d',values.map((v,i)=>`${i?'L':'M'} ${40+i*560/Math.max(values.length-1,1)} ${155-(v/max)*125}`).join(' '))}
-async function refreshCard(card){try{const response=await fetch(`/api/traffic/${card.dataset.id}/history?period=${period}`),data=await response.json();if(!response.ok)throw new Error(data.detail||'Gagal membaca data');renderLine(card.querySelector('.downloadLine'),data.map(s=>s.download_bps));renderLine(card.querySelector('.uploadLine'),data.map(s=>s.upload_bps));card.querySelector('.sampleCount').textContent=`${data.length} sampel`;card.querySelector('.periodLabel').textContent=period;const latest=data.at(-1);if(latest){card.querySelector('.downloadValue').textContent=(latest.download_bps/1e6).toFixed(2);card.querySelector('.uploadValue').textContent=(latest.upload_bps/1e6).toFixed(2);const shifted=new Date(new Date(latest.sampled_at).getTime()+timezone*3600000);card.querySelector('.traffic-status').textContent='Terakhir '+shifted.toLocaleTimeString('id-ID',{timeZone:'UTC'})}else{card.querySelector('.downloadValue').textContent='—';card.querySelector('.uploadValue').textContent='—';card.querySelector('.traffic-status').textContent='Belum ada sampel'}}catch(error){card.querySelector('.traffic-status').textContent=error.message}}
-function filterCards(){const olt=document.getElementById('oltSelect').value,slotFilter=document.getElementById('cardSelect').value,ponFilter=document.getElementById('ponSelect').value,q=document.getElementById('interfaceSearch').value.toLowerCase();let shown=0;cards.forEach(card=>{const port=card.dataset.port||'',slot=port.split('/')[1],visible=card.dataset.kind===kind&&(olt==='all'||card.dataset.olt===olt)&&(slotFilter==='all'||slot===slotFilter)&&(ponFilter==='all'||port.startsWith(ponFilter+':'))&&card.dataset.name.toLowerCase().includes(q);card.classList.toggle('hidden',!visible);if(visible)shown++});document.getElementById('entryCount').textContent=shown;const empty=document.getElementById('emptyGraphs'),none=document.getElementById('noGraphs');empty.classList.toggle('hidden',kind!=='onu'||cards.length>0);none.classList.toggle('hidden',shown>0||kind==='onu'&&cards.length===0);none.textContent=kind==='onu'?'Tidak ada ONU yang cocok dengan filter.':`Data traffic ${kind.toUpperCase()} belum tersedia.`;document.getElementById('cardSelect').classList.toggle('hidden',kind!=='pon');document.getElementById('ponSelect').classList.toggle('hidden',kind!=='onu')}
-document.querySelectorAll('.graph-tab').forEach(button=>button.addEventListener('click',()=>{kind=button.dataset.kind;document.querySelectorAll('.graph-tab').forEach(tab=>{tab.classList.remove('bg-white','font-semibold','text-blue-800','shadow-sm');tab.setAttribute('aria-selected','false')});button.classList.add('bg-white','font-semibold','text-blue-800','shadow-sm');button.setAttribute('aria-selected','true');filterCards()}));
-document.querySelectorAll('.period-tab').forEach(button=>button.addEventListener('click',()=>{period=button.dataset.period;document.querySelectorAll('.period-tab').forEach(tab=>tab.classList.remove('bg-white','font-semibold','text-blue-800','shadow-sm'));button.classList.add('bg-white','font-semibold','text-blue-800','shadow-sm');cards.forEach(refreshCard)}));
-['oltSelect','cardSelect','ponSelect'].forEach(id=>document.getElementById(id).addEventListener('change',filterCards));document.getElementById('interfaceSearch').addEventListener('input',filterCards);filterCards();cards.forEach(refreshCard);
+
+function zoneLabel(offset){
+    const sign=offset>=0?'+':'−',name=offset===7?' (WIB)':offset===8?' (WITA)':offset===9?' (WIT)':'';
+    return `UTC${sign}${Math.abs(offset)}${name}`;
+}
+
+function renderZones(){
+    timezoneOptions.innerHTML=zones.map(offset=>`
+        <button type="button" data-offset="${offset}" class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition cursor-pointer ${offset===timezone?'bg-blue-50 dark:bg-[#0e223b] text-blue-600 dark:text-[#00e5ff] border border-blue-200 dark:border-[#00e5ff]/40':'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#060c17] hover:text-slate-900 dark:hover:text-slate-200'}">
+            <span>${zoneLabel(offset)}</span>
+            <span class="text-[10px] ${offset===timezone?'text-blue-600 dark:text-[#00e5ff] font-bold':''}">${offset===timezone?'ACTIVE':'◉'}</span>
+        </button>
+    `).join('');
+    document.getElementById('timezoneCurrent').textContent=zoneLabel(timezone).replace(/ \(.*\)/,'');
+    timezoneOptions.querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>{
+        timezone=Number(button.dataset.offset);
+        localStorage.setItem('graphsTimezone',timezone);
+        timezoneMenu.classList.add('hidden');
+        timezoneToggle.setAttribute('aria-expanded','false');
+        renderZones();
+        cards.forEach(refreshCard);
+    }));
+}
+
+timezoneToggle.addEventListener('click',()=>{
+    const open=timezoneMenu.classList.toggle('hidden')===false;
+    timezoneToggle.setAttribute('aria-expanded',String(open));
+});
+
+document.addEventListener('click',event=>{
+    if(!timezoneToggle.contains(event.target)&&!timezoneMenu.contains(event.target)){
+        timezoneMenu.classList.add('hidden');
+        timezoneToggle.setAttribute('aria-expanded','false');
+    }
+});
+
+renderZones();
+
+function renderLine(path,values){
+    if(!values.length){
+        path.setAttribute('d','');
+        return;
+    }
+    const max=Math.max(...values,1);
+    path.setAttribute('d',values.map((v,i)=>`${i?'L':'M'} ${40+i*560/Math.max(values.length-1,1)} ${155-(v/max)*125}`).join(' '));
+}
+
+async function refreshCard(card){
+    try{
+        const response=await fetch(`/api/traffic/${card.dataset.id}/history?period=${period}`);
+        const data=await response.json();
+        if(!response.ok) throw new Error(data.detail||'Gagal membaca data');
+        
+        renderLine(card.querySelector('.downloadLine'),data.map(s=>s.download_bps));
+        renderLine(card.querySelector('.uploadLine'),data.map(s=>s.upload_bps));
+        
+        card.querySelector('.sampleCount').textContent=`${data.length} SAMPLES LOGGED`;
+        card.querySelector('.periodLabel').textContent=`${period} WINDOW`;
+        
+        const latest=data.at(-1);
+        if(latest){
+            card.querySelector('.downloadValue').textContent=(latest.download_bps/1e6).toFixed(2);
+            card.querySelector('.uploadValue').textContent=(latest.upload_bps/1e6).toFixed(2);
+            const shifted=new Date(new Date(latest.sampled_at).getTime()+timezone*3600000);
+            card.querySelector('.traffic-status').textContent='SYNC '+shifted.toLocaleTimeString('id-ID',{timeZone:'UTC'});
+            card.querySelector('.traffic-status').className='traffic-status block px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 text-[9px] font-bold font-mono';
+        }else{
+            card.querySelector('.downloadValue').textContent='0.00';
+            card.querySelector('.uploadValue').textContent='0.00';
+            card.querySelector('.traffic-status').textContent='NO SAMPLES';
+            card.querySelector('.traffic-status').className='traffic-status block px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-500 border border-slate-300 dark:border-slate-700 text-[9px] font-bold font-mono';
+        }
+    }catch(error){
+        card.querySelector('.traffic-status').textContent='ERR SYNC';
+        card.querySelector('.traffic-status').className='traffic-status block px-2 py-0.5 rounded bg-rose-50 dark:bg-[#ff3366]/10 text-rose-600 dark:text-[#ff3366] border border-rose-200 dark:border-[#ff3366]/30 text-[9px] font-bold font-mono';
+    }
+}
+
+function filterCards(){
+    const olt=document.getElementById('oltSelect').value;
+    const slotFilter=document.getElementById('cardSelect').value;
+    const ponFilter=document.getElementById('ponSelect').value;
+    const q=document.getElementById('interfaceSearch').value.toLowerCase();
+    let shown=0;
+
+    cards.forEach(card=>{
+        const port=card.dataset.port||'';
+        const slot=port.split('/')[1];
+        const visible=card.dataset.kind===kind &&
+            (olt==='all'||card.dataset.olt===olt) &&
+            (slotFilter==='all'||slot===slotFilter) &&
+            (ponFilter==='all'||port.startsWith(ponFilter+':')) &&
+            card.dataset.name.toLowerCase().includes(q);
+        
+        card.classList.toggle('hidden',!visible);
+        if(visible) shown++;
+    });
+
+    document.getElementById('entryCount').textContent=shown;
+    const empty=document.getElementById('emptyGraphs');
+    const none=document.getElementById('noGraphs');
+    
+    empty.classList.toggle('hidden',kind!=='onu'||cards.length>0);
+    none.classList.toggle('hidden',shown>0||kind==='onu'&&cards.length===0);
+    none.textContent=kind==='onu'?'TIDAK ADA ONU YANG COCOK DENGAN FILTER.':`DATA TRAFFIC ${kind.toUpperCase()} BELUM TERSEDIA.`;
+    
+    document.getElementById('cardSelect').classList.toggle('hidden',kind!=='pon');
+    document.getElementById('ponSelect').classList.toggle('hidden',kind!=='onu');
+}
+
+document.querySelectorAll('.graph-tab').forEach(button=>button.addEventListener('click',()=>{
+    kind=button.dataset.kind;
+    document.querySelectorAll('.graph-tab').forEach(tab=>{
+        tab.classList.remove('bg-blue-100','dark:bg-[#0e223b]','border-blue-300','dark:border-[#00e5ff]/40','text-blue-700','dark:text-[#00e5ff]','font-bold','shadow-none','dark:shadow-[0_0_10px_rgba(0,229,255,0.2)]');
+        tab.classList.add('text-slate-600','dark:text-slate-400','border-transparent');
+        tab.setAttribute('aria-selected','false');
+    });
+    button.classList.add('bg-blue-100','dark:bg-[#0e223b]','border-blue-300','dark:border-[#00e5ff]/40','text-blue-700','dark:text-[#00e5ff]','font-bold','shadow-none','dark:shadow-[0_0_10px_rgba(0,229,255,0.2)]');
+    button.classList.remove('text-slate-600','dark:text-slate-400','border-transparent');
+    button.setAttribute('aria-selected','true');
+    filterCards();
+}));
+
+document.querySelectorAll('.period-tab').forEach(button=>button.addEventListener('click',()=>{
+    period=button.dataset.period;
+    document.querySelectorAll('.period-tab').forEach(tab=>{
+        tab.classList.remove('bg-blue-100','dark:bg-[#0e223b]','border-blue-300','dark:border-[#00e5ff]/40','text-blue-700','dark:text-[#00e5ff]','font-bold','shadow-none','dark:shadow-[0_0_8px_rgba(0,229,255,0.2)]');
+        tab.classList.add('text-slate-600','dark:text-slate-400','border-transparent');
+    });
+    button.classList.add('bg-blue-100','dark:bg-[#0e223b]','border-blue-300','dark:border-[#00e5ff]/40','text-blue-700','dark:text-[#00e5ff]','font-bold','shadow-none','dark:shadow-[0_0_8px_rgba(0,229,255,0.2)]');
+    button.classList.remove('text-slate-600','dark:text-slate-400','border-transparent');
+    cards.forEach(refreshCard);
+}));
+
+['oltSelect','cardSelect','ponSelect'].forEach(id=>document.getElementById(id).addEventListener('change',filterCards));
+document.getElementById('interfaceSearch').addEventListener('input',filterCards);
+
+filterCards();
+cards.forEach(refreshCard);
 </script>
 {% endblock %}

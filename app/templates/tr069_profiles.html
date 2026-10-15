@@ -1,88 +1,334 @@
 {% extends "base.html" %}
 {% block title %}TR069 Profile - OLT Monitoring System{% endblock %}
+
 {% block content %}
-<header class="px-1">
-    <h1 class="text-2xl font-medium text-blue-950">TR069 Profile</h1>
-    <p class="mt-1 text-sm text-slate-500"><a href="/" class="hover:text-blue-600">Home</a><span class="px-2">/</span><a href="#" class="hover:text-blue-600">Template</a><span class="px-2">/</span>TR069 Profile</p>
-</header>
+<div class="space-y-6 font-mono text-slate-800 dark:text-slate-300 transition-colors">
 
-<section class="mt-5 overflow-hidden rounded-xl border border-slate-100 bg-white p-5 shadow-sm md:p-6">
-    <header class="mb-4 flex items-center justify-between gap-4">
-        <h2 class="text-lg font-semibold text-blue-950">TR069 Profile</h2>
-        <button id="createTr069Profile" type="button" class="rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100">⊕ Create</button>
-    </header>
-    <div class="overflow-x-auto">
-        <table class="w-full min-w-[1000px] border-collapse text-left text-sm">
-            <thead><tr class="border-b border-slate-200 text-xs font-bold uppercase tracking-wide text-blue-950"><th class="px-3 py-3 text-center">#</th><th class="px-3 py-3">Profile Name</th><th class="px-3 py-3">ACS URL</th><th class="px-3 py-3">Username</th><th class="px-3 py-3">Password</th><th class="px-3 py-3">Default OLT</th><th class="px-3 py-3">VLAN</th><th class="px-3 py-3 text-center">Action</th></tr></thead>
-            <tbody id="profileRows" class="divide-y divide-slate-200">
-                {% for profile in profiles %}
-                <tr class="text-slate-700" data-id="{{ profile.id }}" data-name="{{ profile.name|e }}">
-                    <td class="px-3 py-3 text-center">{{ loop.index }}</td>
-                    <td class="px-3 py-3 font-medium text-blue-950">{{ profile.name }}</td>
-                    <td class="max-w-[240px] truncate px-3 py-3" title="{{ profile.data.acs_url|default('') }}">{{ profile.data.acs_url|default('—') }}</td>
-                    <td class="px-3 py-3">{{ profile.data.username|default('—') }}</td>
-                    <td class="px-3 py-3">{% if profile.has_password %}••••••••{% else %}—{% endif %}</td>
-                    <td class="px-3 py-3">{{ (profile.data.default_olts|default([profile.data.default_olt] if profile.data.default_olt else []))|join(', ') or '—' }}</td>
-                    <td class="px-3 py-3">{% if profile.data.vlan_tag|default(profile.data.vlan is defined and profile.data.vlan) %}Tag {{ profile.data.vlan }}{% else %}Untag{% endif %}</td>
-                    <td class="px-3 py-2"><div class="flex justify-center gap-2">
-                        <script type="application/json" class="profile-raw-data">{{ profile.data|tojson }}</script>
-                        <button type="button" class="edit-profile-btn rounded-full bg-slate-100 p-2 text-slate-600 hover:bg-slate-200" title="Edit profile"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="m16 4 4 4M4 20l4-.8L19 8a2.1 2.1 0 0 0-3-3L5 16z"/></svg></button>
-                        <button type="button" class="delete-profile-btn rounded-full bg-rose-50 p-2 text-rose-600 hover:bg-rose-100" data-id="{{ profile.id }}" title="Delete profile"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg></button>
-                    </div></td>
-                </tr>
-                {% else %}<tr id="emptyProfiles"><td colspan="8" class="px-4 py-4 text-center text-slate-500">No profiles found</td></tr>{% endfor %}
-            </tbody>
-        </table>
-    </div>
-</section>
-
-<dialog id="tr069Dialog" class="w-[min(96vw,1000px)] overflow-hidden rounded-xl border border-slate-200 p-0 shadow-2xl backdrop:bg-slate-900/50">
-    <form id="profileForm" class="bg-white">
-        <header class="flex items-center justify-between border-b border-slate-200 px-5 py-4"><h2 id="formTitle" class="text-xl font-semibold text-blue-950">Add TR069 Profile</h2><button type="button" id="closeTr069Dialog" aria-label="Close" class="rounded p-1 text-2xl leading-none text-slate-500 hover:bg-slate-100">×</button></header>
-        <div class="max-h-[72vh] space-y-4 overflow-y-auto px-5 py-5">
-            <input id="profileId" type="hidden">
-            <label class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[235px_1fr]">Profile Name<input id="profileName" required maxlength="120" placeholder="e.g. ACS-SVR-MAIN" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal outline-none focus:border-blue-500"></label>
-            <label class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[235px_1fr]">ACS URL<input id="acsUrl" type="url" required placeholder="e.g. http://10.10.10.100:7547" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal outline-none focus:border-blue-500"></label>
-            <label class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[235px_1fr]">Username<input id="acsUsername" placeholder="e.g. acs_admin" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal outline-none focus:border-blue-500"></label>
-            <label class="grid items-center gap-3 text-sm font-medium text-blue-950 md:grid-cols-[235px_1fr]">Password<input id="acsPassword" type="password" autocomplete="new-password" placeholder="e.g. Admin@123" class="w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal outline-none focus:border-blue-500"></label>
-            <div class="grid items-start gap-3 text-sm font-medium text-blue-950 md:grid-cols-[235px_1fr]"><span class="pt-2">VLAN</span><div>
-                <div class="flex items-center gap-5 text-slate-600"><label class="flex items-center gap-2"><input type="radio" name="vlanMode" value="tag" checked class="accent-blue-600">Tag</label><label class="flex items-center gap-2"><input type="radio" name="vlanMode" value="untag" class="accent-blue-600">Untag</label></div>
-                <input id="profileVlan" type="number" min="1" max="4094" placeholder="e.g. 100" class="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal outline-none focus:border-blue-500">
-            </div></div>
-            <div class="grid items-start gap-3 text-sm font-medium text-blue-950 md:grid-cols-[235px_1fr]"><span class="pt-2">Default OLT <span class="font-normal text-slate-400">(optional)</span></span><div id="defaultOltOptions" class="space-y-2">
-                {% for olt in olts %}<label class="flex items-center gap-2 font-normal text-slate-600"><input type="checkbox" name="defaultOlt" value="{{ olt.name }}" class="accent-blue-600">{{ olt.name }}</label>{% else %}<span class="text-sm font-normal text-slate-400">Belum ada OLT terdaftar.</span>{% endfor %}
-                <p class="border-l-2 border-amber-500 bg-amber-50 px-3 py-2 text-sm font-normal text-amber-700">ⓘ OLT pilihan disimpan sebagai default profil. Penerapan otomatis saat registrasi ONU belum terhubung.</p>
-            </div></div>
-            <p id="profileMessage" class="hidden text-sm text-rose-600"></p>
+    <!-- ========================================================= -->
+    <!-- 1. TOP HEADER & TELEMETRY PROFILE STRIP -->
+    <!-- ========================================================= -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-slate-200 dark:border-[#162a45] gap-4 transition-colors">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2.5">
+                <span class="inline-block h-2 w-2 rounded-full bg-blue-600 dark:bg-[#00e5ff] shadow-sm dark:shadow-[0_0_8px_#00e5ff]"></span>
+                <h1 class="text-base font-bold tracking-wider text-slate-800 dark:text-slate-100 uppercase dark:neon-glow-cyan">ACS AUTO-CONFIGURATION PROFILES</h1>
+            </div>
+            <p class="text-[10px] text-slate-500 tracking-widest uppercase">TR069 PROVISIONING TEMPLATES // ACS POOL & VLAN TAG SCHEMAS</p>
         </div>
-        <footer class="flex justify-end gap-2 border-t border-slate-200 px-5 py-4"><button type="button" id="cancelTr069Dialog" class="rounded-lg bg-slate-500 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600">× Close</button><button id="saveTr069Profile" type="submit" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Save</button></footer>
+
+        <div class="flex items-center gap-3">
+            <div class="px-3 py-1.5 rounded-lg bg-white dark:bg-[#08111e] border border-slate-200 dark:border-[#162a45] text-[11px] font-mono text-slate-500 dark:text-slate-400 transition-colors">
+                TOTAL: <strong class="text-blue-600 dark:text-[#00e5ff]">{{ profiles|length }} TEMPLATES</strong>
+            </div>
+            <button id="createTr069Profile" type="button" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 dark:bg-[#00e5ff] hover:bg-blue-700 dark:hover:bg-[#00c8e0] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white dark:text-black shadow-md dark:shadow-[0_0_12px_rgba(0,229,255,0.35)] transition cursor-pointer">
+                <span>+ CREATE PROFILE</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- 2. TR069 TEMPLATES REGISTRY (CYBER CONSOLE MATRIX) -->
+    <!-- ========================================================= -->
+    <section class="rounded-xl border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#08111e] overflow-hidden shadow-sm dark:shadow-xl transition-colors">
+        <div class="p-3.5 bg-slate-50 dark:bg-[#091322] border-b border-slate-200 dark:border-[#162a45] flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 transition-colors">
+            <span class="flex items-center gap-2 font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                <span class="text-blue-600 dark:text-[#00e5ff]">■</span> ACTIVE TR069 ACS PROFILES DIRECTORY
+            </span>
+            <span class="text-slate-500">PROVISIONING DEFAULTS</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[1000px] border-collapse text-left text-xs bg-white dark:bg-[#08111e] transition-colors">
+                <thead>
+                    <tr class="bg-slate-100 dark:bg-[#060c17]/80 border-b border-slate-200 dark:border-[#162a45] text-[10px] font-bold uppercase tracking-widest text-slate-600 dark:text-slate-500 transition-colors">
+                        <th class="px-3 py-3 w-12 text-center">SLOT</th>
+                        <th class="px-4 py-3">PROFILE NAME</th>
+                        <th class="px-4 py-3">ACS TARGET URL</th>
+                        <th class="px-4 py-3">AUTH USERNAME</th>
+                        <th class="px-4 py-3">SECRET KEY</th>
+                        <th class="px-4 py-3">ASSIGNED OLTS</th>
+                        <th class="px-4 py-3">VLAN MODE</th>
+                        <th class="px-4 py-3 text-center">COMMANDS</th>
+                    </tr>
+                </thead>
+                <tbody id="profileRows" class="divide-y divide-slate-100 dark:divide-[#162a45]/60">
+                    {% for profile in profiles %}
+                    <tr class="hover:bg-slate-50 dark:hover:bg-[#0d1d33]/50 transition duration-150" data-id="{{ profile.id }}" data-name="{{ profile.name|e }}">
+                        <!-- SLOT / INDEX -->
+                        <td class="px-3 py-3.5 text-center text-slate-500 font-mono text-[11px]">
+                            {{ "%02d" % loop.index }}
+                        </td>
+
+                        <!-- PROFILE NAME -->
+                        <td class="px-4 py-3.5 font-bold text-slate-800 dark:text-slate-200">
+                            <span class="text-blue-600 dark:text-[#00e5ff]">{{ profile.name }}</span>
+                        </td>
+
+                        <!-- ACS URL -->
+                        <td class="max-w-[240px] truncate px-4 py-3.5 text-slate-600 dark:text-slate-300 font-mono text-[11px]" title="{{ profile.data.acs_url|default('') }}">
+                            {{ profile.data.acs_url|default('—') }}
+                        </td>
+
+                        <!-- USERNAME -->
+                        <td class="px-4 py-3.5 text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                            {{ profile.data.username|default('—') }}
+                        </td>
+
+                        <!-- PASSWORD -->
+                        <td class="px-4 py-3.5 font-mono text-slate-500 text-[11px]">
+                            {% if profile.has_password %}<span class="tracking-widest">••••••••</span>{% else %}—{% endif %}
+                        </td>
+
+                        <!-- DEFAULT OLT -->
+                        <td class="px-4 py-3.5 text-slate-600 dark:text-slate-300 font-mono text-[11px]">
+                            <span class="bg-slate-50 dark:bg-[#060c17] px-2 py-0.5 rounded border border-slate-200 dark:border-[#162a45] transition-colors">
+                                {{ (profile.data.default_olts|default([profile.data.default_olt] if profile.data.default_olt else []))|join(', ') or '—' }}
+                            </span>
+                        </td>
+
+                        <!-- VLAN -->
+                        <td class="px-4 py-3.5">
+                            {% set is_tagged = profile.data.vlan_tag|default(profile.data.vlan is defined and profile.data.vlan) %}
+                            <span class="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider font-mono {% if is_tagged %}bg-blue-50 dark:bg-[#00e5ff]/10 text-blue-700 dark:text-[#00e5ff] border border-blue-200 dark:border-[#00e5ff]/30{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-700{% endif %} transition-colors">
+                                <span class="h-1 w-1 rounded-full {% if is_tagged %}bg-blue-600 dark:bg-[#00e5ff]{% else %}bg-slate-400 dark:bg-slate-500{% endif %}"></span>
+                                {% if is_tagged %}TAG {{ profile.data.vlan }}{% else %}UNTAG{% endif %}
+                            </span>
+                        </td>
+
+                        <!-- ACTIONS -->
+                        <td class="px-4 py-3 text-center">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <script type="application/json" class="profile-raw-data">{{ profile.data|tojson }}</script>
+                                <button type="button" class="edit-profile-btn p-1.5 rounded-md bg-white dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] text-blue-600 dark:text-[#00e5ff] hover:bg-blue-50 dark:hover:bg-[#00e5ff]/10 hover:border-blue-300 dark:hover:border-[#00e5ff]/40 transition cursor-pointer" title="Edit Profile Template">
+                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="m16 4 4 4M4 20l4-.8L19 8a2.1 2.1 0 0 0-3-3L5 16z"/></svg>
+                                </button>
+                                <button type="button" class="delete-profile-btn p-1.5 rounded-md bg-white dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] text-slate-400 hover:text-rose-600 dark:hover:text-[#ff3366] hover:bg-rose-50 dark:hover:bg-[#ff3366]/10 hover:border-rose-300 dark:hover:border-[#ff3366]/40 transition cursor-pointer" data-id="{{ profile.id }}" title="Purge Profile Template">
+                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr id="emptyProfiles">
+                        <td colspan="8" class="p-8 text-center text-xs text-slate-500 font-mono">
+                            Belum ada template TR069 Profile yang tersimpan.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</div>
+
+<!-- ========================================================= -->
+<!-- 3. CYBER MODAL: TR069 CONFIGURATION DIALOG -->
+<!-- ========================================================= -->
+<dialog id="tr069Dialog" class="w-[min(96vw,920px)] overflow-hidden rounded-2xl border border-slate-200 dark:border-[#162a45] p-0 shadow-xl dark:shadow-[0_0_50px_rgba(0,0,0,0.95)] bg-white dark:bg-[#091322] backdrop:bg-black/20 dark:backdrop:bg-black/75 transition-colors">
+    <form id="profileForm" class="flex flex-col bg-white dark:bg-[#091322] font-mono text-slate-800 dark:text-slate-200 transition-colors">
+        <header class="flex items-center justify-between border-b border-slate-200 dark:border-[#162a45] px-6 py-4 bg-slate-50 dark:bg-[#08111e] transition-colors">
+            <h2 id="formTitle" class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-[#00e5ff] flex items-center gap-2">
+                <span class="inline-block w-2 h-2 rounded-full bg-blue-600 dark:bg-[#00e5ff] shadow-sm dark:shadow-[0_0_6px_#00e5ff]"></span>
+                TR069 TEMPLATE CONFIGURATION
+            </h2>
+            <button type="button" id="closeTr069Dialog" aria-label="Close" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-xl leading-none">✕</button>
+        </header>
+
+        <div class="max-h-[72vh] space-y-4 overflow-y-auto px-6 py-5 text-xs">
+            <input id="profileId" type="hidden">
+
+            <!-- Profile Name -->
+            <label class="grid items-center gap-3 md:grid-cols-[200px_1fr]">
+                <span class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">PROFILE NAME</span>
+                <input id="profileName" required maxlength="120" placeholder="e.g. ACS-SVR-MAIN" class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition transition-colors">
+            </label>
+
+            <!-- ACS URL -->
+            <label class="grid items-center gap-3 md:grid-cols-[200px_1fr]">
+                <span class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">ACS TARGET URL</span>
+                <input id="acsUrl" type="url" required placeholder="e.g. http://10.10.10.100:7547" class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition transition-colors">
+            </label>
+
+            <!-- Username -->
+            <label class="grid items-center gap-3 md:grid-cols-[200px_1fr]">
+                <span class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">ACS USERNAME</span>
+                <input id="acsUsername" placeholder="e.g. acs_admin" class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition transition-colors">
+            </label>
+
+            <!-- Password -->
+            <label class="grid items-center gap-3 md:grid-cols-[200px_1fr]">
+                <span class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">ACS PASSWORD</span>
+                <input id="acsPassword" type="password" autocomplete="new-password" placeholder="e.g. Admin@123" class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-colors">
+            </label>
+
+            <!-- VLAN Matrix -->
+            <div class="grid items-start gap-3 md:grid-cols-[200px_1fr] pt-2 border-t border-slate-200 dark:border-[#162a45]/60 transition-colors">
+                <span class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider pt-2">VLAN ENCAPSULATION</span>
+                <div>
+                    <div class="flex items-center gap-5 text-slate-600 dark:text-slate-300">
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-slate-900 dark:hover:text-white">
+                            <input type="radio" name="vlanMode" value="tag" checked class="accent-blue-600 dark:accent-[#00e5ff]">
+                            <span>Tag</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer hover:text-slate-900 dark:hover:text-white">
+                            <input type="radio" name="vlanMode" value="untag" class="accent-blue-600 dark:accent-[#00e5ff]">
+                            <span>Untag</span>
+                        </label>
+                    </div>
+                    <input id="profileVlan" type="number" min="1" max="4094" placeholder="e.g. 100" class="mt-2.5 w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-colors">
+                </div>
+            </div>
+
+            <!-- Default OLT Association -->
+            <div class="grid items-start gap-3 md:grid-cols-[200px_1fr] pt-2 border-t border-slate-200 dark:border-[#162a45]/60 transition-colors">
+                <span class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider pt-1">
+                    CHASSIS BINDING <span class="font-normal text-[10px] text-slate-400 dark:text-slate-500">(OPTIONAL)</span>
+                </span>
+                <div id="defaultOltOptions" class="space-y-2.5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {% for olt in olts %}
+                        <label class="flex items-center gap-2 bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] p-2.5 rounded-lg text-slate-700 dark:text-slate-300 hover:border-blue-300 dark:hover:border-[#00e5ff]/40 cursor-pointer transition transition-colors">
+                            <input type="checkbox" name="defaultOlt" value="{{ olt.name }}" class="accent-blue-600 dark:accent-[#00e5ff] h-3.5 w-3.5 rounded">
+                            <span class="text-xs">{{ olt.name }}</span>
+                        </label>
+                        {% else %}
+                        <span class="text-xs text-slate-500">Belum ada OLT terdaftar di cluster.</span>
+                        {% endfor %}
+                    </div>
+                    <p class="text-[10px] text-slate-600 dark:text-slate-500 p-2.5 rounded bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] leading-relaxed transition-colors">
+                        ⓘ Default OLT akan diasosiasikan secara otomatis pada saat provisioning massal antarmuka ONT/ONU.
+                    </p>
+                </div>
+            </div>
+
+            <p id="profileMessage" class="hidden text-xs font-mono p-2.5 rounded-lg bg-rose-50 dark:bg-[#ff3366]/10 border border-rose-200 dark:border-[#ff3366]/30 text-rose-600 dark:text-[#ff3366] transition-colors"></p>
+        </div>
+
+        <footer class="flex justify-end gap-2 border-t border-slate-200 dark:border-[#162a45] bg-slate-50 dark:bg-[#08111e] px-6 py-4 transition-colors">
+            <button type="button" id="cancelTr069Dialog" class="rounded-lg border border-slate-300 dark:border-[#162a45] px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#0d1d33] transition cursor-pointer">✕ CLOSE</button>
+            <button id="saveTr069Profile" type="submit" class="rounded-lg bg-blue-600 dark:bg-[#00e5ff] hover:bg-blue-700 dark:hover:bg-[#00c8e0] px-5 py-2 text-xs font-bold uppercase tracking-wider text-white dark:text-black shadow-md dark:shadow-[0_0_12px_rgba(0,229,255,0.35)] transition cursor-pointer">SAVE TEMPLATE</button>
+        </footer>
     </form>
 </dialog>
 
+<!-- ========================================================= -->
+<!-- 4. LOGIKA JAVASCRIPT GLOBAL (TERINTEGRASI LENGKAP) -->
+<!-- ========================================================= -->
 <script>
 const form=document.getElementById('profileForm'),dialog=document.getElementById('tr069Dialog'),message=document.getElementById('profileMessage');
-function resetProfileForm(){form.reset();document.getElementById('profileId').value='';document.getElementById('formTitle').textContent='Add TR069 Profile';document.getElementById('acsPassword').placeholder='e.g. Admin@123';document.getElementById('profileMessage').classList.add('hidden');document.getElementById('profileVlan').disabled=false;document.getElementById('profileVlan').required=true}
-function selectedDefaultOlts(){return [...document.querySelectorAll('input[name="defaultOlt"]:checked')].map(input=>input.value)}
+
+function resetProfileForm(){
+    form.reset();
+    document.getElementById('profileId').value='';
+    document.getElementById('formTitle').textContent='CREATE TR069 PROFILE';
+    document.getElementById('acsPassword').placeholder='e.g. Admin@123';
+    document.getElementById('profileMessage').classList.add('hidden');
+    document.getElementById('profileVlan').disabled=false;
+    document.getElementById('profileVlan').required=true;
+}
+
+function selectedDefaultOlts(){
+    return [...document.querySelectorAll('input[name="defaultOlt"]:checked')].map(input=>input.value);
+}
+
 function editProfile(row){
     const data=JSON.parse(row.querySelector('.profile-raw-data')?.textContent||'{}');
-    document.getElementById('profileId').value=row.dataset.id;document.getElementById('profileName').value=row.dataset.name;
-    document.getElementById('acsUrl').value=data.acs_url||'';document.getElementById('acsUsername').value=data.username||'';document.getElementById('acsPassword').value='';document.getElementById('acsPassword').placeholder='Leave blank to keep current password';
-    const tagged=data.vlan_tag??Boolean(data.vlan);document.querySelector(`input[name="vlanMode"][value="${tagged?'tag':'untag'}"]`).checked=true;document.getElementById('profileVlan').value=data.vlan||'';document.getElementById('profileVlan').disabled=!tagged;document.getElementById('profileVlan').required=tagged;
-    const selected=data.default_olts|| (data.default_olt?[data.default_olt]:[]);document.querySelectorAll('input[name="defaultOlt"]').forEach(input=>input.checked=selected.includes(input.value));
-    document.getElementById('formTitle').textContent='Edit TR069 Profile';message.classList.add('hidden');dialog.showModal();
+    document.getElementById('profileId').value=row.dataset.id;
+    document.getElementById('profileName').value=row.dataset.name;
+    document.getElementById('acsUrl').value=data.acs_url||'';
+    document.getElementById('acsUsername').value=data.username||'';
+    document.getElementById('acsPassword').value='';
+    document.getElementById('acsPassword').placeholder='Leave blank to keep current password';
+    
+    const tagged=data.vlan_tag??Boolean(data.vlan);
+    document.querySelector(`input[name="vlanMode"][value="${tagged?'tag':'untag'}"]`).checked=true;
+    document.getElementById('profileVlan').value=data.vlan||'';
+    document.getElementById('profileVlan').disabled=!tagged;
+    document.getElementById('profileVlan').required=tagged;
+    
+    const selected=data.default_olts||(data.default_olt?[data.default_olt]:[]);
+    document.querySelectorAll('input[name="defaultOlt"]').forEach(input=>input.checked=selected.includes(input.value));
+    
+    document.getElementById('formTitle').textContent='EDIT TR069 PROFILE';
+    message.classList.add('hidden');
+    dialog.showModal();
 }
-document.getElementById('createTr069Profile').addEventListener('click',()=>{resetProfileForm();dialog.showModal()});
-document.getElementById('closeTr069Dialog').addEventListener('click',()=>dialog.close());document.getElementById('cancelTr069Dialog').addEventListener('click',()=>dialog.close());
-document.querySelectorAll('input[name="vlanMode"]').forEach(radio=>radio.addEventListener('change',()=>{const tagged=document.querySelector('input[name="vlanMode"]:checked').value==='tag';document.getElementById('profileVlan').disabled=!tagged;document.getElementById('profileVlan').required=tagged;if(!tagged)document.getElementById('profileVlan').value=''}));
+
+document.getElementById('createTr069Profile').addEventListener('click',()=>{
+    resetProfileForm();
+    dialog.showModal();
+});
+
+document.getElementById('closeTr069Dialog').addEventListener('click',()=>dialog.close());
+document.getElementById('cancelTr069Dialog').addEventListener('click',()=>dialog.close());
+
+document.querySelectorAll('input[name="vlanMode"]').forEach(radio=>radio.addEventListener('change',()=>{
+    const tagged=document.querySelector('input[name="vlanMode"]:checked').value==='tag';
+    document.getElementById('profileVlan').disabled=!tagged;
+    document.getElementById('profileVlan').required=tagged;
+    if(!tagged) document.getElementById('profileVlan').value='';
+}));
+
 document.querySelectorAll('.edit-profile-btn').forEach(button=>button.addEventListener('click',()=>editProfile(button.closest('tr'))));
-document.querySelectorAll('.delete-profile-btn').forEach(button=>button.addEventListener('click',async()=>{if(!confirm('Hapus TR069 Profile ini?'))return;try{const response=await fetch(`/api/olt-settings/data/${button.dataset.id}`,{method:'DELETE'}),result=await response.json();if(!response.ok)throw new Error(result.detail||'Gagal menghapus profil');location.reload()}catch(error){alert(error.message)}}));
+
+document.querySelectorAll('.delete-profile-btn').forEach(button=>button.addEventListener('click',async()=>{
+    if(!confirm('Hapus TR069 Profile ini?')) return;
+    try{
+        const response=await fetch(`/api/olt-settings/data/${button.dataset.id}`,{method:'DELETE'});
+        const result=await response.json();
+        if(!response.ok) throw new Error(result.detail||'Gagal menghapus profil');
+        location.reload();
+    }catch(error){
+        alert(error.message);
+    }
+}));
+
 form.addEventListener('submit',async event=>{
-    event.preventDefault();const id=document.getElementById('profileId').value,name=document.getElementById('profileName').value.trim(),tagged=document.querySelector('input[name="vlanMode"]:checked').value==='tag';
-    const data={acs_url:document.getElementById('acsUrl').value.trim(),username:document.getElementById('acsUsername').value.trim(),password:document.getElementById('acsPassword').value,vlan:tagged?document.getElementById('profileVlan').value:'',vlan_tag:tagged,default_olts:selectedDefaultOlts(),apply_default:selectedDefaultOlts().length>0};data.default_olt=data.default_olts[0]||'';
-    const saveButton=document.getElementById('saveTr069Profile');saveButton.disabled=true;saveButton.textContent='Saving...';
-    try{const response=await fetch('/api/olt-settings/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id?Number(id):null,category:'tr069_profile',name,data})});let result={};try{result=await response.json()}catch{}if(!response.ok)throw new Error(result.detail||'Gagal menyimpan profil');if(result.status!=='success'||!result.id)throw new Error('Server belum mengonfirmasi penyimpanan.');location.reload()}
-    catch(error){message.textContent=error.message;message.className='text-sm text-rose-600';message.classList.remove('hidden')}
-    finally{saveButton.disabled=false;saveButton.textContent='Save'}
+    event.preventDefault();
+    const id=document.getElementById('profileId').value,
+          name=document.getElementById('profileName').value.trim(),
+          tagged=document.querySelector('input[name="vlanMode"]:checked').value==='tag';
+    
+    const data={
+        acs_url:document.getElementById('acsUrl').value.trim(),
+        username:document.getElementById('acsUsername').value.trim(),
+        password:document.getElementById('acsPassword').value,
+        vlan:tagged?document.getElementById('profileVlan').value:'',
+        vlan_tag:tagged,
+        default_olts:selectedDefaultOlts(),
+        apply_default:selectedDefaultOlts().length>0
+    };
+    data.default_olt=data.default_olts[0]||'';
+    
+    const saveButton=document.getElementById('saveTr069Profile');
+    saveButton.disabled=true;
+    saveButton.textContent='SAVING...';
+    
+    try{
+        const response=await fetch('/api/olt-settings/data',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+                id:id?Number(id):null,
+                category:'tr069_profile',
+                name,
+                data
+            })
+        });
+        let result={};
+        try{ result=await response.json(); }catch{}
+        if(!response.ok) throw new Error(result.detail||'Gagal menyimpan profil');
+        if(result.status!=='success'||!result.id) throw new Error('Server belum mengonfirmasi penyimpanan.');
+        location.reload();
+    }catch(error){
+        message.textContent=error.message;
+        message.className='text-xs font-mono p-2.5 rounded-lg bg-rose-50 dark:bg-[#ff3366]/10 border border-rose-200 dark:border-[#ff3366]/30 text-rose-600 dark:text-[#ff3366] transition-colors';
+        message.classList.remove('hidden');
+    }finally{
+        saveButton.disabled=false;
+        saveButton.textContent='SAVE TEMPLATE';
+    }
 });
 </script>
-{% endblock %}  
+{% endblock %}

@@ -1,142 +1,299 @@
 {% extends "base.html" %}
 {% block title %}OLT Management - OLT Monitoring System{% endblock %}
+
 {% block content %}
-<div class="flex items-start justify-between">
-    <div>
-        <h1 class="text-2xl font-semibold text-blue-950">Settings</h1>
-        <p class="mt-1 text-sm text-slate-500"><a href="/" class="hover:text-blue-600">Home</a><span class="px-2">/</span>OLTs</p>
-    </div>
-</div>
+<div class="space-y-6 font-mono text-slate-800 dark:text-slate-300 transition-colors">
 
-<section class="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white p-6">
-    <h2 class="mb-4 text-xl font-semibold text-blue-950">OLT Management</h2>
-    <div class="overflow-x-auto">
-        <table class="w-full min-w-[1050px] border-collapse text-left">
-            <thead><tr class="border-b border-slate-200 text-xs font-bold uppercase tracking-wide text-blue-950"><th class="px-2 py-3">#</th><th class="px-3 py-3">Device</th><th class="px-3 py-3">Information</th><th class="px-3 py-3">Synchronization</th><th class="px-3 py-3">Connection</th><th class="px-3 py-3 text-center">Action</th></tr></thead>
-            <tbody class="divide-y divide-slate-200">
-            {% for olt in olts %}
-                <tr class="text-sm text-blue-950">
-                    <td class="px-2 py-4 font-semibold">{{ loop.index }}</td>
-                    <td class="px-3 py-4"><div class="flex items-center gap-4"><span class="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-sky-600"><svg class="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="13" width="38" height="22" rx="3" stroke-width="2"/><path d="M10 19h28M10 25h28M10 31h28" stroke-width="2"/><circle cx="13" cy="19" r="1" fill="currentColor"/><circle cx="13" cy="25" r="1" fill="currentColor"/><circle cx="13" cy="31" r="1" fill="currentColor"/></svg></span><div><p class="font-semibold">{{ olt.name }}</p><p class="mt-1 text-slate-700">{{ olt.ip }}</p><p class="text-slate-500">{{ olt.model }} Version</p></div></div></td>
-                    <td class="px-3 py-4"><div class="grid grid-cols-[20px_1fr] gap-x-2 gap-y-3"><span class="text-blue-500">♧</span><span>{{ olt.temperature }}°C</span><span class="text-blue-500">▦</span><span>{{ olt.model }}</span><span class="text-blue-500">◉</span><span>{{ olt.total_onu }}</span><span class="text-blue-500">◷</span><span>{{ olt.uptime }}</span></div></td>
-                    <td class="px-3 py-4"><div class="flex items-center gap-3"><span class="flex h-16 w-16 items-center justify-center rounded-full border-4 {% if olt.synced != 'Belum pernah' %}border-emerald-600{% else %}border-slate-300{% endif %} font-semibold">{% if olt.synced != 'Belum pernah' %}100%{% else %}0%{% endif %}</span><div><p class="font-medium text-emerald-700">● {{ 'Completed' if olt.synced != 'Belum pernah' else 'Pending' }}</p><p class="mt-1 text-slate-500">▣ {{ olt.synced[:10] if olt.synced != 'Belum pernah' else '—' }}</p></div></div></td>
-                    <td class="px-3 py-4"><div class="space-y-2"><span class="block w-fit rounded-lg px-3 py-1 text-xs font-semibold text-white {% if olt.telnet == 'Connected' %}bg-emerald-600{% elif olt.telnet == 'Failed' %}bg-rose-600{% else %}bg-slate-400{% endif %}">Telnet {{ olt.telnet }}</span><span class="block w-fit rounded-lg px-3 py-1 text-xs font-semibold text-white {% if olt.snmp == 'Connected' %}bg-emerald-600{% elif olt.snmp == 'Failed' %}bg-rose-600{% else %}bg-slate-400{% endif %}">SNMP {{ olt.snmp }}</span></div></td>
-                    <td class="px-3 py-4"><div class="flex flex-col items-stretch gap-1"><button type="button" class="edit-olt-btn rounded-lg bg-slate-100 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-200" data-id="{{ olt.id }}" data-name="{{ olt.name }}" data-ip="{{ olt.ip }}" data-model="{{ olt.model }}" data-snmp-version="{{ olt.snmp_version }}" data-snmp-port="{{ olt.snmp_port }}" data-telnet-username="{{ olt.telnet_username }}" data-telnet-port="{{ olt.telnet_port }}">♢ Edit</button><button type="button" class="sync-olt-btn rounded-lg bg-emerald-50 px-3 py-1.5 text-xs text-emerald-700 hover:bg-emerald-100" data-id="{{ olt.id }}" data-name="{{ olt.name }}">▧ Sync</button><a href="/olt-settings?olt_id={{ olt.id }}" class="rounded-lg bg-blue-50 px-3 py-1.5 text-center text-xs text-blue-700 hover:bg-blue-100">⚙ Settings</a></div></td>
-                </tr>
-            {% else %}
-                <tr><td colspan="6" class="p-10 text-center text-slate-500">Belum ada perangkat OLT yang terdaftar.</td></tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</section>
-
-<div class="hidden grid grid-cols-1 gap-5 xl:grid-cols-2 mt-6">
-{% for olt in olts %}
-<section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-    <div class="flex justify-between border-b border-slate-100 p-5">
-        <div>
-            <div class="flex items-center gap-2">
-                <h2 class="font-bold text-slate-900">{{ olt.name }}</h2>
-                <span class="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">{{ olt.model }}</span>
+    <!-- ========================================================= -->
+    <!-- 1. TOP HEADER & TELEMETRY STRIP -->
+    <!-- ========================================================= -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-slate-200 dark:border-[#162a45] gap-4 transition-colors">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2.5">
+                <span class="inline-block h-2 w-2 rounded-full bg-blue-600 dark:bg-[#00e5ff] shadow-sm dark:shadow-[0_0_8px_#00e5ff]"></span>
+                <h1 class="text-base font-bold tracking-wider text-slate-800 dark:text-slate-100 uppercase dark:neon-glow-cyan">OLT INFRASTRUCTURE & INTERFACES</h1>
             </div>
-            <p class="mt-1 text-xs text-slate-500">{{ olt.ip }} · SNMP v2c:{{ olt.snmp_port }} · Telnet:{{ olt.telnet_port }}</p>
+            <p class="text-[10px] text-slate-500 tracking-widest uppercase">HARDWARE PROFILES // SNMP TELEMETRY & TELNET RUNTIME ORCHESTRATION</p>
         </div>
-        <button type="button"
-            class="text-xs font-semibold text-blue-600 hover:text-blue-800 edit-olt-btn"
-            data-id="{{ olt.id }}"
-            data-name="{{ olt.name }}"
-            data-ip="{{ olt.ip }}"
-            data-model="{{ olt.model }}"
-            data-snmp-version="{{ olt.snmp_version }}"
-            data-snmp-port="{{ olt.snmp_port }}"
-            data-telnet-username="{{ olt.telnet_username }}"
-            data-telnet-port="{{ olt.telnet_port }}">
-            Edit
-        </button>
+        <div class="flex items-center gap-2 text-xs">
+            <a href="/" class="text-slate-500 hover:text-blue-600 dark:hover:text-[#00e5ff] transition">TERMINAL</a>
+            <span class="text-slate-400 dark:text-slate-600">/</span>
+            <span class="text-blue-600 dark:text-[#00e5ff]">OLTS</span>
+        </div>
     </div>
-    <div class="grid grid-cols-2 gap-3 p-5 sm:grid-cols-4">
-        <div class="rounded-lg bg-slate-50 p-3"><p class="text-[10px] text-slate-500">Temperature</p><b>{{ olt.temperature }}°C</b></div>
-        <div class="rounded-lg bg-slate-50 p-3"><p class="text-[10px] text-slate-500">Total ONU</p><b>{{ olt.total_onu }}</b></div>
-        <div class="rounded-lg bg-slate-50 p-3"><p class="text-[10px] text-slate-500">Uptime</p><b class="text-xs">{{ olt.uptime }}</b></div>
-        <div class="rounded-lg bg-slate-50 p-3"><p class="text-[10px] text-slate-500">Last Sync</p><b class="text-xs">{{ olt.synced }}</b></div>
+
+    <!-- ========================================================= -->
+    <!-- 2. OLT HARDWARE CHASSIS MANAGEMENT MATRIX -->
+    <!-- ========================================================= -->
+    <section class="rounded-xl border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#08111e] overflow-hidden shadow-sm dark:shadow-xl transition-colors">
+        <div class="p-3.5 bg-slate-50 dark:bg-[#091322] border-b border-slate-200 dark:border-[#162a45] flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 transition-colors">
+            <span class="flex items-center gap-2 font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                <span class="text-blue-600 dark:text-[#00e5ff]">■</span> REGISTERED OLT CHASSIS DIRECTORY
+            </span>
+            <span class="text-slate-500">LIVE CONNECTION & SYNC REPO</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[1050px] border-collapse text-left text-xs bg-white dark:bg-[#08111e] transition-colors">
+                <thead>
+                    <tr class="bg-slate-100 dark:bg-[#060c17]/80 border-b border-slate-200 dark:border-[#162a45] text-[10px] font-bold uppercase tracking-widest text-slate-600 dark:text-slate-500 transition-colors">
+                        <th class="px-3 py-3 w-12 text-center">RACK</th>
+                        <th class="px-4 py-3">HARDWARE DEVICE</th>
+                        <th class="px-4 py-3">DIAGNOSTIC METRICS</th>
+                        <th class="px-4 py-3">SYNCHRONIZATION</th>
+                        <th class="px-4 py-3">PROTOCOL STATUS</th>
+                        <th class="px-4 py-3 text-center">COMMANDS</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-[#162a45]/60 transition-colors">
+                    {% for olt in olts %}
+                    <tr class="hover:bg-slate-50 dark:hover:bg-[#0d1d33]/50 transition duration-150">
+                        <!-- RACK / INDEX -->
+                        <td class="px-3 py-4 text-center font-mono text-slate-500 text-[11px]">
+                            {{ "%02d" % loop.index }}
+                        </td>
+
+                        <!-- DEVICE & IP -->
+                        <td class="px-4 py-4">
+                            <div class="flex items-center gap-3.5">
+                                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-200 dark:border-[#162a45] text-blue-600 dark:text-[#00e5ff] shadow-sm dark:shadow-inner transition-colors">
+                                    <svg class="h-6 w-6 drop-shadow-none dark:drop-shadow-[0_0_6px_rgba(0,229,255,0.4)]" fill="none" stroke="currentColor" viewBox="0 0 48 48" aria-hidden="true">
+                                        <rect x="5" y="13" width="38" height="22" rx="3" stroke-width="2"/>
+                                        <path d="M10 19h28M10 25h28M10 31h28" stroke-width="2"/>
+                                        <circle cx="13" cy="19" r="1" fill="currentColor"/>
+                                        <circle cx="13" cy="25" r="1" fill="currentColor"/>
+                                        <circle cx="13" cy="31" r="1" fill="currentColor"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-wide">{{ olt.name }}</p>
+                                    <p class="font-mono text-xs text-blue-600 dark:text-[#00e5ff] mt-0.5">{{ olt.ip }}</p>
+                                    <p class="text-[10px] text-slate-500 uppercase tracking-wider">{{ olt.model }} ARCH</p>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- INFORMATION METRICS -->
+                        <td class="px-4 py-4 font-mono text-[11px]">
+                            <div class="grid grid-cols-[16px_1fr] gap-x-2 gap-y-1.5 text-slate-600 dark:text-slate-300">
+                                <span class="text-blue-600 dark:text-[#00e5ff]">◈</span><span>TEMP: <strong class="text-slate-800 dark:text-slate-100">{{ olt.temperature }}°C</strong></span>
+                                <span class="text-blue-600 dark:text-[#00e5ff]">▣</span><span>MODEL: <strong class="text-slate-800 dark:text-slate-100">{{ olt.model }}</strong></span>
+                                <span class="text-blue-600 dark:text-[#00e5ff]">◉</span><span>TOTAL: <strong class="text-blue-700 dark:text-[#00e5ff]">{{ olt.total_onu }} ONUs</strong></span>
+                                <span class="text-blue-600 dark:text-[#00e5ff]">◷</span><span>UPTIME: <strong class="text-slate-800 dark:text-slate-100">{{ olt.uptime }}</strong></span>
+                            </div>
+                        </td>
+
+                        <!-- SYNCHRONIZATION -->
+                        <td class="px-4 py-4">
+                            <div class="flex items-center gap-3 font-mono">
+                                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-50 dark:bg-[#060c17] border {% if olt.synced != 'Belum pernah' %}border-emerald-300 dark:border-emerald-500/40 text-emerald-600 dark:text-emerald-400 shadow-none dark:shadow-[0_0_8px_rgba(16,185,129,0.2)]{% else %}border-slate-300 dark:border-slate-700 text-slate-400 dark:text-slate-500{% endif %} font-bold text-xs transition-colors">
+                                    {% if olt.synced != 'Belum pernah' %}100%{% else %}0%{% endif %}
+                                </div>
+                                <div>
+                                    <p class="text-[11px] font-bold uppercase tracking-wider {% if olt.synced != 'Belum pernah' %}text-emerald-600 dark:text-emerald-400{% else %}text-slate-500{% endif %}">
+                                        ● {{ 'SYNCHRONIZED' if olt.synced != 'Belum pernah' else 'PENDING' }}
+                                    </p>
+                                    <p class="mt-0.5 text-[10px] text-slate-500">
+                                        SYNC: {{ olt.synced[:10] if olt.synced != 'Belum pernah' else 'NEVER' }}
+                                    </p>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- PROTOCOL STATUS -->
+                        <td class="px-4 py-4 font-mono">
+                            <div class="space-y-1.5">
+                                <span class="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider {% if olt.telnet == 'Connected' %}bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30{% elif olt.telnet == 'Failed' %}bg-rose-50 dark:bg-[#ff3366]/10 text-rose-600 dark:text-[#ff3366] border border-rose-200 dark:border-[#ff3366]/30{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700{% endif %}">
+                                    <span class="h-1 w-1 rounded-full {% if olt.telnet == 'Connected' %}bg-emerald-500 dark:bg-emerald-400{% elif olt.telnet == 'Failed' %}bg-rose-500 dark:bg-[#ff3366]{% else %}bg-slate-400 dark:bg-slate-500{% endif %}"></span>
+                                    TELNET: {{ olt.telnet }}
+                                </span>
+                                <span class="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider {% if olt.snmp == 'Connected' %}bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30{% elif olt.snmp == 'Failed' %}bg-rose-50 dark:bg-[#ff3366]/10 text-rose-600 dark:text-[#ff3366] border border-rose-200 dark:border-[#ff3366]/30{% else %}bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700{% endif %}">
+                                    <span class="h-1 w-1 rounded-full {% if olt.snmp == 'Connected' %}bg-emerald-500 dark:bg-emerald-400{% elif olt.snmp == 'Failed' %}bg-rose-500 dark:bg-[#ff3366]{% else %}bg-slate-400 dark:bg-slate-500{% endif %}"></span>
+                                    SNMP: {{ olt.snmp }}
+                                </span>
+                            </div>
+                        </td>
+
+                        <!-- ACTIONS -->
+                        <td class="px-4 py-4 text-center">
+                            <div class="inline-flex flex-col gap-1.5 min-w-[90px]">
+                                <button type="button" class="edit-olt-btn rounded bg-white dark:bg-[#060c17] hover:bg-slate-50 dark:hover:bg-[#0d1d33] border border-slate-300 dark:border-[#162a45] hover:border-blue-400 dark:hover:border-[#00e5ff]/40 px-2.5 py-1 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-[#00e5ff] transition cursor-pointer" data-id="{{ olt.id }}" data-name="{{ olt.name }}" data-ip="{{ olt.ip }}" data-model="{{ olt.model }}" data-snmp-version="{{ olt.snmp_version }}" data-snmp-port="{{ olt.snmp_port }}" data-telnet-username="{{ olt.telnet_username }}" data-telnet-port="{{ olt.telnet_port }}">
+                                    MODIFY
+                                </button>
+                                <button type="button" class="sync-olt-btn rounded bg-blue-50 dark:bg-[#0e223b] hover:bg-blue-100 dark:hover:bg-[#133054] border border-blue-200 dark:border-[#00e5ff]/40 px-2.5 py-1 text-[11px] font-bold text-blue-700 dark:text-[#00e5ff] shadow-none dark:shadow-[0_0_8px_rgba(0,229,255,0.15)] transition cursor-pointer" data-id="{{ olt.id }}" data-name="{{ olt.name }}">
+                                    SYNC
+                                </button>
+                                <a href="/olt-settings?olt_id={{ olt.id }}" class="rounded bg-white dark:bg-[#060c17] hover:bg-slate-50 dark:hover:bg-[#0d1d33] border border-slate-300 dark:border-[#162a45] px-2.5 py-1 text-center text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition">
+                                    SETTINGS
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="p-10 text-center text-xs text-slate-500 font-mono">
+                            Belum ada perangkat OLT yang terdaftar dalam cluster monitoring.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- HIDDEN BACKUP / SECONDARY GRID -->
+    <div class="hidden grid grid-cols-1 gap-5 xl:grid-cols-2 mt-6">
+        {% for olt in olts %}
+        <section class="overflow-hidden rounded-xl border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#08111e] shadow-sm dark:shadow-lg transition-colors">
+            <div class="flex justify-between border-b border-slate-200 dark:border-[#162a45] p-4 bg-slate-50 dark:bg-[#091322] transition-colors">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="font-bold text-slate-800 dark:text-slate-100 text-sm">{{ olt.name }}</h2>
+                        <span class="rounded bg-white dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-2 py-0.5 text-[10px] font-bold text-blue-600 dark:text-[#00e5ff]">{{ olt.model }}</span>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400 font-mono">{{ olt.ip }} · SNMP v2c:{{ olt.snmp_port }} · Telnet:{{ olt.telnet_port }}</p>
+                </div>
+                <button type="button" class="text-xs font-bold text-blue-600 dark:text-[#00e5ff] hover:underline edit-olt-btn cursor-pointer" data-id="{{ olt.id }}" data-name="{{ olt.name }}" data-ip="{{ olt.ip }}" data-model="{{ olt.model }}" data-snmp-version="{{ olt.snmp_version }}" data-snmp-port="{{ olt.snmp_port }}" data-telnet-username="{{ olt.telnet_username }}" data-telnet-port="{{ olt.telnet_port }}">
+                    EDIT
+                </button>
+            </div>
+            <div class="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4 bg-white dark:bg-[#060c17]/50 text-xs font-mono transition-colors">
+                <div class="rounded-lg bg-slate-50 dark:bg-[#091322] border border-slate-200 dark:border-[#162a45] p-2.5"><p class="text-[9px] text-slate-500 uppercase">TEMPERATURE</p><b class="text-blue-600 dark:text-[#00e5ff]">{{ olt.temperature }}°C</b></div>
+                <div class="rounded-lg bg-slate-50 dark:bg-[#091322] border border-slate-200 dark:border-[#162a45] p-2.5"><p class="text-[9px] text-slate-500 uppercase">TOTAL ONU</p><b class="text-slate-800 dark:text-slate-100">{{ olt.total_onu }}</b></div>
+                <div class="rounded-lg bg-slate-50 dark:bg-[#091322] border border-slate-200 dark:border-[#162a45] p-2.5"><p class="text-[9px] text-slate-500 uppercase">UPTIME</p><b class="text-slate-600 dark:text-slate-300 text-[11px] truncate block">{{ olt.uptime }}</b></div>
+                <div class="rounded-lg bg-slate-50 dark:bg-[#091322] border border-slate-200 dark:border-[#162a45] p-2.5"><p class="text-[9px] text-slate-500 uppercase">LAST SYNC</p><b class="text-slate-600 dark:text-slate-300 text-[11px] truncate block">{{ olt.synced }}</b></div>
+            </div>
+            <div class="flex items-center justify-between border-t border-slate-200 dark:border-[#162a45] bg-slate-50 dark:bg-[#091322] px-4 py-3 transition-colors">
+                <span class="text-[10px] text-slate-500 font-mono truncate max-w-[60%]">Env: OLT_{{ olt.env_suffix }}_SNMP_COMMUNITY &amp; TELNET_PASS</span>
+                <button type="button" class="rounded-lg bg-blue-50 dark:bg-[#0e223b] border border-blue-200 dark:border-[#00e5ff]/40 px-3 py-1.5 text-xs font-bold uppercase text-blue-700 dark:text-[#00e5ff] sync-olt-btn cursor-pointer" data-id="{{ olt.id }}" data-name="{{ olt.name }}">
+                    SYNC NOW
+                </button>
+            </div>
+        </section>
+        {% endfor %}
     </div>
-    <div class="flex flex-wrap gap-x-5 gap-y-2 px-5 pb-4 text-xs">
-        <span>ONU online <b class="text-emerald-600">{{ olt.online }}</b></span>
-        <span>LOS <b class="text-rose-600">{{ olt.los }}</b></span>
-        <span>DyingGasp <b class="text-amber-600">{{ olt.dying_gasp }}</b></span>
-        <span>Offline <b>{{ olt.offline }}</b></span>
-    </div>
-    <div class="flex flex-wrap gap-x-5 gap-y-2 px-5 pb-3 text-xs">
-        <span>SNMP: <b class="{{ 'text-emerald-600' if olt.snmp == 'Connected' else 'text-rose-600' if olt.snmp == 'Failed' else 'text-slate-500' }}">{{ olt.snmp }}</b></span>
-        <span>Telnet: <b class="{{ 'text-emerald-600' if olt.telnet == 'Connected' else 'text-rose-600' if olt.telnet == 'Failed' else 'text-slate-500' }}">{{ olt.telnet }}</b></span>
-        <span class="text-slate-400">Tes terakhir: {{ olt.tested }}</span>
-    </div>
-    <div class="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-5 py-3">
-        <span class="text-[10px] text-slate-500">Env: OLT_{{ olt.env_suffix }}_SNMP_COMMUNITY &amp; OLT_{{ olt.env_suffix }}_TELNET_PASSWORD</span>
-        <button type="button" 
-            class="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold hover:bg-blue-50 sync-olt-btn"
-            data-id="{{ olt.id }}"
-            data-name="{{ olt.name }}">
-            Sync Now
-        </button>
-    </div>
-</section>
-{% else %}
-<div class="col-span-full rounded-xl border border-dashed border-slate-300 p-8 text-center bg-white">
-    <p class="text-sm font-semibold text-slate-600">Belum ada perangkat OLT yang terdaftar</p>
-    <p class="text-xs text-slate-400 mt-1">Klik tombol "+ Add OLT" di atas untuk menambahkan profil perangkat baru.</p>
-</div>
-{% endfor %}
+
+    <p class="mt-2 text-[10px] text-slate-500 uppercase tracking-wide">
+        Security Note: Kredensial tersimpan dengan enkripsi runtime. Biarkan field kata sandi kosong saat modifikasi untuk mempertahankan konfigurasi sebelumnya.
+    </p>
+
 </div>
 
-<p class="mt-2 text-xs text-slate-500">Kredensial disimpan terenkripsi. Saat mengedit OLT, biarkan password kosong untuk mempertahankan password yang tersimpan.</p>
-
-<dialog id="oltDialog" class="h-[96vh] w-[min(96vw,1100px)] max-w-none overflow-hidden p-0 shadow-2xl backdrop:bg-slate-900/40">
-    <form id="oltForm" class="flex h-full max-h-[96vh] flex-col bg-white">
-        <header class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-            <h2 id="dialogTitle" class="text-xl font-semibold text-blue-950">OLT Connection Settings</h2>
-            <button type="button" onclick="oltDialog.close()" aria-label="Close dialog" class="rounded p-1 text-2xl leading-none text-slate-500 hover:bg-slate-100">×</button>
+<!-- ========================================================= -->
+<!-- 3. CYBER MODAL: OLT CONFIGURATION DIALOG -->
+<!-- ========================================================= -->
+<dialog id="oltDialog" class="h-[96vh] w-[min(96vw,1100px)] max-w-none overflow-hidden p-0 shadow-xl dark:shadow-[0_0_50px_rgba(0,0,0,0.95)] bg-white dark:bg-[#091322] border border-slate-200 dark:border-[#162a45] rounded-2xl backdrop:bg-black/20 dark:backdrop:bg-black/75 transition-colors">
+    <form id="oltForm" class="flex h-full max-h-[96vh] flex-col bg-white dark:bg-[#091322] font-mono text-slate-800 dark:text-slate-200 transition-colors">
+        <header class="flex items-center justify-between border-b border-slate-200 dark:border-[#162a45] px-6 py-4 bg-slate-50 dark:bg-[#08111e] transition-colors">
+            <h2 id="dialogTitle" class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-[#00e5ff] flex items-center gap-2">
+                <span class="inline-block w-2 h-2 rounded-full bg-blue-600 dark:bg-[#00e5ff] shadow-sm dark:shadow-[0_0_6px_#00e5ff]"></span>
+                OLT HARDWARE CONNECTION SETTINGS
+            </h2>
+            <button type="button" onclick="oltDialog.close()" aria-label="Close dialog" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-xl leading-none">✕</button>
         </header>
-        <div class="flex-1 space-y-6 overflow-y-auto px-6 py-5">
-            <div class="grid gap-3 md:grid-cols-[220px_1fr] md:items-center"><label for="oltName" class="text-base font-medium text-blue-950">OLT Name</label><input id="oltName" required class="w-full rounded-lg border border-slate-300 px-4 py-3 text-base text-slate-700 focus:border-blue-500 focus:outline-none"></div>
-            <div class="grid gap-3 md:grid-cols-[220px_1fr] md:items-center"><label for="oltIp" class="text-base font-medium text-blue-950">IP Address</label><input id="oltIp" required class="w-full rounded-lg border border-slate-300 px-4 py-3 text-base text-slate-700 focus:border-blue-500 focus:outline-none"></div>
-            <div class="grid gap-3 md:grid-cols-[220px_1fr] md:items-center"><label for="oltModel" class="text-base font-medium text-blue-950">Type</label><select id="oltModel" class="w-full rounded-lg border border-slate-300 bg-slate-100 px-4 py-3 text-base text-slate-700"><option>ZTE C300/C320</option><option>ZTE C300</option><option>ZTE C320</option></select></div>
-            <div class="grid gap-3 md:grid-cols-[220px_1fr] md:items-start"><span class="pt-2 text-base font-medium text-blue-950">SNMP</span><div class="space-y-4">
-                <label class="block rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-500">Community Write (RW)<input id="snmpCommunity" type="password" autocomplete="new-password" placeholder="Enter SNMP community" class="mt-1 block w-full border-0 p-0 text-base text-slate-700 outline-none placeholder:text-slate-300"></label>
-                <label class="block rounded-lg border border-slate-300 bg-slate-100 px-4 py-3 text-sm text-slate-500">Version<select id="snmpVersion" class="mt-1 block w-full border-0 bg-transparent p-0 text-base text-slate-700 outline-none"><option value="2c">2</option></select></label>
-                <label class="block rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-500">Port<input id="snmpPort" type="number" min="1" max="65535" value="161" class="mt-1 block w-full border-0 p-0 text-base text-slate-700 outline-none"></label>
-            </div></div>
-            <div class="grid gap-3 md:grid-cols-[220px_1fr] md:items-start"><span class="pt-2 text-base font-medium text-blue-950">Telnet</span><div class="space-y-4">
-                <label class="block rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-500">Username<input id="telnetUsername" value="admin" class="mt-1 block w-full border-0 p-0 text-base text-slate-700 outline-none"></label>
-                <label class="block rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-500">Password<input id="telnetPassword" type="password" autocomplete="new-password" placeholder="Enter Telnet password" class="mt-1 block w-full border-0 p-0 text-base text-slate-700 outline-none placeholder:text-slate-300"></label>
-                <label class="block rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-500">Port<input id="telnetPort" type="number" min="1" max="65535" value="23" class="mt-1 block w-full border-0 p-0 text-base text-slate-700 outline-none"></label>
-            </div></div>
-            <div id="connectionMessage" class="hidden rounded-lg p-3 text-sm"></div>
+
+        <div class="flex-1 space-y-5 overflow-y-auto px-6 py-5 text-xs">
+            <!-- Name -->
+            <div class="grid gap-2 md:grid-cols-[200px_1fr] md:items-center">
+                <label for="oltName" class="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">OLT NAME</label>
+                <input id="oltName" required class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2.5 text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition transition-colors">
+            </div>
+
+            <!-- IP Address -->
+            <div class="grid gap-2 md:grid-cols-[200px_1fr] md:items-center">
+                <label for="oltIp" class="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">IP ADDRESS</label>
+                <input id="oltIp" required class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2.5 text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition transition-colors">
+            </div>
+
+            <!-- Hardware Model -->
+            <div class="grid gap-2 md:grid-cols-[200px_1fr] md:items-center">
+                <label for="oltModel" class="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">HARDWARE TYPE</label>
+                <select id="oltModel" class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2.5 text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition cursor-pointer transition-colors">
+                    <option>ZTE C300/C320</option>
+                    <option>ZTE C300</option>
+                    <option>ZTE C320</option>
+                </select>
+            </div>
+
+            <!-- SNMP Matrix -->
+            <div class="grid gap-2 md:grid-cols-[200px_1fr] md:items-start pt-2 border-t border-slate-200 dark:border-[#162a45]/60 transition-colors">
+                <span class="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pt-2">SNMP V2C MATRIX</span>
+                <div class="space-y-3">
+                    <label class="block rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 transition-colors">
+                        <span class="block text-[10px] text-slate-600 dark:text-slate-500 uppercase font-bold mb-1">Community Write (RW)</span>
+                        <input id="snmpCommunity" type="password" autocomplete="new-password" placeholder="Enter SNMP community" class="w-full bg-transparent text-slate-800 dark:text-slate-200 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600">
+                    </label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="block rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 transition-colors">
+                            <span class="block text-[10px] text-slate-600 dark:text-slate-500 uppercase font-bold mb-1">SNMP Version</span>
+                            <select id="snmpVersion" class="w-full bg-transparent text-slate-800 dark:text-slate-200 outline-none cursor-pointer">
+                                <option value="2c">v2c</option>
+                            </select>
+                        </label>
+                        <label class="block rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 transition-colors">
+                            <span class="block text-[10px] text-slate-600 dark:text-slate-500 uppercase font-bold mb-1">SNMP Port</span>
+                            <input id="snmpPort" type="number" min="1" max="65535" value="161" class="w-full bg-transparent text-slate-800 dark:text-slate-200 outline-none">
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Telnet Matrix -->
+            <div class="grid gap-2 md:grid-cols-[200px_1fr] md:items-start pt-2 border-t border-slate-200 dark:border-[#162a45]/60 transition-colors">
+                <span class="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pt-2">TELNET CLI MATRIX</span>
+                <div class="space-y-3">
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="block rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 transition-colors">
+                            <span class="block text-[10px] text-slate-600 dark:text-slate-500 uppercase font-bold mb-1">Username</span>
+                            <input id="telnetUsername" value="admin" class="w-full bg-transparent text-slate-800 dark:text-slate-200 outline-none">
+                        </label>
+                        <label class="block rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 transition-colors">
+                            <span class="block text-[10px] text-slate-600 dark:text-slate-500 uppercase font-bold mb-1">Port</span>
+                            <input id="telnetPort" type="number" min="1" max="65535" value="23" class="w-full bg-transparent text-slate-800 dark:text-slate-200 outline-none">
+                        </label>
+                    </div>
+                    <label class="block rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 transition-colors">
+                        <span class="block text-[10px] text-slate-600 dark:text-slate-500 uppercase font-bold mb-1">Password</span>
+                        <input id="telnetPassword" type="password" autocomplete="new-password" placeholder="Enter Telnet password" class="w-full bg-transparent text-slate-800 dark:text-slate-200 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Connection Status Message -->
+            <div id="connectionMessage" class="hidden rounded-lg p-3 text-xs font-mono border"></div>
         </div>
-        <footer class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 bg-white px-6 py-4">
-            <button type="button" onclick="oltDialog.close()" class="rounded-lg bg-slate-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-600">× Close</button>
-            <button id="testConnectionButton" type="button" onclick="testOltConnection()" class="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">◉ Test Connection</button>
-            <button id="saveOltButton" type="submit" class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">⇩ Submit</button>
+
+        <footer class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 dark:border-[#162a45] bg-slate-50 dark:bg-[#08111e] px-6 py-4 transition-colors">
+            <button type="button" onclick="oltDialog.close()" class="rounded-lg border border-slate-300 dark:border-[#162a45] px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#0d1d33] transition cursor-pointer">✕ CLOSE</button>
+            <button id="testConnectionButton" type="button" onclick="testOltConnection()" class="rounded-lg bg-blue-50 dark:bg-[#0e223b] hover:bg-blue-100 dark:hover:bg-[#133054] border border-blue-200 dark:border-[#00e5ff]/40 px-4 py-2 text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-[#00e5ff] shadow-none dark:shadow-[0_0_10px_rgba(0,229,255,0.15)] transition cursor-pointer">◉ TEST CONNECTION</button>
+            <button id="saveOltButton" type="submit" class="rounded-lg bg-blue-600 dark:bg-[#00e5ff] hover:bg-blue-700 dark:hover:bg-[#00c8e0] px-5 py-2 text-xs font-bold uppercase tracking-wider text-white dark:text-black shadow-md dark:shadow-[0_0_12px_rgba(0,229,255,0.35)] transition cursor-pointer">⇩ SUBMIT</button>
         </footer>
     </form>
 </dialog>
 
-<dialog id="syncConfirmDialog" class="w-[min(92vw,630px)] overflow-hidden rounded-xl border border-slate-200 p-0 shadow-2xl backdrop:bg-slate-900/50">
-    <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-        <h2 id="syncConfirmTitle" class="text-xl font-semibold text-blue-950"></h2>
-        <button type="button" onclick="syncConfirmDialog.close('no')" aria-label="Close" class="rounded p-1 text-2xl leading-none text-slate-500 hover:bg-slate-100">×</button>
-    </div>
-    <div class="space-y-4 px-5 py-5 text-sm leading-6 text-slate-700">
-        <p>Apakah Anda yakin ingin menyinkronkan data ONU dari OLT ini?</p>
-        <p>Proses sinkronisasi dapat memerlukan beberapa menit, tergantung jumlah ONU. Anda dapat memantau hasilnya pada tabel sinkronisasi.</p>
-    </div>
-    <div class="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
-        <button type="button" onclick="syncConfirmDialog.close('no')" class="rounded-lg bg-slate-500 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-600">× Tidak</button>
-        <button type="button" onclick="syncConfirmDialog.close('yes')" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">✓ Ya, Sync</button>
+<!-- ========================================================= -->
+<!-- 4. CYBER MODAL: CONFIRM SYNC DIALOG -->
+<!-- ========================================================= -->
+<dialog id="syncConfirmDialog" class="w-[min(92vw,560px)] overflow-hidden rounded-2xl border border-slate-200 dark:border-[#162a45] p-0 shadow-xl dark:shadow-[0_0_50px_rgba(0,0,0,0.95)] bg-white dark:bg-[#091322] backdrop:bg-black/20 dark:backdrop:bg-black/75 transition-colors">
+    <div class="p-6 font-mono text-slate-800 dark:text-slate-200">
+        <div class="flex items-center justify-between border-b border-slate-200 dark:border-[#162a45] pb-3 transition-colors">
+            <h2 id="syncConfirmTitle" class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-[#00e5ff] flex items-center gap-2"></h2>
+            <button type="button" onclick="syncConfirmDialog.close('no')" aria-label="Close" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-lg">✕</button>
+        </div>
+        <div class="space-y-3 py-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            <p>Konfirmasi sinkronisasi antarmuka PON dan tabel registrasi ONU untuk OLT ini?</p>
+            <p class="text-[11px] text-slate-500">Operasi ini akan melakukan scraping berkala terhadap status serial, modul optik, dan unprovisioned queue langsung dari sasis perangkat.</p>
+        </div>
+        <div class="flex justify-end gap-2 border-t border-slate-200 dark:border-[#162a45] pt-3 transition-colors">
+            <button type="button" onclick="syncConfirmDialog.close('no')" class="rounded-lg border border-slate-300 dark:border-[#162a45] px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#0d1d33] transition cursor-pointer">✕ ABORT</button>
+            <button type="button" onclick="syncConfirmDialog.close('yes')" class="rounded-lg bg-blue-600 dark:bg-[#00e5ff] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white dark:text-black shadow-md dark:shadow-[0_0_12px_rgba(0,229,255,0.35)] hover:bg-blue-700 dark:hover:bg-[#00c8e0] transition cursor-pointer">✓ INITIATE SYNC</button>
+        </div>
     </div>
 </dialog>
 
+<!-- ========================================================= -->
+<!-- 5. LOGIKA JAVASCRIPT GLOBAL (TERINTEGRASI LENGKAP) -->
+<!-- ========================================================= -->
 <script>
 const oltDialog = document.getElementById('oltDialog');
 const syncConfirmDialog = document.getElementById('syncConfirmDialog');
@@ -144,7 +301,7 @@ let activeOltId = null;
 
 function openOltDialog(mode, id = null, name = '', ip = '', model = 'ZTE C300', snmpVersion = '2c', snmpPort = 161, telnetUsername = 'admin', telnetPort = 23) {
     activeOltId = id;
-    document.getElementById('dialogTitle').textContent = mode === 'add' ? 'Add OLT' : 'Edit OLT';
+    document.getElementById('dialogTitle').textContent = mode === 'add' ? 'ADD OLT' : 'EDIT OLT';
     document.getElementById('oltName').value = name;
     document.getElementById('oltIp').value = ip;
     document.getElementById('oltModel').value = model;
@@ -204,8 +361,9 @@ document.getElementById('oltForm').addEventListener('submit', async e => {
     };
     saveButton.disabled = true;
     saveButton.textContent = 'Saving...';
-    message.textContent = 'Menyimpan perubahan OLT...';
-    message.className = 'rounded-lg bg-blue-50 p-3 text-xs text-blue-700';
+    message.textContent = 'Menyimpan konfigurasi OLT ke database...';
+    message.className = 'rounded-lg bg-blue-50 dark:bg-[#00e5ff]/10 text-blue-600 dark:text-[#00e5ff] border border-blue-200 dark:border-[#00e5ff]/30 p-3 text-xs transition-colors';
+    message.classList.remove('hidden');
     try {
         const response = await fetch('/api/olts', {
             method: 'POST',
@@ -222,11 +380,11 @@ document.getElementById('oltForm').addEventListener('submit', async e => {
         }
         if (result.status !== 'success' || !result.id) throw new Error('Server belum mengonfirmasi penyimpanan OLT.');
         message.textContent = 'Perubahan OLT berhasil disimpan.';
-        message.className = 'rounded-lg bg-emerald-50 p-3 text-xs text-emerald-700';
+        message.className = 'rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 p-3 text-xs transition-colors';
         location.reload();
     } catch (error) {
         message.textContent = error.message;
-        message.className = 'rounded-lg bg-rose-50 p-3 text-xs text-rose-700';
+        message.className = 'rounded-lg bg-rose-50 dark:bg-[#ff3366]/10 text-rose-600 dark:text-[#ff3366] border border-rose-200 dark:border-[#ff3366]/30 p-3 text-xs transition-colors';
     } finally {
         saveButton.disabled = false;
         saveButton.textContent = '⇩ Submit';
@@ -237,25 +395,27 @@ async function testOltConnection() {
     const message = document.getElementById('connectionMessage');
     if (!activeOltId) {
         message.textContent = 'Simpan OLT terlebih dahulu sebelum tes koneksi.';
-        message.className = 'rounded-lg bg-amber-50 p-3 text-xs text-amber-700';
+        message.className = 'rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30 p-3 text-xs transition-colors';
+        message.classList.remove('hidden');
         return;
     }
     const button = document.getElementById('testConnectionButton');
     button.disabled = true;
     button.textContent = 'Testing...';
-    message.textContent = 'Menguji SNMP v2c dan Telnet...';
-    message.className = 'rounded-lg bg-blue-50 p-3 text-xs text-blue-700';
+    message.textContent = 'Menguji runtime SNMP v2c dan Telnet socket...';
+    message.className = 'rounded-lg bg-blue-50 dark:bg-[#00e5ff]/10 text-blue-600 dark:text-[#00e5ff] border border-blue-200 dark:border-[#00e5ff]/30 p-3 text-xs transition-colors';
+    message.classList.remove('hidden');
     try {
         const response = await fetch(`/api/olts/${activeOltId}/test`, {method: 'POST'});
         const result = await response.json();
         const snmp = result.SNMP;
         const telnet = result.Telnet;
         message.textContent = `SNMP: ${snmp?.ok ? 'Connected' : 'Failed'} — ${typeof snmp?.detail === 'object' ? JSON.stringify(snmp.detail) : (snmp?.detail || 'Tidak ada detail')} | Telnet: ${telnet?.ok ? 'Connected' : 'Failed'} — ${telnet?.detail || 'Tidak ada detail'}`;
-        message.className = 'rounded-lg p-3 text-xs ' + (snmp?.ok && telnet?.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800');
+        message.className = 'rounded-lg p-3 text-xs border transition-colors ' + (snmp?.ok && telnet?.ok ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30' : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/30');
         setTimeout(() => location.reload(), 1800);
     } catch (error) {
         message.textContent = error.message;
-        message.className = 'rounded-lg bg-rose-50 p-3 text-xs text-rose-700';
+        message.className = 'rounded-lg bg-rose-50 dark:bg-[#ff3366]/10 text-rose-600 dark:text-[#ff3366] border border-rose-200 dark:border-[#ff3366]/30 p-3 text-xs transition-colors';
     } finally {
         button.disabled = false;
         button.textContent = 'Test Connection';
@@ -263,7 +423,7 @@ async function testOltConnection() {
 }
 
 async function confirmSync(id, name, button) {
-    document.getElementById('syncConfirmTitle').textContent = name;
+    document.getElementById('syncConfirmTitle').textContent = `SYNC CHASSIS: ${name}`;
     const shouldSync = await new Promise(resolve => {
         syncConfirmDialog.addEventListener('close', () => resolve(syncConfirmDialog.returnValue === 'yes'), {once: true});
         syncConfirmDialog.showModal();

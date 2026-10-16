@@ -81,6 +81,31 @@
                 <span class="text-right">COMMAND</span>
             </div>
 
+            {% if unregistered_onus and unregistered_onus|length > 0 %}
+            <div class="divide-y divide-slate-100 dark:divide-[#162a45]/60">
+                {% for onu in unregistered_onus %}
+                <div class="grid grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3.5 text-xs xl:grid-cols-[48px_minmax(0,1fr)_220px_140px] xl:gap-4 hover:bg-slate-50 dark:hover:bg-[#0d1d33]/50 transition duration-150">
+                    <span class="text-center font-mono text-slate-400 text-[11px]">{{ "%02d" % loop.index }}</span>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-slate-800 dark:text-slate-100 tracking-wide font-mono text-sm text-blue-600 dark:text-[#00e5ff]">{{ onu.sn }}</span>
+                            <span class="rounded bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 px-1.5 py-0.5 text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase">UNCONFIGURED</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-0.5">STATE: {{ onu.state }} // DISCOVERED ON RUNTIME</p>
+                    </div>
+                    <div class="hidden xl:block font-mono text-[11px]">
+                        <p class="font-bold text-slate-700 dark:text-slate-200">{{ onu.olt_name }}</p>
+                        <p class="text-blue-600 dark:text-[#00e5ff] text-[10px]">{{ onu.interface }}</p>
+                    </div>
+                    <div class="text-right">
+                        <button type="button" onclick="quickRegister('{{ onu.olt_id }}', '{{ onu.slot }}', '{{ onu.port }}', '{{ onu.onu_id }}', '{{ onu.sn }}')" class="rounded-lg bg-blue-600 dark:bg-[#00e5ff] hover:bg-blue-700 dark:hover:bg-[#00c8e0] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white dark:text-black shadow-md transition cursor-pointer">
+                            REGISTER NOW
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
             <div class="flex min-h-[300px] flex-col items-center justify-center px-4 py-12 text-center">
                 <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 dark:bg-[#060c17] border border-slate-200 dark:border-[#162a45] text-blue-600 dark:text-[#00e5ff] shadow-sm dark:shadow-[0_0_20px_rgba(0,229,255,0.1)] transition-colors">
                     <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,6 +119,7 @@
                     Sistem belum mendeteksi perangkat ONU baru pada PON link. Jalankan pre-registrasi manual untuk menambahkan profil antrean.
                 </p>
             </div>
+            {% endif %}
         </section>
     </div>
 
@@ -121,7 +147,7 @@
                         <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">TARGET OLT CHASSIS</label>
                         <select id="oltSelect" required class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 text-xs text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition cursor-pointer transition-colors">
                             <option value="">SELECT OLT CHASSIS</option>
-                            {% for olt in olts %}<option value="{{ olt.ip_address }}" data-name="{{ olt.name }}">{{ olt.name }} — {{ olt.ip_address }}</option>{% endfor %}
+                            {% for olt in olts %}<option value="{{ olt.ip_address }}" data-id="{{ olt.id }}" data-name="{{ olt.name }}">{{ olt.name }} — {{ olt.ip_address }}</option>{% endfor %}
                         </select>
                     </div>
                     <fieldset>
@@ -141,6 +167,8 @@
             <!-- DETAIL CONFIGURATION SECTIONS -->
             <div id="configSections" class="hidden space-y-6">
                 <input id="formOltIp" name="olt_ip" type="hidden">
+                <input id="formOltId" name="olt_id" type="hidden">
+                <input id="formOltName" name="olt_name" type="hidden">
                 <input id="formSlot" name="slot" type="hidden">
                 <input id="formPort" name="port" type="hidden">
                 <input id="formOnuId" name="onu_id" type="hidden">
@@ -204,6 +232,8 @@
                                 <option value="">SELECT MODEL</option>
                                 <option value="ZTE-F660">ZTE-F660</option>
                                 <option value="ZTE-F670L">ZTE-F670L</option>
+                                <option value="HG6145D2">HG6145D2</option>
+                                <option value="HG6045F3">HG6045F3</option>
                                 <option value="Generic-ONT">Generic ONT</option>
                             </select>
                         </label>
@@ -278,8 +308,6 @@
                                     <span id="gponVlanLabel">VLAN ID</span>
                                     <select id="gponVlan" class="mt-1 w-full rounded-lg bg-white dark:bg-[#08111e] border border-slate-300 dark:border-[#162a45] px-3 py-2 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 dark:focus:border-[#00e5ff] cursor-pointer font-mono transition-colors">
                                         <option value="">SELECT VLAN</option>
-                                        <option value="100">VLAN 100</option>
-                                        <option value="200">VLAN 200</option>
                                     </select>
                                 </label>
 
@@ -297,16 +325,12 @@
                                 <label id="gponUntagVlanWrap" class="hidden text-[10px] font-bold uppercase text-slate-500">VLAN ID
                                     <select id="gponUntagVlan" class="mt-1 w-full rounded-lg bg-white dark:bg-[#08111e] border border-slate-300 dark:border-[#162a45] px-3 py-2 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 dark:focus:border-[#00e5ff] transition-colors">
                                         <option value="">SELECT VLAN</option>
-                                        <option value="100">VLAN 100</option>
-                                        <option value="200">VLAN 200</option>
                                     </select>
                                 </label>
 
                                 <label id="gponMvlanWrap" class="hidden text-[10px] font-bold uppercase text-slate-500 md:col-span-2">MVLAN
                                     <select id="gponMvlan" class="mt-1 w-full rounded-lg bg-white dark:bg-[#08111e] border border-slate-300 dark:border-[#162a45] px-3 py-2 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 dark:focus:border-[#00e5ff] transition-colors">
                                         <option value="">SELECT MVLAN</option>
-                                        <option value="100">MVLAN 100</option>
-                                        <option value="200">MVLAN 200</option>
                                     </select>
                                 </label>
 
@@ -315,8 +339,6 @@
                                     <div id="gponBridgeVlanList" class="space-y-2 mt-1">
                                         <select id="gponBridgeVlan" class="gpon-bridge-vlan w-full rounded-lg bg-white dark:bg-[#08111e] border border-slate-300 dark:border-[#162a45] px-3 py-2 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 dark:focus:border-[#00e5ff] transition-colors">
                                             <option value="">SELECT VLAN</option>
-                                            <option value="100">VLAN 100</option>
-                                            <option value="200">VLAN 200</option>
                                         </select>
                                     </div>
                                     <button id="addGponBridgeVlan" type="button" class="mt-2 rounded bg-white dark:bg-[#08111e] border border-slate-300 dark:border-[#162a45] px-2.5 py-1 text-[10px] font-bold uppercase text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white cursor-pointer transition-colors">+ ADD VLAN</button>
@@ -325,14 +347,12 @@
                                 <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">DOWNLOAD PROFILE
                                     <select id="gponDownloadProfile" class="mt-1 w-full rounded-lg bg-white dark:bg-[#08111e] border border-slate-300 dark:border-[#162a45] px-3 py-2 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 dark:focus:border-[#00e5ff] cursor-pointer transition-colors">
                                         <option value="">SELECT PROFILE</option>
-                                        <option>Residential 100M</option>
                                     </select>
                                 </label>
 
                                 <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">UPLOAD PROFILE
                                     <select id="gponUploadProfile" class="mt-1 w-full rounded-lg bg-white dark:bg-[#08111e] border border-slate-300 dark:border-[#162a45] px-3 py-2 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 dark:focus:border-[#00e5ff] cursor-pointer transition-colors">
                                         <option value="">SELECT PROFILE</option>
-                                        <option>Residential 100M</option>
                                     </select>
                                 </label>
 
@@ -445,9 +465,6 @@
                                     <div class="epon-vlan-row flex items-center gap-2">
                                         <select id="eponVlan" required class="epon-vlan-id w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3 py-2 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 dark:focus:border-[#00e5ff] transition-colors">
                                             <option value="">SELECT VLAN</option>
-                                            <option value="100">VLAN 100</option>
-                                            <option value="200">VLAN 200</option>
-                                            <option value="300">VLAN 300</option>
                                         </select>
                                         <button type="button" class="epon-vlan-remove hidden flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-300 dark:border-[#162a45] bg-slate-50 dark:bg-[#060c17] text-slate-500 hover:text-rose-600 dark:hover:text-[#ff3366] hover:border-rose-400 dark:hover:border-[#ff3366]/40 cursor-pointer transition-colors" aria-label="Remove VLAN ID">×</button>
                                     </div>
@@ -459,7 +476,7 @@
                                         <label class="block w-full text-[10px] font-bold uppercase text-slate-500">VLAN ID
                                             <input class="qinq-vlan-id mt-1 w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3 py-2 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 dark:focus:border-[#00e5ff] transition-colors" type="number" min="1" max="4094" placeholder="100">
                                         </label>
-                                        <button type="button" class="qinq-vlan-remove hidden mb-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-300 dark:border-[#162a45] bg-slate-50 dark:bg-[#060c17] text-slate-500 hover:text-rose-600 dark:hover:text-[#ff3366] cursor-pointer transition-colors" aria-label="Remove VLAN ID">×</button>
+                                        <button type="button" class="qinq-vlan-remove mb-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-300 dark:border-[#162a45] bg-slate-50 dark:bg-[#060c17] text-slate-500 hover:text-rose-600 dark:hover:text-[#ff3366] cursor-pointer transition-colors" aria-label="Remove VLAN ID">×</button>
                                     </div>
                                 </div>
                                 <button id="addQinqVlanId" type="button" class="mt-2 hidden rounded bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-2.5 py-1 text-[10px] font-bold uppercase text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white cursor-pointer transition-colors">+ ADD QINQ ID</button>
@@ -522,7 +539,7 @@
 </dialog>
 
 <!-- ========================================================= -->
-<!-- 3. JAVASCRIPT GLOBAL LOGIC (100% PRESERVED FUNCTIONALITY) -->
+<!-- 3. JAVASCRIPT GLOBAL LOGIC -->
 <!-- ========================================================= -->
 <script>
 const unconfiguredPage = document.getElementById('unconfiguredPage');
@@ -549,6 +566,151 @@ document.getElementById('backToUnconfigured').addEventListener('click', () => {
     preRegisterPage.classList.add('hidden'); unconfiguredPage.classList.remove('hidden');
 });
 
+function quickRegister(oltId, slot, port, onuId, sn) {
+    unconfiguredPage.classList.add('hidden');
+    preRegisterPage.classList.remove('hidden');
+    
+    const oltSelect = document.getElementById('oltSelect');
+    let matchedOption = null;
+    for (let opt of oltSelect.options) {
+        if (String(opt.dataset.id) === String(oltId)) {
+            oltSelect.value = opt.value;
+            matchedOption = opt;
+            break;
+        }
+    }
+    
+    // Sinkronisasi data OLT ke form hidden input
+    if (matchedOption) {
+        document.getElementById('formOltIp').value = matchedOption.value;
+        document.getElementById('formOltId').value = matchedOption.dataset.id || '';
+        document.getElementById('formOltName').value = matchedOption.dataset.name || '';
+    }
+    
+    const gponRadio = document.querySelector('input[name="ponType"][value="GPON"]');
+    if (gponRadio) {
+        gponRadio.checked = true;
+    }
+    
+    updateStartState();
+    
+    document.getElementById('cardSelect').value = slot;
+    document.getElementById('formSlot').value = slot;
+    
+    const ponSelect = document.getElementById('ponSelect');
+    ponSelect.disabled = false;
+    ponSelect.value = port;
+    document.getElementById('formPort').value = port;
+    
+    if (onuId) {
+        document.getElementById('onuIdCustom').click();
+        document.getElementById('customId').value = onuId;
+        document.getElementById('formOnuId').value = onuId;
+    }
+    
+    document.getElementById('serialInput').value = sn;
+
+    // Load VLAN dan Profil otomatis dari sasis OLT
+    fetchAndPopulateVlans(oltId);
+    fetchAndPopulateProfiles(oltId);
+}
+
+// 1. Fungsi mengambil dan mengisi VLAN otomatis
+async function fetchAndPopulateVlans(oltId, selectedVlan = '') {
+    const vlanSelects = document.querySelectorAll('#gponVlan, #gponUntagVlan, #gponMvlan, .gpon-bridge-vlan, #eponVlan');
+    
+    vlanSelects.forEach(select => {
+        select.innerHTML = '<option value="">LOADING VLANS DARI OLT...</option>';
+        select.disabled = true;
+    });
+
+    try {
+        const response = await fetch(`/api/olts/${oltId}/vlans`);
+        const data = await response.json();
+
+        if (data.status === 'success' && data.vlans && data.vlans.length > 0) {
+            vlanSelects.forEach(select => {
+                select.innerHTML = '<option value="">SELECT VLAN</option>';
+                data.vlans.forEach(vlan => {
+                    const opt = document.createElement('option');
+                    opt.value = vlan;
+                    opt.textContent = `VLAN ${vlan}`;
+                    select.appendChild(opt);
+                });
+                select.disabled = false;
+                if (selectedVlan) select.value = selectedVlan;
+            });
+        } else {
+            vlanSelects.forEach(select => {
+                select.innerHTML = '<option value="">TIDAK ADA VLAN TERDETEKSI</option>';
+                select.disabled = false;
+            });
+        }
+    } catch (err) {
+        console.error("Gagal load VLAN:", err);
+        vlanSelects.forEach(select => {
+            select.innerHTML = '<option value="">GAGAL MENGAMBIL VLAN</option>';
+            select.disabled = false;
+        });
+    }
+}
+
+// 2. Fungsi mengambil dan mengisi Download/Upload Profile otomatis
+async function fetchAndPopulateProfiles(oltId) {
+    const downSelect = document.getElementById('gponDownloadProfile');
+    const upSelect = document.getElementById('gponUploadProfile');
+
+    if (!downSelect || !upSelect) return;
+
+    downSelect.innerHTML = '<option value="">LOADING DARI OLT...</option>';
+    upSelect.innerHTML = '<option value="">LOADING DARI OLT...</option>';
+    downSelect.disabled = true;
+    upSelect.disabled = true;
+
+    try {
+        const response = await fetch(`/api/olts/${oltId}/profiles`);
+        const data = await response.json();
+
+        if (data.status === 'success') {
+            // Isi Downstream Traffic Profile
+            downSelect.innerHTML = '<option value="">SELECT PROFILE</option>';
+            (data.download_profiles || []).forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p === '1G' ? '1G (Unlimited)' : p;
+                downSelect.appendChild(opt);
+            });
+            if ((data.download_profiles || []).includes('1G')) {
+                downSelect.value = '1G';
+            }
+
+            // Isi Upstream T-CONT Profile
+            upSelect.innerHTML = '<option value="">SELECT PROFILE</option>';
+            (data.upload_profiles || []).forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p === '1G' ? '1G (Unlimited)' : p;
+                upSelect.appendChild(opt);
+            });
+            if ((data.upload_profiles || []).includes('1G')) {
+                upSelect.value = '1G';
+            }
+
+            downSelect.disabled = false;
+            upSelect.disabled = false;
+        } else {
+            downSelect.innerHTML = '<option value="">GAGAL MENGAMBIL PROFIL</option>';
+            upSelect.innerHTML = '<option value="">GAGAL MENGAMBIL PROFIL</option>';
+        }
+    } catch (err) {
+        console.error("Gagal load profil OLT:", err);
+        downSelect.innerHTML = '<option value="">ERROR KONEKSI</option>';
+        upSelect.innerHTML = '<option value="">ERROR KONEKSI</option>';
+        downSelect.disabled = false;
+        upSelect.disabled = false;
+    }
+}
+
 function updateStartState() {
     const ready = Boolean(document.getElementById('oltSelect').value && selectedPonType());
     configSections.classList.toggle('hidden', !ready);
@@ -556,7 +718,22 @@ function updateStartState() {
     if (ready) renderConfigType();
     else document.getElementById('ponSelect').disabled = true;
 }
-document.getElementById('oltSelect').addEventListener('change', updateStartState);
+
+document.getElementById('oltSelect').addEventListener('change', (e) => {
+    updateStartState();
+    const selectedOption = e.target.selectedOptions[0];
+    const oltId = selectedOption?.dataset.id;
+    
+    // Sinkronisasi hidden input saat OLT dipilih manual
+    document.getElementById('formOltIp').value = selectedOption ? selectedOption.value : '';
+    document.getElementById('formOltId').value = oltId || '';
+    document.getElementById('formOltName').value = selectedOption ? (selectedOption.dataset.name || '') : '';
+
+    if (oltId) {
+        fetchAndPopulateVlans(oltId);
+        fetchAndPopulateProfiles(oltId);
+    }
+});
 
 function renderConfigType() {
     const type = selectedPonType();
@@ -582,7 +759,7 @@ function renderConfigType() {
         document.getElementById('formPort').value = '1';
         ponSelect.disabled = true;
     } else {
-        document.getElementById('formSlot').value = cardSelect.value;
+        document.getElementById('formSlot').value = cardSelect.value || '1';
         document.getElementById('formPort').value = '1';
         ponSelect.value = '';
         ponSelect.disabled = true;
@@ -697,7 +874,6 @@ document.getElementById('cardSelect').addEventListener('change', event => {
     document.getElementById('formSlot').value = event.target.value;
 });
 document.getElementById('ponSelect').addEventListener('change', event => document.getElementById('formPort').value = event.target.value || '1');
-document.getElementById('oltSelect').addEventListener('change', event => document.getElementById('formOltIp').value = event.target.value);
 
 document.getElementById('onuIdAuto').addEventListener('click', () => {
     document.getElementById('customIdWrap').classList.add('hidden'); document.getElementById('customId').required = false;
@@ -799,9 +975,15 @@ document.querySelectorAll('[id^="addGponBridgeVlan"]').forEach(addButton => addB
     vlan.className = 'gpon-bridge-vlan w-full rounded-lg bg-slate-50 dark:bg-[#08111e] border border-slate-300 dark:border-[#162a45] px-3 py-2 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-blue-500 dark:focus:border-[#00e5ff] transition-colors';
     vlan.required = !field('gponBridgeVlanWrap').classList.contains('hidden');
     vlan.disabled = !vlan.required;
-    vlan.add(new Option('SELECT VLAN', ''));
-    vlan.add(new Option('VLAN 100', '100'));
-    vlan.add(new Option('VLAN 200', '200'));
+    
+    // Sinkronisasi opsi VLAN dinamis yang sudah ter-load
+    const sourceSelect = document.getElementById('gponVlan');
+    if (sourceSelect && sourceSelect.options.length > 0) {
+        vlan.innerHTML = sourceSelect.innerHTML;
+    } else {
+        vlan.add(new Option('SELECT VLAN', ''));
+    }
+
     const removeButton = document.createElement('button');
     removeButton.type = 'button';
     removeButton.className = 'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-300 dark:border-[#162a45] bg-white dark:bg-[#08111e] text-slate-500 hover:text-rose-600 dark:hover:text-[#ff3366] cursor-pointer transition-colors';
@@ -907,34 +1089,71 @@ form.addEventListener('submit', async event => {
     const bridgeVlans = [...document.querySelectorAll('.gpon-bridge-vlan')].map(select => select.value).filter(Boolean);
     const missingLocation = !document.getElementById('formSlot').value || !document.getElementById('formPort').value || (type === 'GPON' && !document.getElementById('cardSelect').value);
     
-    if (!serial || !name || missingLocation) {
-        const errorText = type === 'GPON'
-            ? 'Lengkapi OLT, Card, Serial Number, dan Name terlebih dahulu.'
-            : 'Lengkapi OLT, Serial Number, dan Name terlebih dahulu.';
+    // Pastikan nilai OLT IP tidak kosong
+    let oltIp = document.getElementById('formOltIp').value;
+    const oltSelect = document.getElementById('oltSelect');
+    if (!oltIp && oltSelect && oltSelect.value) {
+        oltIp = oltSelect.value;
+        document.getElementById('formOltIp').value = oltIp;
+    }
+
+    if (!serial || !name || missingLocation || !oltIp) {
+        const errorText = !oltIp
+            ? 'Pilih Target OLT Chassis terlebih dahulu.'
+            : (type === 'GPON' ? 'Lengkapi OLT, Card, Serial Number, dan Name terlebih dahulu.' : 'Lengkapi OLT, Serial Number, dan Name terlebih dahulu.');
         message.textContent = errorText;
         message.className = 'rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-[#251704]/40 p-3 text-xs text-amber-600 dark:text-amber-300 transition-colors';
         message.classList.remove('hidden');
         showSaveFeedback(errorText, 'Periksa data ONU');
         return;
     }
+
+    // Tentukan profil paket yang dipilih
+    let selectedProfile = 'DEFAULT';
+    if (type === 'EPON') {
+        selectedProfile = document.getElementById('eponSla').value || 'DEFAULT';
+    } else {
+        const downProfile = document.getElementById('gponDownloadProfile')?.value;
+        const upProfile = document.getElementById('gponUploadProfile')?.value;
+        selectedProfile = downProfile || upProfile || (document.getElementById('tr069Toggle').checked ? document.getElementById('tr069Select').value : 'DEFAULT');
+    }
     
     const data = {
-        olt_ip: document.getElementById('formOltIp').value,
+        olt_ip: oltIp,
+        olt_id: document.getElementById('formOltId').value ? Number(document.getElementById('formOltId').value) : null,
+        olt_name: document.getElementById('formOltName').value || null,
         slot: Number(document.getElementById('formSlot').value),
         port: Number(document.getElementById('formPort').value),
         onu_id: document.getElementById('formOnuId').value ? Number(document.getElementById('formOnuId').value) : null,
-        sn_onu: serial, nama_pelanggan: name,
-        description: [document.getElementById('descriptionInput').value, `PON Type: ${type}`, `VLAN ID: ${vlan}`, bridgeVlans.length > 1 ? `Bridge VLAN IDs: ${bridgeVlans.join(', ')}` : '', type === 'EPON' ? `VLAN Mode: ${vlanMode}` : `WAN: ${gponMethod} | VLAN Mode: ${gponVlanMode} | Service: ${selectedGpon('service')} | WAN Mode: ${gponWanMode} | WAN-IP Mode: ${gponIpMode}`, type === 'EPON' && eponVlans.length > 1 ? `Additional VLAN IDs: ${eponVlans.slice(1).join(', ')}` : '', serviceType.includes('IPTV') ? `MVLAN: ${document.getElementById('gponMvlan').value}` : '', gponIpMode === 'STATIC' ? `IP: ${document.getElementById('gponIpAddress').value} ${document.getElementById('gponSubnetMask').value}` : '', extraVlans.length ? `QinQ VLAN IDs: ${extraVlans.join(', ')}` : '', gponQinqNames.length ? `QinQ VLAN Names: ${gponQinqNames.join(', ')}` : ''].filter(Boolean).join(' | '),
+        sn_onu: serial, 
+        nama_pelanggan: name,
+        description: [
+            document.getElementById('descriptionInput').value, 
+            `PON Type: ${type}`, 
+            `VLAN ID: ${vlan}`, 
+            bridgeVlans.length > 1 ? `Bridge VLAN IDs: ${bridgeVlans.join(', ')}` : '', 
+            type === 'EPON' ? `VLAN Mode: ${vlanMode}` : `WAN: ${gponMethod} | VLAN Mode: ${gponVlanMode} | Service: ${selectedGpon('service')} | WAN Mode: ${gponWanMode} | WAN-IP Mode: ${gponIpMode}`, 
+            type === 'EPON' && eponVlans.length > 1 ? `Additional VLAN IDs: ${eponVlans.slice(1).join(', ')}` : '', 
+            serviceType.includes('IPTV') ? `MVLAN: ${document.getElementById('gponMvlan').value}` : '', 
+            gponIpMode === 'STATIC' ? `IP: ${document.getElementById('gponIpAddress').value} ${document.getElementById('gponSubnetMask').value}` : '', 
+            extraVlans.length ? `QinQ VLAN IDs: ${extraVlans.join(', ')}` : '', 
+            gponQinqNames.length ? `QinQ VLAN Names: ${gponQinqNames.join(', ')}` : ''
+        ].filter(Boolean).join(' | '),
         actual_type: document.getElementById('onuTypeSelect').value || type,
-        vlan_id: Number(vlan || 100), pppoe_user: username || 'demo-user', pppoe_pass: password || 'demo-pass',
-        profil_paket: type === 'EPON'
-            ? (document.getElementById('eponSla').value || 'DEFAULT')
-            : (document.getElementById('tr069Toggle').checked ? document.getElementById('tr069Select').value : 'DEFAULT')
+        vlan_id: Number(vlan || 100), 
+        pppoe_user: username || 'demo-user', 
+        pppoe_pass: password || 'demo-pass',
+        profil_paket: selectedProfile
     };
 
-    saveButton.disabled = true; saveButton.textContent = 'SAVING...';
+    saveButton.disabled = true; 
+    saveButton.textContent = 'SAVING...';
     try {
-        const response = await fetch('/api/v1/register-onu', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+        const response = await fetch('/api/v1/register-onu', {
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify(data)
+        });
         let result = {};
         try { result = await response.json(); } catch {}
         if (!response.ok) {
@@ -958,4 +1177,4 @@ form.addEventListener('submit', async event => {
     }
 });
 </script>
-{% endblock %}g
+{% endblock %}

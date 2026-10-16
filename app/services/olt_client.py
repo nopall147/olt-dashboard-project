@@ -69,10 +69,17 @@ def open_telnet(olt):
     password = get_telnet_password(olt)
     if not password:
         raise RuntimeError(f"Set OLT_{env_key(olt.name)}_TELNET_PASSWORD di environment")
-    return ConnectHandler(device_type="zte_zxros", host=olt.ip_address,
-                          username=olt.telnet_username, password=password,
-                          port=olt.telnet_port, conn_timeout=5, banner_timeout=8,
-                          auth_timeout=8, fast_cli=False)
+    return ConnectHandler(
+        device_type="zte_zxros_telnet",
+        host=olt.ip_address,
+        username=olt.telnet_username,
+        password=password,
+        port=olt.telnet_port,
+        conn_timeout=15,
+        banner_timeout=15,
+        auth_timeout=15,
+        fast_cli=False
+    )
 
 
 def test_telnet(olt):

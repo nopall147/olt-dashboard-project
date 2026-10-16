@@ -11,16 +11,16 @@ def deploy_onu_zte(olt_ip, username, password, data_input):
     commands_text = template.render(**data_input)
     commands_list = [line.strip() for line in commands_text.split('\n') if line.strip()]
 
-    # 2. Detail koneksi Telnet/SSH
+    # 2. Detail koneksi Telnet
     device = {
-        'device_type': 'zte_zxros',
+        'device_type': 'zte_zxros_telnet',
         'host': olt_ip,
         'username': username,
         'password': password,
         'port': data_input.get('telnet_port', 23),
-        'conn_timeout': 8,
-        'banner_timeout': 12,
-        'auth_timeout': 12,
+        'conn_timeout': 15,
+        'banner_timeout': 15,
+        'auth_timeout': 15,
         'fast_cli': False,
     }
 
@@ -28,7 +28,11 @@ def deploy_onu_zte(olt_ip, username, password, data_input):
     net_connect = None
     try:
         net_connect = ConnectHandler(**device)
-        output = net_connect.send_config_set(commands_list)
+        output = net_connect.send_config_set(
+            commands_list,
+            read_timeout=30,
+            cmd_verify=False
+        )
         if any(token in output.lower() for token in ("% error", "invalid command", "unknown command", "failed", "failure", "incomplete command")):
             return {"status": "error", "message": output}
         return {"status": "success", "output": output}

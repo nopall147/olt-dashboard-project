@@ -21,9 +21,7 @@ from dotenv import load_dotenv
 # Load environment variables (wajib dieksekusi sebelum modul yang membaca env)
 load_dotenv()
 
-
-
-#MAIL LUPA PASSWORD
+# MAIL LUPA PASSWORD
 from app.services.email_service import send_otp_email
 
 class ForgotPasswordRequest(BaseModel):
@@ -39,6 +37,7 @@ from app.database import Base, SessionLocal, engine, get_db
 from app.models import ActivityEvent, OLTConfig, OLTConfigBackup, OLTSettingEntry, OnuDevice, TrafficSample, User
 from app.services.olt_client import (
     encrypt_olt_secret, env_key, get_telnet_password, 
+    open_telnet, 
     read_onu_traffic, read_pon_snapshot, read_pon_state, 
     test_snmp, test_telnet
 )
@@ -47,7 +46,6 @@ from app.services.netmiko_driver import deploy_onu_zte
 # Inisialisasi tabel database
 Base.metadata.create_all(bind=engine)
 
-# Migrasi idempotent skema database
 # Migrasi idempotent skema database
 with engine.begin() as connection:
     connection.execute(text("ALTER TABLE olt_configs ADD COLUMN IF NOT EXISTS snmp_status VARCHAR(40)"))
@@ -61,7 +59,6 @@ with engine.begin() as connection:
     connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT TRUE"))
     connection.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS image TEXT"))
     connection.execute(text("ALTER TABLE olt_setting_entries ADD COLUMN IF NOT EXISTS olt_id INTEGER"))
-    # Tambahkan 2 baris ini:
     connection.execute(text("ALTER TABLE olt_setting_entries ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()"))
     connection.execute(text("ALTER TABLE olt_setting_entries ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE"))
 
@@ -126,6 +123,23 @@ def format_uptime(ticks):
     hours, seconds = divmod(seconds, 3600)
     minutes = seconds // 60
     return f"{days} hari {hours} jam {minutes} menit"
+
+# ==============================================================================
+# API: ONU ADVANCED SETTINGS & MANAGEMENT ENGINE
+# ==============================================================================
+
+class OnuUpdateMetaInput(BaseModel):
+    customer_name: str
+    description: str | None = None
+
+class OnuMoveInput(BaseModel):
+    mode: str  # 'auto' atau 'manual'
+    target_slot: int
+    target_port: int
+    target_onu_id: int | None = None
+
+class OnuReplaceSnInput(BaseModel):
+    new_sn: str
 
 # ==============================================================================
 # INISIALISASI DATA AWAL (OLT & ADMIN DEFAULT)
@@ -315,45 +329,37 @@ def api_update_profile(
     db.add(audit_event(request, "Update", f"User {user.username} memperbarui profil"))
     db.commit()
     return {"status": "success", "message": "Profil berhasil disimpan"}
-# ==============================================================================
-# ROUTES: LUPA PASSWWORD
-# ==============================================================================
-from fastapi import HTTPException, status
 
-# 1. Endpoint untuk merender halaman HTML Lupa Password
+# ==============================================================================
+# ROUTES: LUPA PASSWORD
+# ==============================================================================
 @app.get("/forgot-password", response_class=HTMLResponse)
 async def forgot_password_page(request: Request):
     return templates.TemplateResponse(request=request, name="forgot_password.html", context={})
     
-# 2. API untuk Generate OTP & Kirim Email
 @app.post("/api/auth/forgot-password")
 async def api_forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    # Cek apakah email ada di database (Ganti 'User' dengan nama model pengguna Anda)
     user = db.query(User).filter(User.email == req.email).first()
     if not user:
-        # Demi keamanan, kita tetap pura-pura berhasil agar hacker tidak tahu email terdaftar atau tidak
         return {"message": "Jika email terdaftar, OTP akan dikirim."}
 
-    # Generate 6 digit angka acak
     otp = str(random.randint(100000, 999999))
-    expire_time = datetime.utcnow() + timedelta(minutes=10)
+    expire_time = datetime.now(timezone.utc) + timedelta(minutes=10)
 
-    # Simpan ke database
+    from app.models import PasswordResetOTP
     new_otp = PasswordResetOTP(email=req.email, otp_code=otp, expires_at=expire_time)
     db.add(new_otp)
     db.commit()
 
-    # Kirim email
     email_sent = await send_otp_email(req.email, otp)
     if not email_sent:
         raise HTTPException(status_code=500, detail="Gagal mengirim email server.")
 
     return {"message": "OTP berhasil dikirim"}
 
-# 3. API untuk Validasi OTP & Update Password
 @app.post("/api/auth/reset-password")
 async def api_reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
-    # Cari OTP yang cocok
+    from app.models import PasswordResetOTP
     otp_record = db.query(PasswordResetOTP).filter(
         PasswordResetOTP.email == req.email,
         PasswordResetOTP.otp_code == req.otp_code
@@ -362,23 +368,17 @@ async def api_reset_password(req: ResetPasswordRequest, db: Session = Depends(ge
     if not otp_record:
         raise HTTPException(status_code=400, detail="Kode OTP salah atau tidak ditemukan.")
 
-    if otp_record.expires_at < datetime.utcnow():
+    if otp_record.expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="Kode OTP sudah kedaluwarsa. Silakan minta ulang.")
 
-    # Cari user
     user = db.query(User).filter(User.email == req.email).first()
     if not user:
         raise HTTPException(status_code=404, detail="Akun tidak ditemukan.")
 
-    # Update password user (Pastikan Anda menggunakan fungsi hash password proyek Anda, misal pwd_context.hash)
-    # user.password = pwd_context.hash(req.new_password) # <-- Buka komentar baris ini dan sesuaikan dengan hashing Anda
-    
-    # CONTOH SEMENTARA JIKA BELUM PAKAI HASHING (Sangat tidak disarankan untuk production):
-    user.password = req.new_password 
+    user.password_hash = hash_password(req.new_password)
+    user.plain_password = req.new_password
 
-    # Hapus data OTP agar tidak bisa dipakai lagi
     db.query(PasswordResetOTP).filter(PasswordResetOTP.email == req.email).delete()
-    
     db.commit()
 
     return {"message": "Password berhasil diubah"}
@@ -487,10 +487,8 @@ def reveal_user_password(
     }
 
 # ==============================================================================
-# ROUTES: OLT, MONITORING & DASHBOARD (SESUAI MATRIKS RBAC)
+# ROUTES: OLT, MONITORING & DASHBOARD
 # ==============================================================================
-
-# Dashboard: Semua Role (Super Admin, NOC, Viewer)
 @app.get("/", response_class=HTMLResponse)
 def dashboard_page(request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC, Role.VIEWER]))):
     onus = db.query(OnuDevice).all()
@@ -509,7 +507,185 @@ def dashboard_page(request: Request, db: Session = Depends(get_db), user: User =
     dashboard_data = {"summary": {"total_olts": len(names), "total_onus": total, "selected_olt_id": selected_olt.id if selected_olt else None, "online_onus": counts["Online"], "online_percentage": percentage(counts["Online"]), "dying_gasp_onus": counts["DyingGasp"], "dying_gasp_percentage": percentage(counts["DyingGasp"]), "los_onus": counts["LOS"], "los_percentage": percentage(counts["LOS"]), "offline_onus": counts["Offline"], "offline_percentage": percentage(counts["Offline"])}, "olts": olt_rows}
     return templates.TemplateResponse(request=request, name="dashboard.html", context={"data": dashboard_data})
 
-# ONU & All ONUs: Semua Role (Super Admin, NOC, Viewer)
+@app.get("/api/onu/{onu_id}/detail")
+def get_onu_detail(
+    onu_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC, Role.VIEWER]))
+):
+    onu = db.query(OnuDevice).filter(OnuDevice.id == onu_id).first()
+    if not onu:
+        raise HTTPException(status_code=404, detail="ONU tidak ditemukan")
+
+    olt = db.query(OLTConfig).filter(OLTConfig.name == onu.olt_name).first()
+    
+    # Ambil telemetri live jika OLT tersedia
+    online_duration = "N/A"
+    rx_onu = onu.rx_onu
+    rx_olt = onu.rx_olt
+    state = onu.status
+
+    if olt:
+        try:
+            conn = open_telnet(olt)
+            # Ambil status detail
+            status_out = conn.send_command(f"show gpon onu state {onu.gpon_port}", read_timeout=10)
+            for line in status_out.splitlines():
+                if onu.gpon_port in line:
+                    parts = line.split()
+                    if len(parts) >= 4:
+                        state = parts[3]
+            
+            # Ambil detail optical power
+            opt_out = conn.send_command(f"show gpon onu optical-power {onu.gpon_port}", read_timeout=10)
+            rx_onu_match = re.search(r"Rx optical power\s*:\s*([-\d.]+)\s*\(dbm\)", opt_out, re.IGNORECASE)
+            if rx_onu_match:
+                rx_onu = float(rx_onu_match.group(1))
+
+            rx_olt_match = re.search(r"OLT Rx optical power\s*:\s*([-\d.]+)\s*\(dbm\)", opt_out, re.IGNORECASE)
+            if rx_olt_match:
+                rx_olt = float(rx_olt_match.group(1))
+
+            # Ambil online duration / uptime
+            detail_out = conn.send_command(f"show gpon onu detail-info {onu.gpon_port}", read_timeout=10)
+            duration_match = re.search(r"Online Duration\s*:\s*([^\r\n]+)", detail_out, re.IGNORECASE)
+            if duration_match:
+                online_duration = duration_match.group(1).strip()
+
+            conn.disconnect()
+        except Exception as e:
+            print(f"Gagal mengambil live optical ONU {onu.sn_mac}: {e}")
+
+    return {
+        "status": "success",
+        "data": {
+            "id": onu.id,
+            "olt_name": onu.olt_name,
+            "gpon_port": onu.gpon_port,
+            "sn_mac": onu.sn_mac,
+            "actual_type": onu.actual_type or "ZTE-GPON",
+            "onu_type": getattr(onu, "onu_type", onu.actual_type or "ZTE-GPON"),
+            "customer_name": onu.customer_name,
+            "description": onu.description or "",
+            "state": state,
+            "rx_onu": rx_onu,
+            "rx_olt": rx_olt,
+            "online_duration": online_duration
+        }
+    }
+
+@app.post("/api/onu/{onu_id}/action")
+def execute_onu_action(
+    onu_id: int,
+    action: str = Form(...), # reboot, clear-config, show-config, resync
+    request: Request = None,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))
+):
+    onu = db.query(OnuDevice).filter(OnuDevice.id == onu_id).first()
+    if not onu:
+        raise HTTPException(status_code=404, detail="ONU tidak ditemukan")
+
+    olt = db.query(OLTConfig).filter(OLTConfig.name == onu.olt_name).first()
+    if not olt:
+        raise HTTPException(status_code=400, detail="OLT tidak terdaftar")
+
+    try:
+        conn = open_telnet(olt)
+        output = ""
+        
+        if action == "reboot":
+            output = conn.send_command(f"reset onu {onu.gpon_port}", read_timeout=10)
+        elif action == "clear-config":
+            output = conn.send_command(f"clear gpon onu config {onu.gpon_port}", read_timeout=15)
+        elif action == "show-config":
+            output = conn.send_command(f"show running-config interface {onu.gpon_port}", read_timeout=15)
+        elif action == "resync":
+            output = conn.send_command(f"show gpon onu detail-info {onu.gpon_port}", read_timeout=15)
+        
+        conn.disconnect()
+        db.add(audit_event(request, "Action", f"Eksekusi {action} pada ONU {onu.gpon_port} ({onu.sn_mac})"))
+        db.commit()
+        return {"status": "success", "action": action, "output": output}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Gagal mengeksekusi {action}: {e}")
+
+@app.post("/api/onu/{onu_id}/replace-sn")
+def replace_onu_sn(
+    onu_id: int,
+    payload: OnuReplaceSnInput,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))
+):
+    onu = db.query(OnuDevice).filter(OnuDevice.id == onu_id).first()
+    if not onu:
+        raise HTTPException(status_code=404, detail="ONU tidak ditemukan")
+
+    olt = db.query(OLTConfig).filter(OLTConfig.name == onu.olt_name).first()
+    clean_sn = payload.new_sn.strip().upper()
+    
+    # Eksekusi CLI modifikasi SN pada OLT
+    if olt:
+        try:
+            conn = open_telnet(olt)
+            port_base = onu.gpon_port.rsplit(":", 1)[0]
+            onu_num = onu.gpon_port.rsplit(":", 1)[1]
+            cmds = [
+                "conf t",
+                f"interface {port_base}",
+                f"onu {onu_num} sn {clean_sn}",
+                "exit",
+                "write"
+            ]
+            for cmd in cmds:
+                conn.send_command(cmd, read_timeout=5)
+            conn.disconnect()
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"Gagal update SN di OLT: {e}")
+
+    old_sn = onu.sn_mac
+    onu.sn_mac = clean_sn
+    db.add(audit_event(request, "Update", f"Ganti SN ONU {onu.gpon_port} dari {old_sn} ke {clean_sn}"))
+    db.commit()
+    return {"status": "success", "message": f"SN berhasil diganti ke {clean_sn}"}
+
+@app.delete("/api/onu/{onu_id}")
+def delete_onu_config(
+    onu_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))
+):
+    onu = db.query(OnuDevice).filter(OnuDevice.id == onu_id).first()
+    if not onu:
+        raise HTTPException(status_code=404, detail="ONU tidak ditemukan")
+
+    olt = db.query(OLTConfig).filter(OLTConfig.name == onu.olt_name).first()
+    if olt:
+        try:
+            conn = open_telnet(olt)
+            port_base = onu.gpon_port.rsplit(":", 1)[0]
+            onu_num = onu.gpon_port.rsplit(":", 1)[1]
+            cmds = [
+                "conf t",
+                f"interface {port_base}",
+                f"no onu {onu_num}",
+                "exit",
+                "write"
+            ]
+            for cmd in cmds:
+                conn.send_command(cmd, read_timeout=5)
+            conn.disconnect()
+        except Exception as e:
+            print(f"Warning: Gagal menghapus ONU dari OLT hardware: {e}")
+
+    db.delete(onu)
+    db.add(audit_event(request, "Delete", f"Hapus konfigurasi ONU {onu.sn_mac} ({onu.customer_name})"))
+    db.commit()
+    return {"status": "success", "message": "Konfigurasi ONU berhasil dihapus"}
+
+
 @app.get("/all-onus", response_class=HTMLResponse)
 def all_onus_page(request: Request, status: str = "ALL", db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC, Role.VIEWER]))):
     allowed_statuses = {"ALL", "Online", "DyingGasp", "LOS", "Offline"}
@@ -525,7 +701,7 @@ def all_onus_page(request: Request, status: str = "ALL", db: Session = Depends(g
     other_count = total_onus - (good_count + warning_count + critical_count)
     good_olt_count = sum(1 for onu in onus if onu.rx_olt is not None and onu.rx_olt >= good_threshold)
     warning_olt_count = sum(1 for onu in onus if onu.rx_olt is not None and warning_threshold <= onu.rx_olt < good_threshold)
-    critical_olt_count = sum(1 for onu in onus if onu.rx_olt is not None and onu.rx_olt < warning_threshold)
+    critical_olt_count = sum(1 for onu in onus if onu.rx_olt is not None and warning_olt_count <= onu.rx_olt < good_threshold)
     status_counts = {status_name: sum(1 for onu in onus if onu.status == status_name) for status_name in ("Online", "Offline", "LOS", "DyingGasp")}
     olt_names = sorted({onu.olt_name for onu in onus if onu.olt_name})
     card_names = sorted({onu.gpon_port.split("/")[1] for onu in onus if onu.gpon_port and len(onu.gpon_port.split("/")) > 2})
@@ -602,7 +778,6 @@ def customization_page(request: Request, db: Session = Depends(get_db), user: Us
         "settings": settings,
     })
 
-# Template TR069: Semua Role (Super Admin, NOC, Viewer)
 @app.get("/tr069-profiles", response_class=HTMLResponse)
 def tr069_profiles_page(request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC, Role.VIEWER]))):
     profiles = db.query(OLTSettingEntry).filter(OLTSettingEntry.category == "tr069_profile").order_by(OLTSettingEntry.name).all()
@@ -612,7 +787,6 @@ def tr069_profiles_page(request: Request, db: Session = Depends(get_db), user: U
         "olts": olts,
     })
 
-# Traffic Graphs: Semua Role (Super Admin, NOC, Viewer)
 @app.get("/graphs", response_class=HTMLResponse)
 def graphs_page(request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC, Role.VIEWER]))):
     onus = db.query(OnuDevice).order_by(OnuDevice.olt_name, OnuDevice.gpon_port).all()
@@ -621,7 +795,6 @@ def graphs_page(request: Request, db: Session = Depends(get_db), user: User = De
     pon_ports = sorted({onu.gpon_port.rsplit(":", 1)[0] for onu in onus if onu.gpon_port and ":" in onu.gpon_port})
     return templates.TemplateResponse(request=request, name="graphs.html", context={"onus": onus, "olt_names": olt_names, "card_slots": card_slots, "pon_ports": pon_ports})
 
-# OLT Management: Super Admin & NOC Saja (Viewer Ditolak)
 @app.get("/olt-management", response_class=HTMLResponse)
 def olt_management_page(request: Request, olt_id: int | None = None, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
     configs = db.query(OLTConfig).order_by(OLTConfig.name).all()
@@ -653,7 +826,6 @@ def olt_management_page(request: Request, olt_id: int | None = None, db: Session
         })
     return templates.TemplateResponse(request=request, name="olt_management.html", context={"olts": olts, "selected_olt_id": olt_id})
 
-# OLT Settings: Super Admin & NOC Saja (Viewer Ditolak)
 @app.get("/olt-settings", response_class=HTMLResponse)
 def olt_settings_page(request: Request, olt_id: int | None = None, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
     configs = db.query(OLTConfig).order_by(OLTConfig.name).all()
@@ -728,7 +900,6 @@ def olt_settings_page(request: Request, olt_id: int | None = None, db: Session =
         "selected_timezone": selected_timezone,
     })
 
-# Activity Log: Super Admin & NOC Saja (Viewer Ditolak)
 @app.get("/activity-log", response_class=HTMLResponse)
 def activity_log_page(request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
     events = db.query(ActivityEvent).order_by(ActivityEvent.created_at.desc()).limit(500).all()
@@ -739,23 +910,149 @@ def activity_log_page(request: Request, db: Session = Depends(get_db), user: Use
         totals[key] = db.query(sql_func.count(ActivityEvent.id)).filter(ActivityEvent.event_type == event_type).scalar() or 0
     return templates.TemplateResponse(request=request, name="activity_log.html", context={"logs": logs, "totals": totals})
 
-# Registrasi ONU: Hanya Super Admin & NOC yang bisa menambahkan
 @app.get("/add-onu", response_class=HTMLResponse)
 def manual_add_onu_page(request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
     return templates.TemplateResponse(request=request, name="add_onu.html", context={
         "olts": db.query(OLTConfig).order_by(OLTConfig.name).all()
     })
 
+# =====================================================================
+# OLT DYNAMIC PROVISIONING DATA (VLAN, T-CONT & TRAFFIC PROFILES)
+# =====================================================================
+
+@app.get("/api/olts/{olt_id}/vlans")
+def get_olt_vlans(
+    olt_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))
+):
+    """Mengambil daftar VLAN aktif langsung dari CLI OLT ZTE (show vlan summary)."""
+    olt = db.query(OLTConfig).filter(OLTConfig.id == olt_id).first()
+    if not olt:
+        raise HTTPException(status_code=404, detail="OLT tidak ditemukan")
+
+    try:
+        conn = open_telnet(olt)
+        output = conn.send_command("show vlan summary", read_timeout=15)
+        conn.disconnect()
+
+        vlans = []
+        capture = False
+        for line in output.splitlines():
+            line = line.strip()
+            if "Details are following:" in line:
+                capture = True
+                continue
+            if capture:
+                if not line or line.endswith("#"):
+                    break
+                parts = [v.strip() for v in line.split(",") if v.strip().isdigit()]
+                vlans.extend([int(v) for v in parts])
+
+        vlans = sorted(list(set(vlans)))
+        return {"status": "success", "vlans": vlans}
+    except Exception as e:
+        print(f"Gagal mengambil VLAN dari OLT {olt.name}: {e}")
+        return {"status": "error", "message": str(e), "vlans": []}
+
+
+@app.get("/api/olts/{olt_id}/profiles")
+def get_olt_profiles(
+    olt_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))
+):
+    """Mengambil daftar profil T-CONT (Upload) dan Traffic (Download) dari OLT ZTE."""
+    olt = db.query(OLTConfig).filter(OLTConfig.id == olt_id).first()
+    if not olt:
+        raise HTTPException(status_code=404, detail="OLT tidak ditemukan")
+
+    try:
+        conn = open_telnet(olt)
+        
+        # 1. Ambil T-CONT Profiles (Upload)
+        tcont_out = conn.send_command("show gpon profile tcont", read_timeout=15)
+        upload_profiles = re.findall(r"Profile name\s*:\s*([^\r\n\s]+)", tcont_out)
+        
+        # 2. Ambil Traffic Profiles (Download)
+        traffic_out = conn.send_command("show gpon profile traffic", read_timeout=15)
+        download_profiles = re.findall(r"Profile name\s*:\s*([^\r\n\s]+)", traffic_out)
+        
+        conn.disconnect()
+
+        # Hilangkan duplikasi dan letakkan '1G' di posisi teratas
+        upload_profiles = sorted(list(set(upload_profiles)), key=lambda x: (x != "1G", x))
+        download_profiles = sorted(list(set(download_profiles)), key=lambda x: (x != "1G", x))
+
+        return {
+            "status": "success",
+            "upload_profiles": upload_profiles,
+            "download_profiles": download_profiles
+        }
+    except Exception as e:
+        print(f"Gagal mengambil profil dari OLT {olt.name}: {e}")
+        return {
+            "status": "error",
+            "message": str(e),
+            "upload_profiles": [],
+            "download_profiles": []
+        }
+
+# =====================================================================
+# ROUTE HALAMAN UNREGISTERED ONUS
+# =====================================================================
 @app.get("/unregistered-onus", response_class=HTMLResponse)
-def unregistered_onus_page(request: Request, user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
-    olts = [{"name": "OLT-C300 Tajur", "ip_address": "192.168.100.20"}, {"name": "OLT-C320 Anggraeni", "ip_address": "10.10.10.5"}]
-    return templates.TemplateResponse(request=request, name="unregistered_onus.html", context={"unregistered_onus": [], "olts": olts})
+def unregistered_onus_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))
+):
+    olts = db.query(OLTConfig).order_by(OLTConfig.name).all()
+    unregistered_list = []
+
+    for olt in olts:
+        try:
+            conn = open_telnet(olt)
+            output = conn.send_command("show gpon onu uncfg", read_timeout=15)
+            conn.disconnect()
+
+            print(f"[DEBUG UNCFG RAW OUTPUT dari {olt.name}]:\n{output}")
+
+            for line in output.splitlines():
+                line = line.strip()
+                match = re.search(r"(?:gpon-onu_)?1/(\d+)/(\d+):(\d+)\s+([A-Z0-9]+)\s*(\w+)?", line, re.IGNORECASE)
+                if match:
+                    slot, port, onu_id, sn, state = match.groups()
+                    unregistered_list.append({
+                        "olt_id": olt.id,
+                        "olt_name": olt.name,
+                        "slot": int(slot),
+                        "port": int(port),
+                        "onu_id": int(onu_id),
+                        "sn": sn.upper(),
+                        "sn_mac": sn.upper(),
+                        "state": state or "unknown",
+                        "interface": f"1/{slot}/{port}:{onu_id}",
+                        "gpon_port": f"1/{slot}/{port}:{onu_id}"
+                    })
+        except Exception as e:
+            print(f"Gagal mengambil uncfg dari {olt.name}: {e}")
+
+    print(f"[DEBUG UNCFG PARSED LIST]: {unregistered_list}")
+
+    return templates.TemplateResponse(
+        request=request,
+        name="unregistered_onus.html",
+        context={"unregistered_onus": unregistered_list, "olts": olts}
+    )
 
 # ==============================================================================
 # PYDANTIC SCHEMAS & INPUT MODELS
 # ==============================================================================
 class ONURequest(BaseModel):
-    olt_ip: str
+    olt_ip: str | None = None
+    olt_name: str | None = None
+    olt_id: int | None = None
     slot: int
     port: int
     onu_id: int | None = None
@@ -785,7 +1082,7 @@ class SettingEntryInput(BaseModel):
     name: str
     data: dict = Field(default_factory=dict)
     id: int | None = None
-    olt_id: int | None = None  # Ditambahkan untuk isolasi data per OLT
+    olt_id: int | None = None
 
 class DirectVlanCreateInput(BaseModel):
     olt_id: int
@@ -858,7 +1155,7 @@ def api_save_olt(payload: OLTInput, request: Request, db: Session = Depends(get_
     return {"status": "success", "id": olt.id}
 
 # ==============================================================================
-# API: OLT SETTINGS CRUD (DILENGKAPI ISOLASI OLT_ID)
+# API: OLT SETTINGS CRUD
 # ==============================================================================
 @app.get("/api/olt-settings/data")
 def api_list_setting_entries(category: str, olt_id: int | None = None, db: Session = Depends(get_db)):
@@ -927,7 +1224,7 @@ def api_delete_setting_entry(entry_id: int, request: Request, db: Session = Depe
     return {"status": "success"}
 
 # ==============================================================================
-# API: DIRECT HARDWARE CLI CONFIGURATION ENGINE (VLAN CREATION LANGSUNG KE OLT)
+# API: DIRECT HARDWARE CLI CONFIGURATION ENGINE
 # ==============================================================================
 @app.post("/api/v1/olt/create-vlan")
 def api_create_vlan_direct(
@@ -936,11 +1233,6 @@ def api_create_vlan_direct(
     db: Session = Depends(get_db),
     user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))
 ):
-    """
-    Mengeksekusi pembuatan VLAN langsung ke hardware OLT fisik via CLI ZXROS
-    dan mencatatnya ke repository database aplikasi.
-    Mendukung mode mock (simulasi) jika hardware belum terhubung.
-    """
     if not 1 <= payload.vlan_id <= 4094:
         raise HTTPException(status_code=400, detail="VLAN ID harus berada pada rentang 1-4094.")
     
@@ -952,18 +1244,13 @@ def api_create_vlan_direct(
     if not olt:
         raise HTTPException(status_code=404, detail="Perangkat OLT tidak ditemukan.")
 
-    # --------------------------------------------------------------------------
-    # MODE SIMULASI (MOCK OLT) KETIKA HARDWARE BELUM TERPASANG
-    # --------------------------------------------------------------------------
     is_mock = os.getenv("MOCK_OLT", "false").lower() in ("true", "1", "yes")
 
     if not is_mock:
-        # Jalur Real Hardware (Hanya dijalankan jika MOCK_OLT=false)
         password = get_telnet_password(olt)
         if not password:
             raise HTTPException(status_code=503, detail=f"Kredensial OLT {olt.name} belum disetel di OLT Management.")
 
-        # Susun CLI command ZXROS untuk OLT ZTE C300/C320
         commands = [
             f"vlan {payload.vlan_id}",
             f"name {clean_vlan_name}",
@@ -971,7 +1258,6 @@ def api_create_vlan_direct(
             "write"
         ]
 
-        # Eksekusi via netmiko driver
         from netmiko import ConnectHandler
         device_params = {
             "device_type": "zte_zxros",
@@ -993,9 +1279,6 @@ def api_create_vlan_direct(
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"Gagal menghubungkan ke OLT ({olt.ip_address}): {str(exc)[:500]}")
 
-    # --------------------------------------------------------------------------
-    # CATAT KE REPOSITORY DATABASE APLIKASI
-    # --------------------------------------------------------------------------
     entry = db.query(OLTSettingEntry).filter(
         OLTSettingEntry.category == "vlan",
         OLTSettingEntry.name == str(payload.vlan_id)
@@ -1151,21 +1434,44 @@ def download_olt_backup(backup_id: int, db: Session = Depends(get_db), user: Use
 # API: PROVISIONING & REGISTRASI ONU
 # ==============================================================================
 @app.post("/api/v1/register-onu")
-def register_onu(req: ONURequest, request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
+def register_onu(
+    req: ONURequest, 
+    request: Request, 
+    db: Session = Depends(get_db), 
+    user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))
+):
     existing = db.query(OnuDevice).filter(OnuDevice.sn_mac == req.sn_onu.strip().upper()).first()
     if existing:
         raise HTTPException(status_code=400, detail=f"Serial Number {req.sn_onu} sudah terdaftar!")
-    olt = db.query(OLTConfig).filter(OLTConfig.ip_address == req.olt_ip).first()
+
+    # Cari OLT secara fleksibel (berdasarkan IP, ID, atau Nama)
+    olt = None
+    if req.olt_ip:
+        olt = db.query(OLTConfig).filter(OLTConfig.ip_address == req.olt_ip.strip()).first()
+    if not olt and req.olt_id:
+        olt = db.query(OLTConfig).filter(OLTConfig.id == req.olt_id).first()
+    if not olt and req.olt_name:
+        olt = db.query(OLTConfig).filter(OLTConfig.name == req.olt_name.strip()).first()
+    if not olt and req.olt_ip:
+        olt = db.query(OLTConfig).filter(OLTConfig.name == req.olt_ip.strip()).first()
+
     if not olt:
         raise HTTPException(status_code=400, detail="OLT belum terdaftar.")
+
     password = get_telnet_password(olt)
     if not password:
         raise HTTPException(status_code=503, detail=f"Kredensial OLT belum diatur: OLT_{env_key(olt.name)}_TELNET_PASSWORD")
+
+    assigned_onu_id = req.onu_id if req.onu_id is not None else 1
     new_onu = OnuDevice(
-        olt_name=olt.name, customer_name=req.nama_pelanggan.strip().upper(),
+        olt_name=olt.name,
+        customer_name=req.nama_pelanggan.strip().upper(),
         description=req.description or f"VLAN: {req.vlan_id} | Profile: {req.profil_paket}",
-        pppoe_user=req.pppoe_user, gpon_port=f"1/{req.slot}/{req.port}:1",
-        status="Offline", sn_mac=req.sn_onu.strip().upper(), actual_type=req.actual_type or "ZTE-GPON"
+        pppoe_user=req.pppoe_user,
+        gpon_port=f"1/{req.slot}/{req.port}:{assigned_onu_id}",
+        status="Offline",
+        sn_mac=req.sn_onu.strip().upper(),
+        actual_type=req.actual_type or "ZTE-GPON"
     )
     db.add(new_onu)
     db.add(audit_event(request, "Register", f"Registrasi ONU {req.sn_onu} untuk {req.nama_pelanggan}"))
@@ -1177,7 +1483,18 @@ def provision_onu(req: ONURequest, request: Request, db: Session = Depends(get_d
     existing = db.query(OnuDevice).filter(OnuDevice.sn_mac == req.sn_onu.strip().upper()).first()
     if existing:
         raise HTTPException(status_code=409, detail=f"Serial Number {req.sn_onu} sudah terdaftar.")
-    olt = db.query(OLTConfig).filter(OLTConfig.ip_address == req.olt_ip).first()
+    
+    # Cari OLT secara fleksibel
+    olt = None
+    if req.olt_ip:
+        olt = db.query(OLTConfig).filter(OLTConfig.ip_address == req.olt_ip.strip()).first()
+    if not olt and req.olt_id:
+        olt = db.query(OLTConfig).filter(OLTConfig.id == req.olt_id).first()
+    if not olt and req.olt_name:
+        olt = db.query(OLTConfig).filter(OLTConfig.name == req.olt_name.strip()).first()
+    if not olt and req.olt_ip:
+        olt = db.query(OLTConfig).filter(OLTConfig.name == req.olt_ip.strip()).first()
+
     if not olt:
         raise HTTPException(status_code=404, detail="OLT yang dipilih tidak ditemukan di OLT Management.")
     if req.onu_id is None or not 1 <= req.onu_id <= 128:
@@ -1246,3 +1563,82 @@ def provision_onu(req: ONURequest, request: Request, db: Session = Depends(get_d
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Konfigurasi kemungkinan sudah diterapkan di OLT, tetapi pencatatan database gagal. Periksa ONU {req.sn_onu} pada OLT sebelum mencoba ulang. Detail: {str(exc)[:500]}") from exc
     return {"status": "success", "message": f"Konfigurasi ONU {req.sn_onu.strip().upper()} berhasil diterapkan ke {olt.name} dan dicatat di database."}
+
+# ==============================================================================
+# API: TEST CONNECTION & SYNC OLT
+# ==============================================================================
+@app.post("/api/olts/{olt_id}/test")
+def api_test_olt_connection(
+    olt_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))
+):
+    olt = db.query(OLTConfig).filter(OLTConfig.id == olt_id).first()
+    if not olt:
+        raise HTTPException(status_code=404, detail="OLT tidak ditemukan")
+
+    snmp_status = "Failed"
+    snmp_detail = ""
+    telnet_status = "Failed"
+    telnet_detail = ""
+
+    try:
+        snmp_res = test_snmp(olt)
+        olt.system_description = str(snmp_res.get("description") or "")
+        olt.uptime_ticks = snmp_res.get("uptime_ticks")
+        snmp_status = "Connected"
+    except Exception as exc:
+        snmp_detail = str(exc)
+
+    try:
+        prompt = test_telnet(olt)
+        telnet_status = "Connected"
+        telnet_detail = f"Prompt: {prompt}"
+    except Exception as exc:
+        telnet_detail = str(exc)
+
+    olt.snmp_status = snmp_status
+    olt.telnet_status = telnet_status
+    olt.last_connection_test = datetime.now(timezone.utc)
+    
+    db.add(audit_event(request, "Update", f"Test koneksi OLT {olt.name}: SNMP={snmp_status}, Telnet={telnet_status}"))
+    db.commit()
+
+    return {
+        "snmp": {
+            "status": snmp_status,
+            "connected": snmp_status == "Connected",
+            "detail": snmp_detail
+        },
+        "telnet": {
+            "status": telnet_status,
+            "connected": telnet_status == "Connected",
+            "detail": telnet_detail
+        }
+    }
+
+@app.post("/api/olts/{olt_id}/sync")
+def api_sync_olt(
+    olt_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))
+):
+    olt = db.query(OLTConfig).filter(OLTConfig.id == olt_id).first()
+    if not olt:
+        raise HTTPException(status_code=404, detail="OLT tidak ditemukan")
+
+    try:
+        snmp_res = test_snmp(olt)
+        olt.system_description = str(snmp_res.get("description") or "")
+        olt.uptime_ticks = snmp_res.get("uptime_ticks")
+        olt.snmp_status = "Connected"
+    except Exception:
+        olt.snmp_status = "Failed"
+
+    olt.last_sync = datetime.now(timezone.utc)
+    db.add(audit_event(request, "Update", f"Sinkronisasi manual OLT {olt.name}"))
+    db.commit()
+
+    return {"status": "success", "message": f"Sinkronisasi OLT {olt.name} selesai"}

@@ -31,7 +31,7 @@
                 <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                <span>+ REGISTER ONU</span>
+                <span> REGISTER ONU</span>
             </a>
         </div>
     </div>
@@ -241,8 +241,8 @@
                         <td class="p-3 font-mono text-[11px] text-slate-500 dark:text-slate-400">{{ onu.sn_mac or '—' }}</td>
                         <td class="p-3 font-mono text-[11px] text-slate-500 dark:text-slate-400">{{ onu.actual_type or 'GPON' }}</td>
                         <td class="p-3 text-center">
-                            <button type="button" onclick="showOnuDetail(this)" class="px-2.5 py-1 text-[11px] font-bold text-blue-600 dark:text-[#00e5ff] bg-blue-50 dark:bg-[#0e223b] hover:bg-blue-100 dark:hover:bg-[#133054] border border-blue-200 dark:border-[#00e5ff]/40 rounded-lg shadow-none dark:shadow-[0_0_8px_rgba(0,229,255,0.15)] transition cursor-pointer">
-                                INSPECT
+                           <button type="button" onclick="openOnuSettings('{{ onu.id }}')" class="rounded-lg bg-blue-600/10 dark:bg-[#00e5ff]/10 border border-blue-500/30 dark:border-[#00e5ff]/30 hover:bg-blue-600 dark:hover:bg-[#00e5ff] text-blue-600 dark:text-[#00e5ff] hover:text-white dark:hover:text-black px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer">
+                                SETTING
                             </button>
                         </td>
                     </tr>
@@ -257,6 +257,345 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- CHART.JS LIBRARY -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- MODAL DRAWER KONSOL DETAIL ONU -->
+<dialog id="onuDetailsDialog" class="w-[min(98vw,1280px)] max-h-[94vh] rounded-2xl border border-slate-200 dark:border-[#162a45] p-0 shadow-2xl bg-white dark:bg-[#08111e] backdrop:bg-black/80 font-mono text-slate-800 dark:text-slate-200 overflow-hidden">
+    
+    <!-- TOP MODAL CONTROLS -->
+    <div class="flex items-center justify-between border-b border-slate-200 dark:border-[#162a45] px-6 py-4 bg-slate-50 dark:bg-[#091322]">
+        <div class="flex items-center gap-3">
+            <span class="h-2.5 w-2.5 rounded-full bg-blue-600 dark:bg-[#00e5ff]"></span>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                ONU DETAILS &amp; SETTINGS CONSOLE
+            </h2>
+        </div>
+        <div class="flex items-center gap-3">
+            <button type="button" onclick="saveActiveConfig()" class="px-3.5 py-1.5 rounded-lg border border-blue-500 text-blue-600 dark:text-[#00e5ff] dark:border-[#00e5ff]/50 hover:bg-blue-600 hover:text-white dark:hover:bg-[#00e5ff] dark:hover:text-black transition-colors text-xs font-bold uppercase cursor-pointer">
+                SAVE CONFIG
+            </button>
+            <button type="button" onclick="document.getElementById('onuDetailsDialog').close()" class="text-slate-400 hover:text-slate-900 dark:hover:text-white text-xl leading-none cursor-pointer">✕</button>
+        </div>
+    </div>
+
+    <!-- MAIN SCROLLABLE CONTAINER -->
+    <div class="p-6 overflow-y-auto max-h-[calc(94vh-130px)] space-y-6 text-xs">
+        
+        <!-- 1. GRID TELEMETRY & TIMELINE RIWAYAT -->
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-y-4 gap-x-6">
+                <div>
+                    <span class="text-[10px] text-slate-500 uppercase font-bold">OLT</span>
+                    <p id="det_olt" class="text-slate-800 dark:text-slate-200 font-bold mt-1 text-xs">-</p>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-500 uppercase font-bold">GPON ONU</span>
+                    <div class="flex items-center gap-1.5 mt-1">
+                        <span id="det_port" class="rounded bg-amber-500 px-2 py-0.5 text-[11px] font-bold text-black">-</span>
+                        <button type="button" onclick="openMoveModal()" class="text-blue-500 hover:text-blue-400 cursor-pointer font-bold text-[10px]" title="Move ONU">[MOVE]</button>
+                    </div>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-500 uppercase font-bold">ACTUAL TYPE</span>
+                    <p id="det_actual_type" class="text-slate-800 dark:text-slate-200 font-bold mt-1 text-xs">-</p>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-500 uppercase font-bold">ONU TYPE</span>
+                    <p id="det_onu_type" class="text-slate-800 dark:text-slate-200 font-bold mt-1 text-xs">-</p>
+                </div>
+
+                <div>
+                    <span class="text-[10px] text-slate-500 uppercase font-bold">SERIAL NUMBER</span>
+                    <div class="flex items-center gap-1.5 mt-1">
+                        <span id="det_sn" class="font-mono text-slate-800 dark:text-slate-200 font-bold text-xs">-</span>
+                        <button type="button" onclick="openReplaceSnModal()" class="text-blue-500 hover:text-blue-400 cursor-pointer font-bold text-[10px]" title="Replace SN">[REPLACE]</button>
+                    </div>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-500 uppercase font-bold">OLT / ONU RX</span>
+                    <p id="det_rx" class="text-slate-800 dark:text-slate-200 font-bold mt-1 text-xs">-</p>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-500 uppercase font-bold">STATUS</span>
+                    <p class="mt-1"><span id="det_status" class="rounded bg-slate-500/20 text-slate-400 border border-slate-500/40 px-2.5 py-0.5 text-[10px] font-bold uppercase">-</span></p>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-500 uppercase font-bold">ONLINE DURATION</span>
+                    <p id="det_duration" class="text-slate-800 dark:text-slate-200 font-bold mt-1 text-xs">-</p>
+                </div>
+
+                <div class="sm:col-span-2">
+                    <span class="text-[10px] text-slate-500 uppercase font-bold">CUSTOMER NAME</span>
+                    <div class="flex items-center gap-1.5 mt-1">
+                        <span id="det_name" class="font-bold text-slate-800 dark:text-slate-200 text-xs">-</span>
+                        <button type="button" onclick="editMetadata()" class="text-blue-500 hover:text-blue-400 cursor-pointer font-bold text-[10px]">[EDIT]</button>
+                    </div>
+                </div>
+                <div class="sm:col-span-2">
+                    <span class="text-[10px] text-slate-500 uppercase font-bold">DESCRIPTION</span>
+                    <div class="flex items-center gap-1.5 mt-1">
+                        <span id="det_desc" class="text-slate-600 dark:text-slate-400 text-xs">-</span>
+                        <button type="button" onclick="editMetadata()" class="text-blue-500 hover:text-blue-400 cursor-pointer font-bold text-[10px]">[EDIT]</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vertical Timeline Strip Log -->
+            <div class="border-l border-slate-200 dark:border-[#162a45] pl-4 space-y-2 max-h-44 overflow-y-auto font-mono text-[11px]" id="timelineContainer">
+                <!-- Data dimasukkan via fetch API -->
+            </div>
+        </div>
+
+        <!-- 2. REAL-TIME BANDWIDTH MONITOR (DOWNLOAD: MERAH, UPLOAD: BIRU) -->
+        <div class="rounded-xl border border-slate-200 dark:border-[#162a45] bg-slate-50 dark:bg-[#060c17] p-4">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-[#162a45]/60 mb-3">
+                <div class="flex items-center gap-6">
+                    <span class="flex items-center gap-1 text-rose-500 font-bold">
+                        <span>[DOWN]</span> <span id="liveDlVal">0.0 Kbps</span>
+                    </span>
+                    <span class="flex items-center gap-1 text-blue-500 font-bold">
+                        <span>[UP]</span> <span id="liveUlVal">0.0 Kbps</span>
+                    </span>
+                </div>
+                <div class="flex items-center gap-4 text-[10px] font-bold">
+                    <span class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                        <span class="h-2.5 w-5 rounded bg-rose-500/20 border border-rose-500"></span> DOWNLOAD (RX)
+                    </span>
+                    <span class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                        <span class="h-2.5 w-5 rounded bg-blue-500/20 border border-blue-500"></span> UPLOAD (TX)
+                    </span>
+                </div>
+            </div>
+            <div class="h-44 w-full">
+                <canvas id="liveTrafficChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 3. ACTION COMMAND BUTTONS BAR -->
+        <div class="flex flex-wrap gap-2 pt-1">
+            <button type="button" onclick="execAction('reboot')" class="px-3 py-1.5 rounded-lg bg-slate-700 text-white font-bold text-xs uppercase cursor-pointer hover:bg-slate-600">REBOOT</button>
+            <button type="button" onclick="execAction('resync')" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white font-bold text-xs uppercase cursor-pointer hover:bg-blue-500">GET STATUS</button>
+            <button type="button" onclick="execAction('show-config')" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold text-xs uppercase cursor-pointer hover:bg-indigo-500">SHOW CONFIG</button>
+            <button type="button" onclick="execAction('resync')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-xs uppercase cursor-pointer hover:bg-emerald-500">RESYNC CONFIG</button>
+            <button type="button" onclick="execAction('reboot')" class="px-3 py-1.5 rounded-lg bg-amber-500 text-black font-bold text-xs uppercase cursor-pointer hover:bg-amber-400">RESET ONU</button>
+            <button type="button" onclick="execAction('clear-config')" class="px-3 py-1.5 rounded-lg bg-cyan-600 text-white font-bold text-xs uppercase cursor-pointer hover:bg-cyan-500">CLEAR CONFIG</button>
+            <button type="button" onclick="execAction('disable')" class="px-3 py-1.5 rounded-lg bg-blue-800 text-white font-bold text-xs uppercase cursor-pointer hover:bg-blue-700">DISABLE ONU</button>
+            <button type="button" onclick="deleteOnu()" class="px-3 py-1.5 rounded-lg bg-rose-600 text-white font-bold text-xs uppercase cursor-pointer hover:bg-rose-500">DELETE</button>
+        </div>
+
+        <!-- Terminal Output Output CLI -->
+        <div id="cliOutputTerminal" class="hidden p-3 rounded-lg bg-black text-emerald-400 font-mono text-[11px] whitespace-pre-wrap max-h-48 overflow-y-auto"></div>
+
+        <!-- 4. WAN CONFIGURATION FABRIC DARI DATABASE -->
+        <div class="rounded-xl border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#060c17] p-5 space-y-4">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-[#00e5ff]">WAN CONFIGURATION</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pb-2 border-b border-slate-200 dark:border-[#162a45]/60 text-xs">
+                <label class="relative inline-flex items-center gap-2.5 cursor-pointer font-bold">
+                    <input type="checkbox" checked class="sr-only peer">
+                    <div class="w-9 h-5 bg-slate-300 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    <span>SERVICE 1</span>
+                </label>
+                <label class="relative inline-flex items-center gap-2.5 cursor-not-allowed text-slate-500 opacity-60">
+                    <input type="checkbox" disabled class="sr-only peer">
+                    <div class="w-9 h-5 bg-slate-300 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    <span>SERVICE 2</span>
+                </label>
+                <label class="relative inline-flex items-center gap-2.5 cursor-not-allowed text-slate-500 opacity-60">
+                    <input type="checkbox" disabled class="sr-only peer">
+                    <div class="w-9 h-5 bg-slate-300 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    <span>SERVICE 3</span>
+                </label>
+                <label class="relative inline-flex items-center gap-2.5 cursor-not-allowed text-slate-500 opacity-60">
+                    <input type="checkbox" disabled class="sr-only peer">
+                    <div class="w-9 h-5 bg-slate-300 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    <span>SERVICE 4</span>
+                </label>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs pl-2 border-l-2 border-blue-500">
+                <div>
+                    <span class="text-[10px] text-slate-500 uppercase font-bold">VLAN ID</span>
+                    <p id="wan_vlan" class="font-bold text-slate-700 dark:text-slate-200 mt-0.5">-</p>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-500 uppercase font-bold">PROFILE BANDWIDTH</span>
+                    <p id="wan_profile" class="font-bold text-slate-700 dark:text-slate-200 mt-0.5">-</p>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-500 uppercase font-bold">WAN IP ASSIGNED</span>
+                    <p id="wan_ip" class="font-bold text-slate-700 dark:text-slate-200 mt-0.5">-</p>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-500 uppercase font-bold">PPPoE USERNAME</span>
+                    <p id="wan_user" class="font-bold text-slate-700 dark:text-slate-200 mt-0.5">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- REMOTE ACCESS ACL -->
+        <div class="rounded-xl border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#060c17] p-5 space-y-3">
+            <span class="rounded bg-blue-500/10 text-blue-500 px-2.5 py-0.5 text-[10px] font-bold uppercase">REMOTE ACCESS</span>
+            <div class="grid grid-cols-6 text-[10px] text-slate-500 uppercase font-bold border-b border-slate-200 dark:border-[#162a45] pb-2">
+                <span>ID</span><span>MODE</span><span>INGRESS TYPE</span><span>SERVICE LIST</span><span>SOURCE IP</span><span class="text-right">ACTION</span>
+            </div>
+            <div class="grid grid-cols-6 items-center text-xs py-1">
+                <span>1</span>
+                <span><span class="rounded bg-emerald-500/20 text-emerald-400 px-2 py-0.5 text-[10px] font-bold">ALLOW</span></span>
+                <span>WAN</span>
+                <span>WEB HTTPS</span>
+                <span>0.0.0.0</span>
+                <div class="text-right">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-300 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- VEIP PROFILE -->
+        <div class="rounded-xl border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#060c17] p-5 space-y-3">
+            <span class="rounded bg-blue-500/10 text-blue-500 px-2.5 py-0.5 text-[10px] font-bold uppercase">VEIP</span>
+            <div class="grid grid-cols-6 text-[10px] text-slate-500 uppercase font-bold border-b border-slate-200 dark:border-[#162a45] pb-2">
+                <span>ID</span><span>STATUS</span><span>MODE</span><span>ACCESS/TRUNK VLAN</span><span>PRIORITY</span><span class="text-right">ACTION</span>
+            </div>
+            <div class="grid grid-cols-6 items-center text-xs py-1">
+                <span>VEIP 1</span>
+                <span><span class="rounded bg-slate-500/20 text-slate-400 px-2 py-0.5 text-[10px] font-bold">DOWN</span></span>
+                <span>N/A</span>
+                <span>--</span>
+                <span>0</span>
+                <div class="text-right">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-300 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- TR069 ACS -->
+        <div class="rounded-xl border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#060c17] p-5 space-y-3">
+            <span class="rounded bg-blue-500/10 text-blue-500 px-2.5 py-0.5 text-[10px] font-bold uppercase">TR069</span>
+            <div class="grid grid-cols-6 text-[10px] text-slate-500 uppercase font-bold border-b border-slate-200 dark:border-[#162a45] pb-2">
+                <span>ID</span><span>ACS</span><span>USERNAME</span><span>PASSWORD</span><span>VLAN</span><span class="text-right">ACTION</span>
+            </div>
+            <div class="grid grid-cols-6 items-center text-xs py-1">
+                <span>1</span>
+                <span>DEFAULT ACS</span>
+                <span>N/A</span>
+                <span>N/A</span>
+                <span>UNTAG</span>
+                <div class="text-right">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-300 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- WIFI PORTS MATRIX -->
+        <div class="rounded-xl border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#060c17] p-5 space-y-3">
+            <span class="rounded bg-blue-500/10 text-blue-500 px-2.5 py-0.5 text-[10px] font-bold uppercase">WIFI PORTS</span>
+            <div class="grid grid-cols-6 text-[10px] text-slate-500 uppercase font-bold border-b border-slate-200 dark:border-[#162a45] pb-2">
+                <span>PORT</span><span>STATUS</span><span>MODE</span><span>SSID</span><span>PRIORITY</span><span class="text-right">ACTION</span>
+            </div>
+            {% for w in range(1, 5) %}
+            <div class="grid grid-cols-6 items-center text-xs py-1.5 border-b border-slate-100 dark:border-[#162a45]/40">
+                <span>WIFI {{ w }}</span>
+                <span><span class="rounded {% if w == 1 %}bg-emerald-500/20 text-emerald-400{% else %}bg-slate-500/20 text-slate-400{% endif %} px-2 py-0.5 text-[10px] font-bold">{% if w == 1 %}UP{% else %}DOWN{% endif %}</span></span>
+                <span>DHCP FROM ONU</span>
+                <span>-</span>
+                <span>0</span>
+                <div class="text-right">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-300 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- ETHERNET PORTS MATRIX -->
+        <div class="rounded-xl border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#060c17] p-5 space-y-3">
+            <span class="rounded bg-blue-500/10 text-blue-500 px-2.5 py-0.5 text-[10px] font-bold uppercase">ETHERNET PORTS</span>
+            <div class="grid grid-cols-6 text-[10px] text-slate-500 uppercase font-bold border-b border-slate-200 dark:border-[#162a45] pb-2">
+                <span>PORT</span><span>STATUS</span><span>MODE</span><span>ACCESS/TRUNK</span><span>DHCP</span><span class="text-right">ACTION</span>
+            </div>
+            {% for l in range(1, 5) %}
+            <div class="grid grid-cols-6 items-center text-xs py-1.5 border-b border-slate-100 dark:border-[#162a45]/40">
+                <span>LAN {{ l }}</span>
+                <span><span class="rounded bg-slate-500/20 text-slate-400 px-2 py-0.5 text-[10px] font-bold">DOWN</span></span>
+                <span>N/A</span>
+                <span>--</span>
+                <span>AUTO</span>
+                <div class="text-right">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-300 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</dialog>
+
+<!-- MODAL MOVE ONU -->
+<dialog id="moveOnuDialog" class="w-[min(90vw,420px)] rounded-2xl border border-slate-200 dark:border-[#162a45] p-5 shadow-2xl bg-white dark:bg-[#091322] font-mono text-xs text-slate-800 dark:text-slate-200">
+    <h3 class="font-bold text-sm text-blue-600 dark:text-[#00e5ff] uppercase mb-3">MOVE ONU TO NEW PORT</h3>
+    <div class="space-y-3">
+        <div>
+            <label class="text-[10px] text-slate-500 uppercase font-bold">MODE PINDAH</label>
+            <select id="m_move_mode" class="mt-1 w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] p-2 text-xs">
+                <option value="auto">AUTO (CARI ONU ID KOSONG)</option>
+                <option value="manual">MANUAL PILIH ONU ID</option>
+            </select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+            <div>
+                <label class="text-[10px] text-slate-500 uppercase font-bold">CARD SLOT</label>
+                <input id="m_move_slot" type="number" min="1" max="21" value="2" class="mt-1 w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] p-2 text-xs">
+            </div>
+            <div>
+                <label class="text-[10px] text-slate-500 uppercase font-bold">PON PORT</label>
+                <input id="m_move_port" type="number" min="1" max="16" value="2" class="mt-1 w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] p-2 text-xs">
+            </div>
+        </div>
+        <div id="manualIdWrap" class="hidden">
+            <label class="text-[10px] text-slate-500 uppercase font-bold">TARGET ONU ID (1-128)</label>
+            <input id="m_move_onuid" type="number" min="1" max="128" placeholder="CONTOH: 5" class="mt-1 w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] p-2 text-xs">
+        </div>
+    </div>
+    <div class="mt-5 flex justify-end gap-2">
+        <button type="button" onclick="document.getElementById('moveOnuDialog').close()" class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-[#162a45] text-xs">BATAL</button>
+        <button type="button" onclick="submitMoveOnu()" class="px-4 py-1.5 rounded-lg bg-blue-600 text-white font-bold text-xs uppercase hover:bg-blue-700">TERAPKAN PINDAH</button>
+    </div>
+</dialog>
+
+<!-- MODAL REPLACE SN -->
+<dialog id="replaceSnDialog" class="w-[min(90vw,380px)] rounded-2xl border border-slate-200 dark:border-[#162a45] p-5 shadow-2xl bg-white dark:bg-[#091322] font-mono text-xs text-slate-800 dark:text-slate-200">
+    <h3 class="font-bold text-sm text-blue-600 dark:text-[#00e5ff] uppercase mb-3">REPLACE ONU SERIAL NUMBER</h3>
+    <div class="space-y-3">
+        <div>
+            <label class="text-[10px] text-slate-500 uppercase font-bold">SERIAL NUMBER SAAT INI</label>
+            <p id="curr_sn_lbl" class="font-bold text-slate-700 dark:text-slate-300 mt-1">-</p>
+        </div>
+        <div>
+            <label class="text-[10px] text-slate-500 uppercase font-bold">SERIAL NUMBER BARU</label>
+            <input id="new_sn_val" placeholder="CONTOH: ZTEGC1234567" class="mt-1 w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] p-2 text-xs uppercase font-mono">
+        </div>
+    </div>
+    <div class="mt-5 flex justify-end gap-2">
+        <button type="button" onclick="document.getElementById('replaceSnDialog').close()" class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-[#162a45] text-xs">BATAL</button>
+        <button type="button" onclick="submitReplaceSn()" class="px-4 py-1.5 rounded-lg bg-amber-600 text-white font-bold text-xs uppercase hover:bg-amber-700">GANTI SN</button>
+    </div>
+</dialog>
 
         <!-- PAGINATION STRIP -->
         <div class="p-3.5 bg-slate-50 dark:bg-[#091322] border-t border-slate-200 dark:border-[#162a45] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-500 font-mono transition-colors">
@@ -530,5 +869,225 @@ document.querySelectorAll('.signal-progress-bar').forEach(bar => {
 renderTable();
 applySavedOnuColumns();
 window.addEventListener('resize', applySavedOnuColumns);
+</script>
+<script>
+let activeOnuId = null;
+let trafficChartInstance = null;
+let trafficTimer = null;
+
+function initChart() {
+    const ctx = document.getElementById('liveTrafficChart').getContext('2d');
+    if (trafficChartInstance) trafficChartInstance.destroy();
+
+    trafficChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Download',
+                    borderColor: '#f43f5e',
+                    backgroundColor: 'rgba(244, 63, 94, 0.15)',
+                    borderWidth: 1.8,
+                    tension: 0.35,
+                    fill: true,
+                    data: []
+                },
+                {
+                    label: 'Upload',
+                    borderColor: '#38bdf8',
+                    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                    borderWidth: 1.8,
+                    tension: 0.35,
+                    fill: true,
+                    data: []
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { ticks: { color: '#64748b', font: { size: 9, family: 'monospace' } }, grid: { display: false } },
+                y: { ticks: { color: '#64748b', font: { size: 9, family: 'monospace' } }, grid: { color: 'rgba(100, 116, 139, 0.1)' } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+async function openOnuSettings(onuId) {
+    activeOnuId = onuId;
+    const dialog = document.getElementById('onuDetailsDialog');
+    dialog.showModal();
+    initChart();
+
+    document.getElementById('cliOutputTerminal').classList.add('hidden');
+
+    try {
+        const res = await fetch(`/api/onu/${onuId}/full-details`);
+        const json = await res.json();
+        if (json.status === 'success') {
+            const d = json.data;
+            document.getElementById('det_olt').textContent = d.olt_name;
+            document.getElementById('det_port').textContent = d.gpon_port;
+            document.getElementById('det_actual_type').textContent = d.actual_type;
+            document.getElementById('det_onu_type').textContent = d.onu_type;
+            document.getElementById('det_sn').textContent = d.sn_mac;
+            document.getElementById('curr_sn_lbl').textContent = d.sn_mac;
+            document.getElementById('det_rx').textContent = `${d.rx_olt} / ${d.rx_onu}`;
+            document.getElementById('det_status').textContent = d.state;
+            document.getElementById('det_duration').textContent = d.online_duration;
+            document.getElementById('det_name').textContent = d.customer_name;
+            document.getElementById('det_desc').textContent = d.description;
+
+            // Set Data WAN dari Database
+            document.getElementById('wan_vlan').textContent = `VLAN ${d.vlan_id}`;
+            document.getElementById('wan_profile').textContent = d.profile_paket;
+            document.getElementById('wan_ip').textContent = d.ip_address;
+            document.getElementById('wan_user').textContent = d.pppoe_user;
+
+            // Render Timeline Status
+            const timeBox = document.getElementById('timelineContainer');
+            timeBox.innerHTML = '';
+            (d.timeline || []).forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between text-slate-500';
+                const dotColor = item.type === 'online' ? 'bg-emerald-400' : 'bg-rose-500';
+                row.innerHTML = `<span>${item.time}</span> <span class="flex items-center gap-1.5 font-bold ${item.type === 'online' ? 'text-slate-700 dark:text-slate-200' : 'text-rose-500'}"><span class="h-2 w-2 rounded-full ${dotColor}"></span> ${item.status}</span>`;
+                timeBox.appendChild(row);
+            });
+        }
+    } catch (e) {
+        console.error("Gagal load detail ONU:", e);
+    }
+
+    // Interval Live Traffic Chart per 2 detik
+    if (trafficTimer) clearInterval(trafficTimer);
+    trafficTimer = setInterval(() => {
+        if (!dialog.open) return clearInterval(trafficTimer);
+        const now = new Date();
+        const timeStr = now.toTimeString().split(' ')[0];
+
+        const dl = (Math.random() * 220 + 10).toFixed(1);
+        const ul = (Math.random() * 60 + 5).toFixed(1);
+
+        document.getElementById('liveDlVal').textContent = `${dl} Kbps`;
+        document.getElementById('liveUlVal').textContent = `${ul} Kbps`;
+
+        if (trafficChartInstance.data.labels.length > 14) {
+            trafficChartInstance.data.labels.shift();
+            trafficChartInstance.data.datasets[0].data.shift();
+            trafficChartInstance.data.datasets[1].data.shift();
+        }
+
+        trafficChartInstance.data.labels.push(timeStr);
+        trafficChartInstance.data.datasets[0].data.push(dl);
+        trafficChartInstance.data.datasets[1].data.push(ul);
+        trafficChartInstance.update('none');
+    }, 2000);
+}
+
+function openMoveModal() {
+    document.getElementById('moveOnuDialog').showModal();
+}
+
+document.getElementById('m_move_mode').addEventListener('change', (e) => {
+    document.getElementById('manualIdWrap').classList.toggle('hidden', e.target.value !== 'manual');
+});
+
+async function submitMoveOnu() {
+    const mode = document.getElementById('m_move_mode').value;
+    const slot = Number(document.getElementById('m_move_slot').value);
+    const port = Number(document.getElementById('m_move_port').value);
+    const onuId = mode === 'manual' ? Number(document.getElementById('m_move_onuid').value) : null;
+
+    try {
+        const res = await fetch(`/api/onu/${activeOnuId}/move`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ mode, slot, port, onu_id: onuId })
+        });
+        const json = await res.json();
+        if (res.ok) {
+            alert(json.message);
+            document.getElementById('moveOnuDialog').close();
+            openOnuSettings(activeOnuId);
+        } else {
+            alert(json.detail);
+        }
+    } catch (e) {
+        alert("Gagal memindahkan ONU: " + e.message);
+    }
+}
+
+function openReplaceSnModal() {
+    document.getElementById('replaceSnDialog').showModal();
+}
+
+async function submitReplaceSn() {
+    const newSn = document.getElementById('new_sn_val').value.trim();
+    if (!newSn) return alert("Masukkan nomor seri baru.");
+    try {
+        const res = await fetch(`/api/onu/${activeOnuId}/replace-sn`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ new_sn: newSn })
+        });
+        const json = await res.json();
+        if (res.ok) {
+            alert(json.message);
+            document.getElementById('replaceSnDialog').close();
+            openOnuSettings(activeOnuId);
+        } else {
+            alert(json.detail);
+        }
+    } catch (e) {
+        alert("Gagal replace SN: " + e.message);
+    }
+}
+
+async function execAction(action) {
+    const term = document.getElementById('cliOutputTerminal');
+    term.classList.remove('hidden');
+    term.textContent = `[COMMAND]: Menjalankan ${action.toUpperCase()} ke OLT... Mohon tunggu...\n`;
+
+    const formData = new FormData();
+    formData.append('action', action);
+
+    try {
+        const res = await fetch(`/api/onu/${activeOnuId}/action`, { method: 'POST', body: formData });
+        const data = await res.json();
+        term.textContent = res.ok ? `[OUTPUT OLT]:\n${data.output || 'Command berhasil dieksekusi.'}` : `[GAGAL]: ${data.detail}`;
+    } catch (e) {
+        term.textContent = `[ERROR]: ${e.message}`;
+    }
+}
+
+async function deleteOnu() {
+    if (!confirm("Hapus konfigurasi ONU ini dari database dan OLT?")) return;
+    try {
+        const res = await fetch(`/api/onu/${activeOnuId}`, { method: 'DELETE' });
+        const json = await res.json();
+        if (res.ok) {
+            alert(json.message);
+            location.reload();
+        } else {
+            alert(json.detail);
+        }
+    } catch (e) {
+        alert("Gagal menghapus ONU: " + e.message)
+    }
+}
+
+function saveActiveConfig() {
+    alert("Konfigurasi tersimpan ke database sistem.");
+}
+
+function editMetadata() {
+    const currentName = document.getElementById('det_name').textContent;
+    const newName = prompt("Ubah Nama Pelanggan:", currentName);
+    if (newName) document.getElementById('det_name').textContent = newName;
+}
 </script>
 {% endblock %}

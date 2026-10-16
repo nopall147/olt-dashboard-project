@@ -46,16 +46,22 @@ def _read_tlv(data, offset=0):
     return tag, data[start:start + size], start + size
 
 
-def get_value(host, port, community, oid, timeout=3):
+def get_value(host, port, community, oid, timeout=8):
     request_id = 1
     varbind = _tlv(0x30, _oid(oid) + _tlv(0x05, b""))
     varbinds = _tlv(0x30, varbind)
     pdu = _tlv(0xa0, _integer(request_id) + _integer(0) + _integer(0) + varbinds)
     packet = _tlv(0x30, _integer(1) + _tlv(0x04, community.encode()) + pdu)
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-        sock.settimeout(timeout)
-        sock.sendto(packet, (host, port))
-        data, _ = sock.recvfrom(65535)
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.settimeout(timeout)
+            sock.sendto(packet, (host, port))
+            data, _ = sock.recvfrom(65535)
+    except socket.timeout as exc:
+        raise RuntimeError(f"SNMP request timed out after {timeout} seconds connecting to {host}:{port}") from exc
+    except OSError as exc:
+        raise RuntimeError(f"SNMP socket error: {exc}") from exc
+
     _, outer, _ = _read_tlv(data)
     _, _, offset = _read_tlv(outer)
     _, _, offset = _read_tlv(outer, offset)

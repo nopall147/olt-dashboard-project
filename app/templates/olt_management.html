@@ -30,7 +30,12 @@
             <span class="flex items-center gap-2 font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                 <span class="text-blue-600 dark:text-[#00e5ff]">■</span> REGISTERED OLT CHASSIS DIRECTORY
             </span>
-            <span class="text-slate-500">LIVE CONNECTION & SYNC REPO</span>
+            <div class="flex items-center gap-3">
+                <span class="text-slate-500 hidden sm:inline">LIVE CONNECTION & SYNC REPO</span>
+                <button type="button" onclick="openOltDialog('add')" class="rounded-lg bg-blue-600 dark:bg-[#00e5ff] hover:bg-blue-700 dark:hover:bg-[#00c8e0] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white dark:text-black shadow-md transition cursor-pointer">
+                    + ADD OLT
+                </button>
+            </div>
         </div>
 
         <div class="overflow-x-auto">
@@ -343,82 +348,116 @@ document.querySelectorAll('.sync-olt-btn').forEach(btn => {
     });
 });
 
+async function saveOltData() {
+    const payload = {
+        id: activeOltId,
+        name: document.getElementById('oltName').value.trim(),
+        ip_address: document.getElementById('oltIp').value.trim(),
+        model: document.getElementById('oltModel').value.trim(),
+        snmp_version: document.getElementById('snmpVersion').value,
+        snmp_port: Number(document.getElementById('snmpPort').value),
+        snmp_community: document.getElementById('snmpCommunity').value || null,
+        telnet_username: document.getElementById('telnetUsername').value.trim(),
+        telnet_password: document.getElementById('telnetPassword').value || null,
+        telnet_port: Number(document.getElementById('telnetPort').value)
+    };
+
+    const response = await fetch('/api/olts', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    });
+
+    let result = {};
+    try { result = await response.json(); } catch {}
+    if (!response.ok) {
+        const detail = Array.isArray(result.detail)
+            ? result.detail.map(item => `${(item.loc || []).filter(part => part !== 'body').join('.')}: ${item.msg}`).join('; ')
+            : result.detail;
+        throw new Error(detail || `Gagal menyimpan perubahan (HTTP ${response.status}).`);
+    }
+    if (result.status !== 'success' || !result.id) throw new Error('Server belum mengonfirmasi penyimpanan OLT.');
+    activeOltId = result.id;
+    return result;
+}
+
 document.getElementById('oltForm').addEventListener('submit', async e => {
     e.preventDefault();
     const message = document.getElementById('connectionMessage');
     const saveButton = document.getElementById('saveOltButton');
-    const payload = {
-        id: activeOltId,
-        name: document.getElementById('oltName').value,
-        ip_address: document.getElementById('oltIp').value,
-        model: document.getElementById('oltModel').value,
-        snmp_version: document.getElementById('snmpVersion').value,
-        snmp_port: Number(document.getElementById('snmpPort').value),
-        snmp_community: document.getElementById('snmpCommunity').value,
-        telnet_username: document.getElementById('telnetUsername').value,
-        telnet_password: document.getElementById('telnetPassword').value,
-        telnet_port: Number(document.getElementById('telnetPort').value)
-    };
     saveButton.disabled = true;
     saveButton.textContent = 'Saving...';
     message.textContent = 'Menyimpan konfigurasi OLT ke database...';
     message.className = 'rounded-lg bg-blue-50 dark:bg-[#00e5ff]/10 text-blue-600 dark:text-[#00e5ff] border border-blue-200 dark:border-[#00e5ff]/30 p-3 text-xs transition-colors';
     message.classList.remove('hidden');
+
     try {
-        const response = await fetch('/api/olts', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
-        });
-        let result = {};
-        try { result = await response.json(); } catch {}
-        if (!response.ok) {
-            const detail = Array.isArray(result.detail)
-                ? result.detail.map(item => `${(item.loc || []).filter(part => part !== 'body').join('.')}: ${item.msg}`).join('; ')
-                : result.detail;
-            throw new Error(detail || `Gagal menyimpan perubahan (HTTP ${response.status}).`);
-        }
-        if (result.status !== 'success' || !result.id) throw new Error('Server belum mengonfirmasi penyimpanan OLT.');
+        await saveOltData();
         message.textContent = 'Perubahan OLT berhasil disimpan.';
         message.className = 'rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 p-3 text-xs transition-colors';
-        location.reload();
+        setTimeout(() => location.reload(), 1000);
     } catch (error) {
         message.textContent = error.message;
         message.className = 'rounded-lg bg-rose-50 dark:bg-[#ff3366]/10 text-rose-600 dark:text-[#ff3366] border border-rose-200 dark:border-[#ff3366]/30 p-3 text-xs transition-colors';
     } finally {
         saveButton.disabled = false;
-        saveButton.textContent = '⇩ Submit';
+        saveButton.textContent = '⇩ SUBMIT';
     }
 });
 
 async function testOltConnection() {
     const message = document.getElementById('connectionMessage');
-    if (!activeOltId) {
-        message.textContent = 'Simpan OLT terlebih dahulu sebelum tes koneksi.';
-        message.className = 'rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30 p-3 text-xs transition-colors';
-        message.classList.remove('hidden');
-        return;
-    }
     const button = document.getElementById('testConnectionButton');
+
     button.disabled = true;
     button.textContent = 'Testing...';
     message.textContent = 'Menguji runtime SNMP v2c dan Telnet socket...';
     message.className = 'rounded-lg bg-blue-50 dark:bg-[#00e5ff]/10 text-blue-600 dark:text-[#00e5ff] border border-blue-200 dark:border-[#00e5ff]/30 p-3 text-xs transition-colors';
     message.classList.remove('hidden');
+
     try {
-        const response = await fetch(`/api/olts/${activeOltId}/test`, {method: 'POST'});
+        // Jika ada input password/community baru di form, simpan dulu agar database tersinkronisasi
+        const hasNewPass = document.getElementById('telnetPassword').value.length > 0;
+        const hasNewComm = document.getElementById('snmpCommunity').value.length > 0;
+        if (hasNewPass || hasNewComm || !activeOltId) {
+            message.textContent = 'Menyimpan kredensial baru sebelum tes...';
+            await saveOltData();
+            message.textContent = 'Menguji runtime SNMP v2c dan Telnet socket...';
+        }
+
+        const response = await fetch(`/api/olts/${activeOltId}/test`, { method: 'POST' });
         const result = await response.json();
-        const snmp = result.SNMP;
-        const telnet = result.Telnet;
-        message.textContent = `SNMP: ${snmp?.ok ? 'Connected' : 'Failed'} — ${typeof snmp?.detail === 'object' ? JSON.stringify(snmp.detail) : (snmp?.detail || 'Tidak ada detail')} | Telnet: ${telnet?.ok ? 'Connected' : 'Failed'} — ${telnet?.detail || 'Tidak ada detail'}`;
-        message.className = 'rounded-lg p-3 text-xs border transition-colors ' + (snmp?.ok && telnet?.ok ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30' : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/30');
-        setTimeout(() => location.reload(), 1800);
+        if (!response.ok) {
+            throw new Error(result.detail || `HTTP ${response.status}: Gagal melakukan tes`);
+        }
+
+        // Dukung kedua format key (lowercase dan uppercase)
+        const snmp = result.snmp || result.SNMP || {};
+        const telnet = result.telnet || result.Telnet || {};
+
+        const snmpConnected = Boolean(snmp.connected ?? snmp.ok ?? (snmp.status === 'Connected'));
+        const telnetConnected = Boolean(telnet.connected ?? telnet.ok ?? (telnet.status === 'Connected'));
+
+        const snmpMsg = snmp.status ? snmp.status : (snmpConnected ? 'Connected' : 'Failed');
+        const telnetMsg = telnet.status ? telnet.status : (telnetConnected ? 'Connected' : 'Failed');
+
+        const snmpDetail = typeof snmp.detail === 'object' ? JSON.stringify(snmp.detail) : (snmp.detail || 'OK');
+        const telnetDetail = telnet.detail || 'OK';
+
+        message.textContent = `SNMP: ${snmpMsg} (${snmpDetail}) | Telnet: ${telnetMsg} (${telnetDetail})`;
+
+        if (snmpConnected && telnetConnected) {
+            message.className = 'rounded-lg p-3 text-xs border transition-colors bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30 font-medium';
+            setTimeout(() => location.reload(), 1600);
+        } else {
+            message.className = 'rounded-lg p-3 text-xs border transition-colors bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/30';
+        }
     } catch (error) {
-        message.textContent = error.message;
+        message.textContent = `Error: ${error.message}`;
         message.className = 'rounded-lg bg-rose-50 dark:bg-[#ff3366]/10 text-rose-600 dark:text-[#ff3366] border border-rose-200 dark:border-[#ff3366]/30 p-3 text-xs transition-colors';
     } finally {
         button.disabled = false;
-        button.textContent = 'Test Connection';
+        button.textContent = '◉ TEST CONNECTION';
     }
 }
 
@@ -435,12 +474,12 @@ async function confirmSync(id, name, button) {
         const response = await fetch(`/api/olts/${id}/sync`, {method: 'POST'});
         const result = await response.json();
         if (!response.ok) throw new Error(result.detail || 'Sync gagal');
-        alert(`${result.updated} ONU diperbarui dari ${result.interfaces} PON.`);
+        alert(result.message || 'Sinkronisasi berhasil!');
         location.reload();
     } catch (error) {
         alert(error.message);
         button.disabled = false;
-        button.textContent = 'Sync Now';
+        button.textContent = 'SYNC';
     }
 }
 </script>

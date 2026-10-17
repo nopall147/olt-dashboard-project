@@ -78,3 +78,82 @@ def get_value(host, port, community, oid, timeout=8):
     if value_tag == 0x04:
         return value.decode(errors="replace")
     return int.from_bytes(value, "big") if value else None
+
+
+def _decode_oid(value):
+    if not value:
+        return ""
+    first = value[0]
+    arcs = [min(first // 40, 2), first - min(first // 40, 2) * 40]
+    current = 0
+    for byte in value[1:]:
+        current = (current << 7) | (byte & 0x7f)
+        if not byte & 0x80:
+            arcs.append(current)
+            current = 0
+    return ".".join(map(str, arcs))
+
+
+def _decode_value(tag, value):
+    if tag == 0x04:
+        return value.decode(errors="replace")
+    if tag in (0x02, 0x41, 0x42, 0x43, 0x46):
+        return int.from_bytes(value, "big") if value else 0
+    return None
+
+
+def _get_bulk(host, port, community, oid, max_repetitions=25, timeout=8):
+    request_id = 7
+    varbind = _tlv(0x30, _oid(oid) + _tlv(0x05, b""))
+    varbinds = _tlv(0x30, varbind)
+    pdu = _tlv(0xa5, _integer(request_id) + _integer(0) + _integer(max_repetitions) + varbinds)
+    packet = _tlv(0x30, _integer(1) + _tlv(0x04, community.encode()) + pdu)
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.settimeout(timeout)
+            sock.sendto(packet, (host, port))
+            data, _ = sock.recvfrom(65535)
+    except socket.timeout as exc:
+        raise RuntimeError(f"SNMP GETBULK timeout connecting to {host}:{port}") from exc
+    _, outer, _ = _read_tlv(data)
+    _, _, offset = _read_tlv(outer)
+    _, _, offset = _read_tlv(outer, offset)
+    _, response_pdu, _ = _read_tlv(outer, offset)
+    _, _, pdu_offset = _read_tlv(response_pdu)
+    _, error_status, pdu_offset = _read_tlv(response_pdu, pdu_offset)
+    if int.from_bytes(error_status, "big") != 0:
+        raise RuntimeError("SNMP agent returned an error")
+    _, _, pdu_offset = _read_tlv(response_pdu, pdu_offset)
+    _, varbind_list, _ = _read_tlv(response_pdu, pdu_offset)
+    results, offset = [], 0
+    while offset < len(varbind_list):
+        tag, binding, offset = _read_tlv(varbind_list, offset)
+        if tag != 0x30:
+            continue
+        _, oid_bytes, value_offset = _read_tlv(binding)
+        value_tag, value_bytes, _ = _read_tlv(binding, value_offset)
+        results.append((_decode_oid(oid_bytes), _decode_value(value_tag, value_bytes)))
+    return results
+
+
+def walk(host, port, community, root_oid, timeout=8, max_rows=1024):
+    """Walk an SNMP table subtree using SNMPv2 GETBULK requests."""
+    root = root_oid.strip(".")
+    cursor = root
+    results = {}
+    while len(results) < max_rows:
+        bindings = _get_bulk(host, port, community, cursor, timeout=timeout)
+        if not bindings:
+            break
+        advanced = False
+        for oid, value in bindings:
+            if not oid.startswith(root + "."):
+                return results
+            if tuple(map(int, oid.split("."))) <= tuple(map(int, cursor.split("."))):
+                continue
+            results[oid] = value
+            cursor = oid
+            advanced = True
+        if not advanced:
+            break
+    return results

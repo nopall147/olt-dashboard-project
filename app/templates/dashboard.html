@@ -43,7 +43,7 @@
     <!-- ========================================================= -->
     <!-- 2. TELEMETRY KPI MATRIX (5-SLOT HUD CARDS) -->
     <!-- ========================================================= -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+    <div class="grid adaptive-card-grid gap-3.5">
         <!-- CARD 1: TOTAL OLTS -->
         <a {% if data.summary.selected_olt_id %}href="/olt-management?olt_id={{ data.summary.selected_olt_id }}"{% else %}href="/olt-management"{% endif %} class="group block focus:outline-none" aria-label="Buka OLT Management">
             <div class="h-full bg-white dark:bg-[#08111e] rounded-xl border border-slate-200 dark:border-[#162a45] p-3.5 relative overflow-hidden group-hover:border-blue-400 dark:group-hover:border-[#00e5ff]/60 shadow-sm dark:shadow-none group-hover:shadow-md dark:group-hover:shadow-[0_0_18px_rgba(0,229,255,0.18)] transition-all">

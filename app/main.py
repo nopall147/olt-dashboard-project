@@ -138,6 +138,10 @@ class OnuMoveInput(BaseModel):
     target_port: int
     target_onu_id: int | None = None
 
+class OnuMetadataUpdate(BaseModel):
+    customer_name: str
+    description: str = ""
+
 class OnuReplaceSnInput(BaseModel):
     new_sn: str
 
@@ -207,6 +211,73 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
     yield
+
+# =========================================================
+# === TARUH DI SINI (Background Worker Telemetri) =======
+# =========================================================
+async def periodic_telemetry_poller():
+    """Tugas latar belakang untuk memperbarui redaman optik dan status ONU secara berkala."""
+    while True:
+        try:
+            await asyncio.sleep(300)
+            
+            is_mock = os.getenv("MOCK_OLT", "false").lower() in ("true", "1", "yes")
+            if is_mock:
+                continue
+
+            def run_sync_job():
+                from app.database import SessionLocal
+                from app.services.olt_fetcher import fetch_onu_realtime
+                
+                db = SessionLocal()
+                try:
+                    olts = db.query(OLTConfig).all()
+                    for olt in olts:
+                        live_data = fetch_onu_realtime(olt)
+                        for item in live_data:
+                            onu = db.query(OnuDevice).filter(
+                                OnuDevice.olt_id == olt.id,
+                                OnuDevice.sn_mac == item.get("sn_mac")
+                            ).first()
+                            if onu:
+                                onu.status = item.get("status", onu.status)
+                                if "rx_onu" in item:
+                                    onu.rx_power = item["rx_onu"]
+                                onu.updated_at = datetime.utcnow()
+                        db.commit()
+                except Exception as err:
+                    db.rollback()
+                    print(f"[POLLER ERROR] Gagal update telemetri: {err}")
+                finally:
+                    db.close()
+
+            await asyncio.to_thread(run_sync_job)
+
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            print(f"[WORKER ERROR] Poller crash: {e}")
+            await asyncio.sleep(60)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Dijalankan saat server Uvicorn booting
+    poller_task = asyncio.create_task(periodic_telemetry_poller())
+    yield
+    # Dijalankan saat server Uvicorn shutdown
+    poller_task.cancel()
+    try:
+        await poller_task
+    except asyncio.CancelledError:
+        pass
+
+
+# --- INISIALISASI ASLI MILIK PROYEK ANDA (Tambahkan parameter lifespan) ---
+app = FastAPI(
+    title="OLT Monitoring System",
+    lifespan=lifespan
+)
 
 # ==============================================================================
 # INISIALISASI FASTAPI & CONTEXT GLOBAL
@@ -574,6 +645,230 @@ def get_onu_detail(
         }
     }
 
+# 1. Endpoint alias agar pemanggilan /full-details tetap kompatibel
+@app.get("/api/onu/{onu_id}/full-details")
+def get_onu_full_details_alias(
+    onu_id: int, 
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC, Role.VIEWER]))
+):
+    return get_onu_detail(onu_id=onu_id, db=db, user=user)
+
+@app.post("/api/onu/{onu_id}/move")
+def move_onu_port(
+    onu_id: int, 
+    payload: OnuMoveInput, 
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))
+):
+    onu = db.query(OnuDevice).filter(OnuDevice.id == onu_id).first()
+    if not onu:
+        raise HTTPException(status_code=404, detail="ONU tidak ditemukan di database.")
+    
+    target_slot = payload.target_slot
+    target_port = payload.target_port
+    
+    # 1. Tentukan target_onu_id (auto allocation atau manual)
+    if payload.mode == "auto" or payload.target_onu_id is None:
+        existing_onus = db.query(OnuDevice).filter(
+            OnuDevice.olt_name == onu.olt_name,
+            OnuDevice.gpon_port.like(f"%{target_slot}/{target_port}:%")
+        ).all()
+        
+        used_ids = set()
+        for dev in existing_onus:
+            try:
+                used_ids.add(int(dev.gpon_port.split(":")[-1]))
+            except (ValueError, IndexError):
+                pass
+        
+        new_onu_id = 1
+        while new_onu_id in used_ids:
+            new_onu_id += 1
+            if new_onu_id > 128:
+                raise HTTPException(status_code=400, detail=f"Port {target_slot}/{target_port} sudah penuh (maksimal 128 ONU).")
+    else:
+        new_onu_id = payload.target_onu_id
+
+    old_port_full = onu.gpon_port  # misal: "gpon-onu_1/1/1:2" atau "1/1/1:2"
+    new_port_full = f"gpon-onu_{target_slot}/{target_port}:{new_onu_id}"
+
+    # 2. Parsing interface OLT lama dan ID lama
+    # Format GPON ZTE: gpon-olt_1/slot/port
+    clean_old = old_port_full.replace("gpon-onu_", "").replace("gpon-olt_", "")
+    try:
+        old_slot_port, old_onu_index = clean_old.split(":")
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Format port lama tidak valid: {old_port_full}")
+
+    # Cek mode mock
+    is_mock = os.getenv("MOCK_OLT", "false").lower() in ("true", "1", "yes")
+
+    # Ambil data profil OLT
+    olt = None
+    if hasattr(onu, "olt_id") and onu.olt_id:
+        olt = db.query(OLTConfig).filter(OLTConfig.id == onu.olt_id).first()
+    if not olt and hasattr(onu, "olt_name") and onu.olt_name:
+        olt = db.query(OLTConfig).filter(OLTConfig.name == onu.olt_name).first()
+
+    # 3. Eksekusi CLI Netmiko ke ZTE OLT Fisik
+    if not is_mock and olt:
+        password = get_telnet_password(olt) if "get_telnet_password" in globals() else getattr(olt, "telnet_password", None)
+        if not password:
+            raise HTTPException(status_code=503, detail=f"Kredensial OLT {olt.name} belum disetel di OLT Management.")
+
+        # Interface OLT ZTE C300/C320 menggunakan prefiks 'gpon-olt_'
+        old_olt_interface = f"gpon-olt_{old_slot_port}"
+        target_olt_interface = f"gpon-olt_{target_slot}/{target_port}"
+
+        # Tipe ONU (default ke ZTE-F660 atau tipe yang tersimpan di field onu_type)
+        onu_type = getattr(onu, "onu_type", None) or "ZTE-F660"
+
+        commands = [
+            # Hapus ONU di port lama
+            f"interface {old_olt_interface}",
+            f"no onu {old_onu_index}",
+            "exit",
+            # Daftarkan ONU di port tujuan
+            f"interface {target_olt_interface}",
+            f"onu {new_onu_id} type {onu_type} sn {onu.sn_mac}",
+            "exit",
+            "write"
+        ]
+
+        from netmiko import ConnectHandler
+        device_params = {
+            "device_type": "zte_zxros_telnet",
+            "host": olt.ip_address,
+            "username": olt.telnet_username,
+            "password": password,
+            "port": getattr(olt, "telnet_port", 23) or 23,
+            "timeout": 15
+        }
+
+        try:
+            with ConnectHandler(**device_params) as net_connect:
+                net_connect.enable()
+                output = net_connect.send_config_set(commands)
+                if re.search(r"(% Error|% Ambiguous|% Incomplete|% Unknown)", output, re.IGNORECASE):
+                    raise HTTPException(status_code=502, detail=f"OLT menolak migrasi port: {output}")
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Gagal menghubungkan ke OLT ({olt.ip_address}): {str(exc)[:500]}")
+
+    # 4. Simpan perubahan ke Database
+    try:
+        onu.gpon_port = new_port_full
+
+        if "audit_event" in globals():
+            audit_msg = (
+                f"[SIMULASI] Migrasi port ONU {onu.sn_mac} dari {old_port_full} ke {new_port_full}"
+                if is_mock
+                else f"Push CLI Migrasi port ONU {onu.sn_mac} dari {old_port_full} ke {new_port_full}"
+            )
+            db.add(audit_event(request, "Update", audit_msg))
+
+        db.commit()
+    except Exception as db_err:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Gagal menyimpan migrasi ke database: {str(db_err)}")
+
+    return {
+        "status": "success",
+        "message": f"[{'SIMULASI' if is_mock else 'HARDWARE'}] ONU {onu.customer_name or onu.sn_mac} berhasil dipindahkan ke {new_port_full}."
+    }
+
+@app.patch("/api/onu/{onu_id}/metadata")
+def update_onu_metadata(
+    onu_id: int,
+    payload: OnuMetadataUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))
+):
+    onu = db.query(OnuDevice).filter(OnuDevice.id == onu_id).first()
+    if not onu:
+        raise HTTPException(status_code=404, detail="ONU tidak ditemukan.")
+
+    clean_name = re.sub(r"[^A-Za-z0-9_-]", "", payload.customer_name.strip())
+    clean_desc = re.sub(r"[^A-Za-z0-9_-]", "", payload.description.strip())
+    if not clean_name:
+        clean_name = f"ONU_{onu.id}"
+
+    # Cek mode mock
+    is_mock = os.getenv("MOCK_OLT", "false").lower() in ("true", "1", "yes")
+
+    # Ambil data OLT terkait ONU ini
+    olt = db.query(OLTConfig).filter(OLTConfig.id == onu.olt_id).first() if hasattr(onu, "olt_id") else None
+
+    # Eksekusi ke perangkat fisik jika bukan mode mock
+    if not is_mock and olt:
+        password = get_telnet_password(olt) if "get_telnet_password" in globals() else getattr(olt, "telnet_password", None)
+        if not password:
+            raise HTTPException(status_code=503, detail=f"Kredensial OLT {olt.name} belum disetel di OLT Management.")
+
+        # Format interface ZTE: gpon-onu_1/{slot}/{port}:{onu_id}
+        # Contoh onu.gpon_port: "1/1/1:1" -> "gpon-onu_1/1/1:1"
+        port_identifier = onu.gpon_port if onu.gpon_port.startswith("gpon-onu_") else f"gpon-onu_{onu.gpon_port}"
+
+        commands = [
+            f"interface {port_identifier}",
+            f"name {clean_name}",
+        ]
+        if clean_desc:
+            commands.append(f"description {clean_desc}")
+        commands.extend(["exit", "write"])
+
+        from netmiko import ConnectHandler
+        device_params = {
+            "device_type": "zte_zxros_telnet",
+            "host": olt.ip_address,
+            "username": olt.telnet_username,
+            "password": password,
+            "port": getattr(olt, "telnet_port", 23) or 23,
+            "timeout": 15
+        }
+
+        try:
+            with ConnectHandler(**device_params) as net_connect:
+                net_connect.enable()
+                output = net_connect.send_config_set(commands)
+                if re.search(r"(% Error|% Ambiguous|% Incomplete|% Unknown)", output, re.IGNORECASE):
+                    raise HTTPException(status_code=502, detail=f"OLT menolak konfigurasi: {output}")
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Gagal menghubungkan ke OLT ({olt.ip_address}): {str(exc)[:500]}")
+
+    # Simpan ke Database
+    try:
+        onu.customer_name = payload.customer_name.strip()
+        onu.description = payload.description.strip()
+
+        if "audit_event" in globals():
+            audit_msg = (
+                f"[SIMULASI] Update metadata ONU {onu.sn_mac} ({clean_name})"
+                if is_mock
+                else f"Push CLI Update metadata ONU {onu.sn_mac} ({clean_name}) ke OLT"
+            )
+            db.add(audit_event(request, "Update", audit_msg))
+
+        db.commit()
+    except Exception as db_err:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Gagal menyimpan ke database: {str(db_err)}")
+
+    return {
+        "status": "success",
+        "message": f"[{'SIMULASI' if is_mock else 'HARDWARE'}] Metadata ONU {onu.sn_mac} berhasil diperbarui.",
+        "data": {
+            "customer_name": onu.customer_name,
+            "description": onu.description
+        }
+    }
+
 @app.post("/api/onu/{onu_id}/action")
 def execute_onu_action(
     onu_id: int,
@@ -684,6 +979,35 @@ def delete_onu_config(
     db.add(audit_event(request, "Delete", f"Hapus konfigurasi ONU {onu.sn_mac} ({onu.customer_name})"))
     db.commit()
     return {"status": "success", "message": "Konfigurasi ONU berhasil dihapus"}
+
+# =========================================================
+# === TARUH DI SINI (Di bawah move_onu_port / blok ONU) ===
+# =========================================================
+
+@app.get("/api/traffic/{onu_id}/history")
+def get_traffic_history(
+    onu_id: int,
+    range: str = "1h",
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC, Role.VIEWER]))
+):
+    samples = db.query(TrafficSample).filter(
+        TrafficSample.onu_id == onu_id
+    ).order_by(TrafficSample.timestamp.desc()).limit(60).all()
+
+    return {
+        "status": "success",
+        "data": [
+            {
+                "timestamp": s.timestamp.isoformat() if hasattr(s.timestamp, "isoformat") else str(s.timestamp),
+                "in_octets": s.in_octets,
+                "out_octets": s.out_octets,
+                "in_rate_kbps": getattr(s, "in_rate_kbps", 0),
+                "out_rate_kbps": getattr(s, "out_rate_kbps", 0)
+            }
+            for s in reversed(samples)
+        ]
+    }
 
 
 @app.get("/all-onus", response_class=HTMLResponse)
@@ -908,7 +1232,20 @@ def activity_log_page(request: Request, db: Session = Depends(get_db), user: Use
     for event_type in ("Login", "Delete", "Update"):
         key = "update_count" if event_type == "Update" else event_type.lower()
         totals[key] = db.query(sql_func.count(ActivityEvent.id)).filter(ActivityEvent.event_type == event_type).scalar() or 0
-    return templates.TemplateResponse(request=request, name="activity_log.html", context={"logs": logs, "totals": totals})
+
+    # Ambil daftar unik event_type dari database untuk mengisi dropdown filter
+    raw_types = db.query(ActivityEvent.event_type).distinct().filter(ActivityEvent.event_type.isnot(None)).all()
+    event_types = sorted([t[0] for t in raw_types if t[0]])
+
+    return templates.TemplateResponse(
+        request=request,
+        name="activity_log.html",
+        context={
+            "logs": logs,
+            "totals": totals,
+            "event_types": event_types
+        }
+    )
 
 @app.get("/add-onu", response_class=HTMLResponse)
 def manual_add_onu_page(request: Request, db: Session = Depends(get_db), user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))):
@@ -1233,21 +1570,24 @@ def api_create_vlan_direct(
     db: Session = Depends(get_db),
     user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))
 ):
-    if not 1 <= payload.vlan_id <= 4094:
+    # 1. Validasi Rentang VLAN
+    if not (1 <= payload.vlan_id <= 4094):
         raise HTTPException(status_code=400, detail="VLAN ID harus berada pada rentang 1-4094.")
     
     clean_vlan_name = re.sub(r"[^A-Za-z0-9_-]", "", payload.vlan_name.strip())
     if not clean_vlan_name:
         clean_vlan_name = f"VLAN_{payload.vlan_id}"
 
+    # 2. Ambil Profil OLT
     olt = db.query(OLTConfig).filter(OLTConfig.id == payload.olt_id).first()
     if not olt:
         raise HTTPException(status_code=404, detail="Perangkat OLT tidak ditemukan.")
 
+    # 3. Eksekusi Hardware / Netmiko jika bukan mock
     is_mock = os.getenv("MOCK_OLT", "false").lower() in ("true", "1", "yes")
 
     if not is_mock:
-        password = get_telnet_password(olt)
+        password = get_telnet_password(olt) if "get_telnet_password" in globals() else getattr(olt, "telnet_password", None)
         if not password:
             raise HTTPException(status_code=503, detail=f"Kredensial OLT {olt.name} belum disetel di OLT Management.")
 
@@ -1260,12 +1600,12 @@ def api_create_vlan_direct(
 
         from netmiko import ConnectHandler
         device_params = {
-            "device_type": "zte_zxros",
+            "device_type": "zte_zxros_telnet",  # <-- Gunakan driver telnet Netmiko
             "host": olt.ip_address,
             "username": olt.telnet_username,
             "password": password,
-            "port": olt.telnet_port,
-            "timeout": 10
+            "port": getattr(olt, "telnet_port", 23) or 23,
+            "timeout": 15
         }
 
         try:
@@ -1279,38 +1619,129 @@ def api_create_vlan_direct(
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"Gagal menghubungkan ke OLT ({olt.ip_address}): {str(exc)[:500]}")
 
-    entry = db.query(OLTSettingEntry).filter(
-        OLTSettingEntry.category == "vlan",
-        OLTSettingEntry.name == str(payload.vlan_id)
-    ).first()
-    
-    if not entry:
-        entry = OLTSettingEntry(
-            category="vlan",
-            name=str(payload.vlan_id),
-            data_json=json.dumps({"vlan_name": clean_vlan_name})
-        )
-        if hasattr(entry, "olt_id"):
-            entry.olt_id = olt.id
-        db.add(entry)
-    else:
-        entry.data_json = json.dumps({"vlan_name": clean_vlan_name})
-        if hasattr(entry, "olt_id"):
-            entry.olt_id = olt.id
+    # 4. Simpan / Perbarui Record di Database
+    vlan_dict = {
+        "vlan_id": payload.vlan_id,
+        "vlan_name": clean_vlan_name,
+        "access_ports": "-",
+        "trunk_ports": "-"
+    }
 
-    audit_msg = (
-        f"[SIMULASI] Buat VLAN {payload.vlan_id} ({clean_vlan_name}) pada {olt.name}"
-        if is_mock
-        else f"Push CLI VLAN {payload.vlan_id} ({clean_vlan_name}) ke OLT {olt.name}"
-    )
-    db.add(audit_event(request, "Create", audit_msg))
-    db.commit()
+    try:
+        # Filter spesifik per OLT agar tidak menimpa VLAN sasis lain
+        entry_query = db.query(OLTSettingEntry).filter(
+            OLTSettingEntry.category == "vlan",
+            OLTSettingEntry.name == str(payload.vlan_id)
+        )
+        if hasattr(OLTSettingEntry, "olt_id"):
+            entry_query = entry_query.filter(OLTSettingEntry.olt_id == olt.id)
+
+        entry = entry_query.first()
+
+        if not entry:
+            entry = OLTSettingEntry(
+                category="vlan",
+                name=str(payload.vlan_id),
+                data_json=json.dumps(vlan_dict)
+            )
+            if hasattr(entry, "olt_id"):
+                entry.olt_id = olt.id
+            db.add(entry)
+        else:
+            entry.data_json = json.dumps(vlan_dict)
+            if hasattr(entry, "olt_id"):
+                entry.olt_id = olt.id
+
+        # 5. Catat Audit Log jika fungsi audit tersedia
+        if "audit_event" in globals():
+            audit_msg = (
+                f"[SIMULASI] Buat VLAN {payload.vlan_id} ({clean_vlan_name}) pada {olt.name}"
+                if is_mock
+                else f"Push CLI VLAN {payload.vlan_id} ({clean_vlan_name}) ke OLT {olt.name}"
+            )
+            db.add(audit_event(request, "Create", audit_msg))
+
+        db.commit()
+
+    except Exception as db_err:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Gagal menyimpan ke database: {str(db_err)}")
 
     return {
         "status": "success",
         "message": f"[{'SIMULASI' if is_mock else 'HARDWARE'}] VLAN {payload.vlan_id} ({clean_vlan_name}) berhasil dibuat untuk {olt.name}!",
         "vlan_id": payload.vlan_id,
         "vlan_name": clean_vlan_name
+    }
+
+@app.post("/api/olt/{olt_id}/sync-hardware")
+def sync_olt_hardware(
+    olt_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))
+):
+    olt = db.query(OLTConfig).filter(OLTConfig.id == olt_id).first()
+    if not olt:
+        raise HTTPException(status_code=404, detail="OLT tidak ditemukan.")
+
+    is_mock = os.getenv("MOCK_OLT", "false").lower() in ("true", "1", "yes")
+    if is_mock:
+        return {
+            "status": "success",
+            "message": f"[SIMULASI] Sinkronisasi OLT {olt.name} berhasil disimulasikan."
+        }
+
+    password = get_telnet_password(olt) if "get_telnet_password" in globals() else getattr(olt, "telnet_password", None)
+    if not password:
+        raise HTTPException(status_code=503, detail=f"Kredensial OLT {olt.name} belum disetel di OLT Management.")
+
+    from netmiko import ConnectHandler
+    device_params = {
+        "device_type": "zte_zxros_telnet",
+        "host": olt.ip_address,
+        "username": olt.telnet_username,
+        "password": password,
+        "port": getattr(olt, "telnet_port", 23) or 23,
+        "timeout": 20
+    }
+
+    try:
+        with ConnectHandler(**device_params) as net_connect:
+            net_connect.enable()
+            output = net_connect.send_command("show gpon onu state", read_timeout=15)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Gagal menghubungi OLT ({olt.ip_address}): {str(exc)[:400]}")
+
+    synced_count = 0
+    # Parsing baris output CLI ZTE: OnuIndex, Admin State, OMCC State, Phase State, Channel
+    for line in output.splitlines():
+        line = line.strip()
+        if not line or "OnuIndex" in line or line.startswith("-"):
+            continue
+        parts = line.split()
+        if len(parts) >= 4:
+            port_raw = parts[0]
+            clean_port = port_raw if port_raw.startswith("gpon-onu_") else f"gpon-onu_{port_raw}"
+            phase_state = parts[3].lower()  # working, dyinggasp, los, offline
+
+            onu = db.query(OnuDevice).filter(
+                OnuDevice.olt_id == olt.id,
+                OnuDevice.gpon_port == clean_port
+            ).first()
+
+            if onu:
+                onu.status = phase_state
+                synced_count += 1
+
+    if "audit_event" in globals():
+        db.add(audit_event(request, "Sync", f"Sinkronisasi hardware OLT {olt.name}: {synced_count} ONU terverifikasi."))
+
+    db.commit()
+
+    return {
+        "status": "success",
+        "message": f"Sinkronisasi selesai. Sebanyak {synced_count} status ONU disesuaikan dengan kondisi fisik OLT {olt.name}."
     }
 
 # ==============================================================================

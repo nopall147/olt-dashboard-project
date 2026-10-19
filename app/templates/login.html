@@ -25,11 +25,10 @@
             background-size: cover;
         }
 
-        /* Di light mode background lebih polos atau beri efek putih agar beda */
+        /* Background untuk Light Mode */
         html:not(.dark) body {
-            background: #f8fafc; /* Warna slate-50 murni sebagai fallback tanpa gambar */
-            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-            background-size: 20px 20px;
+            background: url('/static/img/lightmodelogin.jpg') no-repeat center center fixed;
+            background-size: cover;
         }
 
         html.dark .neon-glow-cyan {
@@ -42,19 +41,27 @@
             -webkit-backdrop-filter: blur(16px);
             box-shadow: 0 0 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(0, 229, 255, 0.12);
         }
+
+        /* Glassmorphism card untuk light mode agar tetap kontras dan elegan */
+        html:not(.dark) .cyber-card {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
     </style>
 </head>
 <body class="relative flex min-h-screen items-center justify-center p-4 text-slate-800 dark:text-slate-300 transition-colors duration-300">
-    <!-- Overlay Gelap Halus Agar Gambar Tidak Menabrak Form (Hanya di mode gelap) -->
-    <div class="fixed inset-0 hidden dark:block bg-[#050b14]/60 pointer-events-none transition-colors"></div>
+    <!-- Overlay Transparan: Putih lembut di Light Mode, Gelap di Dark Mode -->
+    <div class="fixed inset-0 bg-white/40 dark:bg-[#050b14]/60 pointer-events-none transition-colors"></div>
 
     <!-- Theme Toggle Standalone Button -->
-    <button id="theme-toggle" type="button" class="absolute top-4 right-4 rounded-lg p-2.5 text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-[#0d1d33] transition bg-white/80 dark:bg-black/50 backdrop-blur border border-slate-300 dark:border-[#162a45]">
+    <button id="theme-toggle" type="button" class="absolute top-4 right-4 rounded-lg p-2.5 text-slate-500 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-[#0d1d33] transition bg-white/80 dark:bg-black/50 backdrop-blur border border-slate-300 dark:border-[#162a45] z-20">
         <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
         <svg id="theme-toggle-light-icon" class="hidden w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
     </button>
 
-    <div class="cyber-card bg-white/90 border border-slate-300 shadow-xl dark:border-[#162a45] relative z-10 w-full max-w-md rounded-2xl p-8 transition-colors">
+    <div class="cyber-card border border-slate-300 dark:border-[#162a45] relative z-10 w-full max-w-md rounded-2xl p-8 transition-colors">
         
         <!-- Header Section with Logo -->
         <div class="text-center">
@@ -93,7 +100,7 @@
                     required 
                     autofocus 
                     placeholder="Enter username"
-                    class="w-full rounded-lg bg-white dark:bg-[#060c17]/90 border border-slate-300 dark:border-[#162a45] px-3.5 py-2.5 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] transition transition-colors"
+                    class="w-full rounded-lg bg-white dark:bg-[#060c17]/90 border border-slate-300 dark:border-[#162a45] px-3.5 py-2.5 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] transition"
                 >
             </div>
 
@@ -104,7 +111,7 @@
                     name="password" 
                     required 
                     placeholder="••••••••"
-                    class="w-full rounded-lg bg-white dark:bg-[#060c17]/90 border border-slate-300 dark:border-[#162a45] px-3.5 py-2.5 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] transition transition-colors"
+                    class="w-full rounded-lg bg-white dark:bg-[#060c17]/90 border border-slate-300 dark:border-[#162a45] px-3.5 py-2.5 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] transition"
                 >
             </div>
 
@@ -116,7 +123,7 @@
             </button>
             <div class="mb-5 flex items-center justify-between mt-4">
                 <div class="flex items-center">
-                    <input type="checkbox" id="remember_me" class="h-4 w-4 rounded border-slate-300 dark:border-[#162a45] bg-white dark:bg-[#060c17] text-blue-600 dark:text-[#00e5ff]">
+                   <input type="checkbox" id="remember_me" name="remember_me" value="true" class="h-4 w-4 rounded border-slate-300 dark:border-[#162a45] bg-white dark:bg-[#060c17] text-blue-600 dark:text-[#00e5ff]">
                     <label for="remember_me" class="ml-2 block text-xs text-slate-600 dark:text-slate-400">Ingat saya</label>
                 </div>
                 <div class="text-xs">

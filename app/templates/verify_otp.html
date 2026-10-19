@@ -1,32 +1,49 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verifikasi OTP - OLT Monitoring System</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            base: '#050b14',
+                            card: '#08111e',
+                            border: '#162a45',
+                            cyan: '#00e5ff'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body class="bg-slate-50 flex min-h-screen items-center justify-center p-4">
-    <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+<body class="bg-slate-50 dark:bg-[#050b14] flex min-h-screen items-center justify-center p-4 font-mono transition-colors">
+    <div class="w-full max-w-md rounded-2xl border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#08111e] p-8 shadow-sm dark:shadow-[0_0_50px_rgba(0,0,0,0.8)] transition-colors">
         
         <!-- Icon & Judul -->
         <div class="text-center">
-            <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 mb-3">
+            <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 dark:bg-[#00e5ff]/10 text-blue-600 dark:text-[#00e5ff] border border-blue-100 dark:border-[#00e5ff]/20 mb-3 shadow-sm dark:shadow-[0_0_12px_rgba(0,229,255,0.2)]">
                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
             </div>
-            <h1 class="text-xl font-bold text-slate-900">Verifikasi Email</h1>
-            <p class="mt-1 text-xs text-slate-500">
-                Masukkan 6 digit kode OTP yang kami kirimkan ke:<br>
-                <b class="text-slate-800">{{ email }}</b>
+            <h1 class="text-lg font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">Verifikasi OTP</h1>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Masukkan 6 digit kode OTP yang dikirimkan ke:<br>
+                <b class="text-slate-800 dark:text-blue-400 font-mono">{{ email }}</b>
             </p>
         </div>
 
         <!-- Alert Error -->
         {% if error %}
-        <div class="mt-4 rounded-lg bg-rose-50 border border-rose-200 p-3 text-xs text-rose-700 flex items-center gap-2">
-            <svg class="h-4 w-4 shrink-0 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"/><path d="M12 8v4m0 4h.01" stroke-width="2" stroke-linecap="round"/></svg>
+        <div class="mt-4 rounded-lg bg-rose-50 dark:bg-[#ff3366]/10 border border-rose-200 dark:border-[#ff3366]/30 p-3 text-xs text-rose-700 dark:text-[#ff3366] flex items-center gap-2">
+            <svg class="h-4 w-4 shrink-0 text-rose-500 dark:text-[#ff3366]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke-width="2"/><path d="M12 8v4m0 4h.01" stroke-width="2" stroke-linecap="round"/></svg>
             <span>{{ error }}</span>
         </div>
         {% endif %}
@@ -36,20 +53,20 @@
             <input type="hidden" name="email" value="{{ email }}">
             
             <div>
-                <label class="block text-center text-xs font-semibold text-slate-600 mb-2">Kode OTP (6 Digit)</label>
+                <label class="block text-center text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">Kode OTP (6 Digit)</label>
                 <input type="text" name="otp" required maxlength="6" autofocus placeholder="123456"
-                    class="w-full text-center text-2xl font-mono tracking-widest rounded-xl border border-slate-200 py-3 text-slate-900 placeholder:text-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    class="w-full text-center text-2xl font-mono tracking-[0.4em] rounded-xl border border-slate-200 dark:border-[#162a45] bg-slate-50 dark:bg-[#060c17] py-3 text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-700 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] transition">
             </div>
 
             <button type="submit"
-                class="w-full rounded-lg bg-blue-600 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition">
+                class="w-full rounded-lg bg-blue-600 dark:bg-[#00e5ff] hover:bg-blue-700 dark:hover:bg-[#00c8e0] py-2.5 text-xs font-bold uppercase tracking-wider text-white dark:text-black shadow-md dark:shadow-[0_0_12px_rgba(0,229,255,0.35)] transition cursor-pointer">
                 Verifikasi & Aktifkan Akun
             </button>
         </form>
 
-        <p class="mt-6 text-center text-xs text-slate-500">
-            Salah email? 
-            <a href="/signup" class="font-semibold text-blue-600 hover:text-blue-700">Daftar ulang</a>
+        <p class="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
+            Kembali ke 
+            <a href="/login" class="font-bold text-blue-600 dark:text-[#00e5ff] hover:underline">Halaman Login</a>
         </p>
     </div>
 </body>

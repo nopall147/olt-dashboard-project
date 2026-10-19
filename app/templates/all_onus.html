@@ -1084,10 +1084,45 @@ function saveActiveConfig() {
     alert("Konfigurasi tersimpan ke database sistem.");
 }
 
-function editMetadata() {
-    const currentName = document.getElementById('det_name').textContent;
+async function editMetadata() {
+    // Pastikan variabel ID ONU aktif tersedia
+    const onuId = window.activeOnuId || (document.getElementById('det_id') ? document.getElementById('det_id').textContent : null);
+    if (!onuId) {
+        alert("ID ONU tidak ditemukan.");
+        return;
+    }
+
+    const nameEl = document.getElementById('det_name');
+    const currentName = nameEl ? nameEl.textContent.trim() : "";
+    
     const newName = prompt("Ubah Nama Pelanggan:", currentName);
-    if (newName) document.getElementById('det_name').textContent = newName;
+    if (newName === null || newName.trim() === "") return;
+
+    try {
+        const res = await fetch(`/api/onu/${onuId}/metadata`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                customer_name: newName.trim(),
+                description: ""
+            })
+        });
+
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.detail || "Gagal memperbarui nama pelanggan.");
+
+        nameEl.textContent = newName.trim();
+        
+        // Perbarui juga nama di baris tabel secara langsung jika ada
+        const tableRowName = document.querySelector(`tr[data-id="${onuId}"] .onu-customer-name`);
+        if (tableRowName) {
+            tableRowName.textContent = newName.trim();
+        }
+
+        alert("Nama pelanggan berhasil diperbarui di database.");
+    } catch (err) {
+        alert(err.message);
+    }
 }
 </script>
 {% endblock %}

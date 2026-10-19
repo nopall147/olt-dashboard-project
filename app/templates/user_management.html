@@ -1,117 +1,137 @@
 {% extends "base.html" %}
-{% block title %}TR069 Profile - OLT Monitoring System{% endblock %}
+{% block title %}User Management - OLT Monitoring System{% endblock %}
 
 {% block content %}
 <div class="space-y-6 font-mono text-slate-800 dark:text-slate-300 transition-colors">
 
     <!-- ========================================================= -->
-    <!-- 1. TOP HEADER & TELEMETRY PROFILE STRIP -->
+    <!-- 1. TOP HEADER & TELEMETRY STRIP -->
     <!-- ========================================================= -->
     <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-slate-200 dark:border-[#162a45] gap-4 transition-colors">
         <div class="space-y-1">
             <div class="flex items-center gap-2.5">
                 <span class="inline-block h-2 w-2 rounded-full bg-blue-600 dark:bg-[#00e5ff] shadow-sm dark:shadow-[0_0_8px_#00e5ff]"></span>
-                <h1 class="text-base font-bold tracking-wider text-slate-800 dark:text-slate-100 uppercase dark:neon-glow-cyan">ACS AUTO-CONFIGURATION PROFILES</h1>
+                <h1 class="text-base font-bold tracking-wider text-slate-800 dark:text-slate-100 uppercase dark:neon-glow-cyan">OPERATOR & USER CLEARANCE REGISTRY</h1>
             </div>
-            <p class="text-[10px] text-slate-500 tracking-widest uppercase">TR069 PROVISIONING TEMPLATES // ACS POOL & VLAN TAG SCHEMAS</p>
+            <p class="text-[10px] text-slate-500 tracking-widest uppercase">RBAC MATRIX // PRIVILEGE POLICIES & CREDENTIAL DIRECTORY</p>
         </div>
 
         <div class="flex items-center gap-3">
             <div class="px-3 py-1.5 rounded-lg bg-white dark:bg-[#08111e] border border-slate-200 dark:border-[#162a45] text-[11px] font-mono text-slate-600 dark:text-slate-400 transition-colors">
-                TOTAL: <strong class="text-blue-600 dark:text-[#00e5ff]">{{ profiles|length }} TEMPLATES</strong>
+                TOTAL: <strong class="text-blue-600 dark:text-[#00e5ff]">{{ users|length }} OPERATORS</strong>
             </div>
-            <button id="createTr069Profile" type="button" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 dark:bg-[#00e5ff] hover:bg-blue-700 dark:hover:bg-[#00c8e0] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white dark:text-black shadow-md dark:shadow-[0_0_12px_rgba(0,229,255,0.35)] transition cursor-pointer">
-                <span>+ CREATE PROFILE</span>
+            <button id="createUserBtn" type="button" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 dark:bg-[#00e5ff] hover:bg-blue-700 dark:hover:bg-[#00c8e0] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white dark:text-black shadow-md dark:shadow-[0_0_12px_rgba(0,229,255,0.35)] transition cursor-pointer">
+                <span>+ ADD OPERATOR</span>
             </button>
         </div>
     </div>
 
     <!-- ========================================================= -->
-    <!-- 2. TR069 TEMPLATES REGISTRY (CYBER CONSOLE MATRIX) -->
+    <!-- 2. USER REGISTRY MATRIX (CYBER TABLE CONSOLE) -->
     <!-- ========================================================= -->
     <section class="rounded-xl border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#08111e] overflow-hidden shadow-sm dark:shadow-xl transition-colors">
         <div class="p-3.5 bg-slate-50 dark:bg-[#091322] border-b border-slate-200 dark:border-[#162a45] flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 transition-colors">
             <span class="flex items-center gap-2 font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                <span class="text-blue-600 dark:text-[#00e5ff]">■</span> ACTIVE TR069 ACS PROFILES DIRECTORY
+                <span class="text-blue-600 dark:text-[#00e5ff]">■</span> SYSTEM OPERATORS & CREDENTIAL DIRECTORY
             </span>
-            <span class="text-slate-500">PROVISIONING DEFAULTS</span>
+            <span class="text-slate-500">ROLE-BASED ACCESS CONTROL (RBAC)</span>
         </div>
 
         <div class="overflow-x-auto">
             <table class="w-full min-w-[1000px] border-collapse text-left text-xs bg-white dark:bg-[#08111e] transition-colors">
                 <thead>
                     <tr class="bg-slate-100 dark:bg-[#060c17]/80 border-b border-slate-200 dark:border-[#162a45] text-[10px] font-bold uppercase tracking-widest text-slate-600 dark:text-slate-500 transition-colors">
-                        <th class="px-3 py-3 w-12 text-center">SLOT</th>
-                        <th class="px-4 py-3">PROFILE NAME</th>
-                        <th class="px-4 py-3">ACS TARGET URL</th>
-                        <th class="px-4 py-3">AUTH USERNAME</th>
-                        <th class="px-4 py-3">SECRET KEY</th>
-                        <th class="px-4 py-3">ASSIGNED OLTS</th>
-                        <th class="px-4 py-3">VLAN MODE</th>
+                        <th class="px-3 py-3 w-12 text-center">INDEX</th>
+                        <th class="px-4 py-3">OPERATOR / IDENTITY</th>
+                        <th class="px-4 py-3">USERNAME</th>
+                        <th class="px-4 py-3">COMMUNICATION EMAIL</th>
+                        <th class="px-4 py-3">CLEARANCE ROLE</th>
+                        <th class="px-4 py-3 text-center">ACCOUNT STATUS</th>
                         <th class="px-4 py-3 text-center">COMMANDS</th>
                     </tr>
                 </thead>
-                <tbody id="profileRows" class="divide-y divide-slate-100 dark:divide-[#162a45]/60 transition-colors">
-                    {% for profile in profiles %}
-                    <tr class="hover:bg-slate-50 dark:hover:bg-[#0d1d33]/50 transition duration-150" data-id="{{ profile.id }}" data-name="{{ profile.name|e }}">
-                        <!-- SLOT / INDEX -->
+                <tbody id="userRows" class="divide-y divide-slate-100 dark:divide-[#162a45]/60 transition-colors">
+                    {% for u in users %}
+                    <tr class="hover:bg-slate-50 dark:hover:bg-[#0d1d33]/50 transition duration-150" data-id="{{ u.id }}">
+                        <!-- INDEX -->
                         <td class="px-3 py-3.5 text-center text-slate-500 font-mono text-[11px]">
                             {{ "%02d" % loop.index }}
                         </td>
 
-                        <!-- PROFILE NAME -->
+                        <!-- FULL NAME & AVATAR -->
                         <td class="px-4 py-3.5 font-bold text-slate-800 dark:text-slate-200">
-                            <span class="text-blue-600 dark:text-[#00e5ff]">{{ profile.name }}</span>
-                        </td>
-
-                        <!-- ACS URL -->
-                        <td class="max-w-[240px] truncate px-4 py-3.5 text-slate-600 dark:text-slate-300 font-mono text-[11px]" title="{{ profile.data.acs_url|default('') }}">
-                            {{ profile.data.acs_url|default('—') }}
+                            <div class="flex items-center gap-3">
+                                {% if u.image %}
+                                <img src="{{ u.image }}" alt="" class="h-7 w-7 rounded-lg object-cover border border-slate-300 dark:border-[#162a45]">
+                                {% else %}
+                                <div class="h-7 w-7 rounded-lg bg-blue-100 dark:bg-[#0e223b] border border-blue-200 dark:border-[#00e5ff]/30 text-blue-700 dark:text-[#00e5ff] flex items-center justify-center font-bold text-[10px]">
+                                    {{ (u.full_name[:2] if u.full_name else u.username[:2])|upper }}
+                                </div>
+                                {% endif %}
+                                <span class="tracking-wide">{{ u.full_name or 'No Display Name' }}</span>
+                            </div>
                         </td>
 
                         <!-- USERNAME -->
-                        <td class="px-4 py-3.5 text-slate-500 dark:text-slate-400 font-mono text-[11px]">
-                            {{ profile.data.username|default('—') }}
+                        <td class="px-4 py-3.5 font-mono text-blue-600 dark:text-[#00e5ff] font-bold text-xs">
+                            {{ u.username }}
                         </td>
 
-                        <!-- PASSWORD -->
-                        <td class="px-4 py-3.5 font-mono text-slate-500 text-[11px]">
-                            {% if profile.has_password %}<span class="tracking-widest">••••••••</span>{% else %}—{% endif %}
+                        <!-- EMAIL -->
+                        <td class="px-4 py-3.5 text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+                            {{ u.email }}
                         </td>
 
-                        <!-- DEFAULT OLT -->
-                        <td class="px-4 py-3.5 text-slate-700 dark:text-slate-300 font-mono text-[11px]">
-                            <span class="bg-slate-50 dark:bg-[#060c17] px-2 py-0.5 rounded border border-slate-200 dark:border-[#162a45] transition-colors">
-                                {{ (profile.data.default_olts|default([profile.data.default_olt] if profile.data.default_olt else []))|join(', ') or '—' }}
-                            </span>
-                        </td>
-
-                        <!-- VLAN -->
+                        <!-- ROLE -->
                         <td class="px-4 py-3.5">
-                            {% set is_tagged = profile.data.vlan_tag|default(profile.data.vlan is defined and profile.data.vlan) %}
-                            <span class="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider font-mono {% if is_tagged %}bg-blue-100 dark:bg-[#00e5ff]/10 text-blue-700 dark:text-[#00e5ff] border border-blue-200 dark:border-[#00e5ff]/30{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700{% endif %} transition-colors">
-                                <span class="h-1 w-1 rounded-full {% if is_tagged %}bg-blue-600 dark:bg-[#00e5ff]{% else %}bg-slate-400 dark:bg-slate-500{% endif %}"></span>
-                                {% if is_tagged %}TAG {{ profile.data.vlan }}{% else %}UNTAG{% endif %}
+                            <span class="inline-flex items-center gap-1.5 rounded px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider font-mono
+                                {% if u.role == 'Super Admin' %}
+                                    bg-purple-100 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-500/30
+                                {% elif u.role == 'NOC' %}
+                                    bg-sky-100 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-500/30
+                                {% else %}
+                                    bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700
+                                {% endif %}">
+                                {{ u.role }}
                             </span>
                         </td>
 
-                        <!-- ACTIONS -->
+                        <!-- STATUS (ACTIVE / INACTIVE) -->
+                        <td class="px-4 py-3.5 text-center">
+                            <span class="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider font-mono {% if u.is_active %}bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30{% else %}bg-rose-100 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30{% endif %}">
+                                <span class="h-1.5 w-1.5 rounded-full {% if u.is_active %}bg-emerald-500 dark:bg-emerald-400 animate-pulse{% else %}bg-rose-500{% endif %}"></span>
+                                {{ 'ACTIVE' if u.is_active else 'DISABLED' }}
+                            </span>
+                        </td>
+
+                        <!-- COMMAND ACTIONS -->
                         <td class="px-4 py-3 text-center">
                             <div class="flex items-center justify-center gap-1.5">
-                                <script type="application/json" class="profile-raw-data">{{ profile.data|tojson }}</script>
-                                <button type="button" class="edit-profile-btn p-1.5 rounded-md bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] text-blue-600 dark:text-[#00e5ff] hover:bg-blue-100 dark:hover:bg-[#00e5ff]/10 hover:border-blue-300 dark:hover:border-[#00e5ff]/40 transition cursor-pointer" title="Edit Profile Template">
+                                <button type="button" 
+                                    class="edit-user-btn p-1.5 rounded-md bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] text-blue-600 dark:text-[#00e5ff] hover:bg-blue-100 dark:hover:bg-[#00e5ff]/10 hover:border-blue-300 dark:hover:border-[#00e5ff]/40 transition cursor-pointer"
+                                    data-id="{{ u.id }}"
+                                    data-username="{{ u.username }}"
+                                    data-fullname="{{ u.full_name or '' }}"
+                                    data-email="{{ u.email }}"
+                                    data-role="{{ u.role }}"
+                                    data-active="{{ 'true' if u.is_active else 'false' }}"
+                                    title="Edit Operator Profile">
                                     <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="m16 4 4 4M4 20l4-.8L19 8a2.1 2.1 0 0 0-3-3L5 16z"/></svg>
                                 </button>
-                                <button type="button" class="delete-profile-btn p-1.5 rounded-md bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] text-slate-500 hover:text-rose-600 dark:hover:text-[#ff3366] hover:bg-rose-100 dark:hover:bg-[#ff3366]/10 hover:border-rose-300 dark:hover:border-[#ff3366]/40 transition cursor-pointer" data-id="{{ profile.id }}" title="Purge Profile Template">
+                                <button type="button" 
+                                    class="delete-user-btn p-1.5 rounded-md bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] text-slate-500 hover:text-rose-600 dark:hover:text-[#ff3366] hover:bg-rose-100 dark:hover:bg-[#ff3366]/10 hover:border-rose-300 dark:hover:border-[#ff3366]/40 transition cursor-pointer" 
+                                    data-id="{{ u.id }}"
+                                    data-username="{{ u.username }}"
+                                    title="Revoke Operator Access">
                                     <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/></svg>
                                 </button>
                             </div>
                         </td>
                     </tr>
                     {% else %}
-                    <tr id="emptyProfiles">
-                        <td colspan="8" class="p-8 text-center text-xs text-slate-500 font-mono">
-                            Belum ada template TR069 Profile yang tersimpan.
+                    <tr>
+                        <td colspan="7" class="p-8 text-center text-xs text-slate-500 font-mono">
+                            Belum ada user yang terdaftar dalam basis data sistem.
                         </td>
                     </tr>
                     {% endfor %}
@@ -123,208 +143,179 @@
 </div>
 
 <!-- ========================================================= -->
-<!-- 3. CYBER MODAL: TR069 CONFIGURATION DIALOG -->
+<!-- 3. CYBER MODAL: ADD / EDIT OPERATOR DIALOG -->
 <!-- ========================================================= -->
-<dialog id="tr069Dialog" class="w-[min(96vw,920px)] overflow-hidden rounded-2xl border border-slate-200 dark:border-[#162a45] p-0 shadow-xl dark:shadow-[0_0_50px_rgba(0,0,0,0.95)] bg-white dark:bg-[#091322] backdrop:bg-black/20 dark:backdrop:bg-black/75 transition-colors">
-    <form id="profileForm" class="flex flex-col bg-white dark:bg-[#091322] font-mono text-slate-800 dark:text-slate-200 transition-colors">
+<dialog id="userDialog" class="w-[min(94vw,560px)] overflow-hidden rounded-2xl border border-slate-200 dark:border-[#162a45] p-0 shadow-xl dark:shadow-[0_0_50px_rgba(0,0,0,0.95)] bg-white dark:bg-[#091322] backdrop:bg-black/20 dark:backdrop:bg-black/75 transition-colors">
+    <form id="userForm" class="flex flex-col bg-white dark:bg-[#091322] font-mono text-slate-800 dark:text-slate-200 transition-colors">
         <header class="flex items-center justify-between border-b border-slate-200 dark:border-[#162a45] px-6 py-4 bg-slate-50 dark:bg-[#08111e] transition-colors">
-            <h2 id="formTitle" class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-[#00e5ff] flex items-center gap-2">
+            <h2 id="userDialogTitle" class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-[#00e5ff] flex items-center gap-2">
                 <span class="inline-block w-2 h-2 rounded-full bg-blue-600 dark:bg-[#00e5ff] shadow-sm dark:shadow-[0_0_6px_#00e5ff]"></span>
-                TR069 TEMPLATE CONFIGURATION
+                OPERATOR CREDENTIAL CONFIGURATION
             </h2>
-            <button type="button" id="closeTr069Dialog" aria-label="Close" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-xl leading-none">✕</button>
+            <button type="button" id="closeUserDialog" aria-label="Close" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-xl leading-none cursor-pointer">✕</button>
         </header>
 
         <div class="max-h-[72vh] space-y-4 overflow-y-auto px-6 py-5 text-xs">
-            <input id="profileId" type="hidden">
-
-            <!-- Profile Name -->
-            <label class="grid items-center gap-3 md:grid-cols-[200px_1fr]">
-                <span class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">PROFILE NAME</span>
-                <input id="profileName" required maxlength="120" placeholder="e.g. ACS-SVR-MAIN" class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition transition-colors">
-            </label>
-
-            <!-- ACS URL -->
-            <label class="grid items-center gap-3 md:grid-cols-[200px_1fr]">
-                <span class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">ACS TARGET URL</span>
-                <input id="acsUrl" type="url" required placeholder="e.g. http://10.10.10.100:7547" class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition transition-colors">
-            </label>
+            <input id="userId" type="hidden">
 
             <!-- Username -->
-            <label class="grid items-center gap-3 md:grid-cols-[200px_1fr]">
-                <span class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">ACS USERNAME</span>
-                <input id="acsUsername" placeholder="e.g. acs_admin" class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition transition-colors">
-            </label>
+            <div>
+                <label for="uUsername" class="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">SYSTEM USERNAME</label>
+                <input id="uUsername" required maxlength="50" placeholder="e.g. operator_noc" class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition transition-colors">
+            </div>
+
+            <!-- Full Name -->
+            <div>
+                <label for="uFullName" class="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">OPERATOR FULL NAME</label>
+                <input id="uFullName" required maxlength="100" placeholder="e.g. Hari Pujianto" class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition transition-colors">
+            </div>
+
+            <!-- Email -->
+            <div>
+                <label for="uEmail" class="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">COMMUNICATION EMAIL</label>
+                <input id="uEmail" type="email" required maxlength="100" placeholder="e.g. noc@domain.com" class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition transition-colors">
+            </div>
+
+            <!-- Role Selection -->
+            <div>
+                <label for="uRole" class="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">CLEARANCE ROLE</label>
+                <select id="uRole" required class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition cursor-pointer transition-colors">
+                    {% for r in roles %}
+                    <option value="{{ r.value if r.value is defined else r }}">{{ r.value if r.value is defined else r }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
             <!-- Password -->
-            <label class="grid items-center gap-3 md:grid-cols-[200px_1fr]">
-                <span class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">ACS PASSWORD</span>
-                <input id="acsPassword" type="password" autocomplete="new-password" placeholder="e.g. Admin@123" class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-colors">
-            </label>
-
-            <!-- VLAN Matrix -->
-            <div class="grid items-start gap-3 md:grid-cols-[200px_1fr] pt-2 border-t border-slate-200 dark:border-[#162a45]/60 transition-colors">
-                <span class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider pt-2">VLAN ENCAPSULATION</span>
-                <div>
-                    <div class="flex items-center gap-5 text-slate-600 dark:text-slate-300">
-                        <label class="flex items-center gap-2 cursor-pointer hover:text-slate-900 dark:hover:text-white">
-                            <input type="radio" name="vlanMode" value="tag" checked class="accent-blue-600 dark:accent-[#00e5ff]">
-                            <span>Tag</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer hover:text-slate-900 dark:hover:text-white">
-                            <input type="radio" name="vlanMode" value="untag" class="accent-blue-600 dark:accent-[#00e5ff]">
-                            <span>Untag</span>
-                        </label>
-                    </div>
-                    <input id="profileVlan" type="number" min="1" max="4094" placeholder="e.g. 100" class="mt-2.5 w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-colors">
-                </div>
+            <div>
+                <label for="uPassword" class="block text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">ACCOUNT PASSWORD</label>
+                <input id="uPassword" type="password" autocomplete="new-password" placeholder="••••••••" class="w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] px-3.5 py-2 text-slate-800 dark:text-slate-200 focus:border-blue-500 dark:focus:border-[#00e5ff] focus:ring-1 focus:ring-blue-500 dark:focus:ring-[#00e5ff] outline-none transition placeholder:text-slate-400 dark:placeholder:text-slate-600 transition-colors">
+                <span id="pwdHint" class="hidden text-[9px] text-slate-500 mt-1 block">Kosongkan jika tidak ingin mengganti password lama saat mengedit.</span>
             </div>
 
-            <!-- Default OLT Association -->
-            <div class="grid items-start gap-3 md:grid-cols-[200px_1fr] pt-2 border-t border-slate-200 dark:border-[#162a45]/60 transition-colors">
-                <span class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider pt-1">
-                    CHASSIS BINDING <span class="font-normal text-[10px] text-slate-500">(OPTIONAL)</span>
-                </span>
-                <div id="defaultOltOptions" class="space-y-2.5">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {% for olt in olts %}
-                        <label class="flex items-center gap-2 bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] p-2.5 rounded-lg text-slate-700 dark:text-slate-300 hover:border-blue-400 dark:hover:border-[#00e5ff]/40 cursor-pointer transition transition-colors">
-                            <input type="checkbox" name="defaultOlt" value="{{ olt.name }}" class="accent-blue-600 dark:accent-[#00e5ff] h-3.5 w-3.5 rounded">
-                            <span class="text-xs">{{ olt.name }}</span>
-                        </label>
-                        {% else %}
-                        <span class="text-xs text-slate-500">Belum ada OLT terdaftar di cluster.</span>
-                        {% endfor %}
-                    </div>
-                    <p class="text-[10px] text-slate-500 p-2.5 rounded bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] leading-relaxed transition-colors">
-                        ⓘ Default OLT akan diasosiasikan secara otomatis pada saat provisioning massal antarmuka ONT/ONU.
-                    </p>
-                </div>
+            <!-- Status Toggle -->
+            <div class="pt-2 border-t border-slate-200 dark:border-[#162a45]/60">
+                <label class="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300">
+                    <input id="uIsActive" type="checkbox" checked class="rounded accent-blue-600 dark:accent-[#00e5ff] h-3.5 w-3.5">
+                    <span class="font-bold text-xs uppercase tracking-wide">ACCOUNT ACTIVE // ACCESS PERMITTED</span>
+                </label>
             </div>
 
-            <p id="profileMessage" class="hidden text-xs font-mono p-2.5 rounded-lg bg-rose-50 dark:bg-[#ff3366]/10 border border-rose-200 dark:border-[#ff3366]/30 text-rose-600 dark:text-[#ff3366] transition-colors"></p>
+            <p id="userFormError" class="hidden text-xs font-mono p-2.5 rounded-lg bg-rose-50 dark:bg-[#ff3366]/10 border border-rose-200 dark:border-[#ff3366]/30 text-rose-600 dark:text-[#ff3366] transition-colors"></p>
         </div>
 
         <footer class="flex justify-end gap-2 border-t border-slate-200 dark:border-[#162a45] bg-slate-50 dark:bg-[#08111e] px-6 py-4 transition-colors">
-            <button type="button" id="cancelTr069Dialog" class="rounded-lg border border-slate-300 dark:border-[#162a45] px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#0d1d33] transition cursor-pointer">✕ CLOSE</button>
-            <button id="saveTr069Profile" type="submit" class="rounded-lg bg-blue-600 dark:bg-[#00e5ff] hover:bg-blue-700 dark:hover:bg-[#00c8e0] px-5 py-2 text-xs font-bold uppercase tracking-wider text-white dark:text-black shadow-md dark:shadow-[0_0_12px_rgba(0,229,255,0.35)] transition cursor-pointer">SAVE TEMPLATE</button>
+            <button type="button" id="cancelUserDialog" class="rounded-lg border border-slate-300 dark:border-[#162a45] px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#0d1d33] transition cursor-pointer">✕ CLOSE</button>
+            <button id="saveUserBtn" type="submit" class="rounded-lg bg-blue-600 dark:bg-[#00e5ff] hover:bg-blue-700 dark:hover:bg-[#00c8e0] px-5 py-2 text-xs font-bold uppercase tracking-wider text-white dark:text-black shadow-md dark:shadow-[0_0_12px_rgba(0,229,255,0.35)] transition cursor-pointer">SAVE OPERATOR</button>
         </footer>
     </form>
 </dialog>
 
+<!-- ========================================================= -->
+<!-- 4. LOGIKA JAVASCRIPT GLOBAL -->
+<!-- ========================================================= -->
 <script>
-const form=document.getElementById('profileForm'),dialog=document.getElementById('tr069Dialog'),message=document.getElementById('profileMessage');
+const userDialog = document.getElementById('userDialog');
+const userForm = document.getElementById('userForm');
+const userFormError = document.getElementById('userFormError');
 
-function resetProfileForm(){
-    form.reset();
-    document.getElementById('profileId').value='';
-    document.getElementById('formTitle').textContent='CREATE TR069 PROFILE';
-    document.getElementById('acsPassword').placeholder='e.g. Admin@123';
-    document.getElementById('profileMessage').classList.add('hidden');
-    document.getElementById('profileVlan').disabled=false;
-    document.getElementById('profileVlan').required=true;
-}
-
-function selectedDefaultOlts(){
-    return [...document.querySelectorAll('input[name="defaultOlt"]:checked')].map(input=>input.value);
-}
-
-function editProfile(row){
-    const data=JSON.parse(row.querySelector('.profile-raw-data')?.textContent||'{}');
-    document.getElementById('profileId').value=row.dataset.id;
-    document.getElementById('profileName').value=row.dataset.name;
-    document.getElementById('acsUrl').value=data.acs_url||'';
-    document.getElementById('acsUsername').value=data.username||'';
-    document.getElementById('acsPassword').value='';
-    document.getElementById('acsPassword').placeholder='Leave blank to keep current password';
-    
-    const tagged=data.vlan_tag??Boolean(data.vlan);
-    document.querySelector(`input[name="vlanMode"][value="${tagged?'tag':'untag'}"]`).checked=true;
-    document.getElementById('profileVlan').value=data.vlan||'';
-    document.getElementById('profileVlan').disabled=!tagged;
-    document.getElementById('profileVlan').required=tagged;
-    
-    const selected=data.default_olts||(data.default_olt?[data.default_olt]:[]);
-    document.querySelectorAll('input[name="defaultOlt"]').forEach(input=>input.checked=selected.includes(input.value));
-    
-    document.getElementById('formTitle').textContent='EDIT TR069 PROFILE';
-    message.classList.add('hidden');
-    dialog.showModal();
-}
-
-document.getElementById('createTr069Profile').addEventListener('click',()=>{
-    resetProfileForm();
-    dialog.showModal();
+document.getElementById('createUserBtn').addEventListener('click', () => {
+    userForm.reset();
+    document.getElementById('userId').value = '';
+    document.getElementById('userDialogTitle').textContent = 'ADD NEW OPERATOR';
+    document.getElementById('uUsername').readOnly = false;
+    document.getElementById('uUsername').classList.remove('opacity-60', 'cursor-not-allowed');
+    document.getElementById('uPassword').required = true;
+    document.getElementById('pwdHint').classList.add('hidden');
+    document.getElementById('uIsActive').checked = true;
+    userFormError.classList.add('hidden');
+    userDialog.showModal();
 });
 
-document.getElementById('closeTr069Dialog').addEventListener('click',()=>dialog.close());
-document.getElementById('cancelTr069Dialog').addEventListener('click',()=>dialog.close());
+const closeUserModal = () => userDialog.close();
+document.getElementById('closeUserDialog').addEventListener('click', closeUserModal);
+document.getElementById('cancelUserDialog').addEventListener('click', closeUserModal);
 
-document.querySelectorAll('input[name="vlanMode"]').forEach(radio=>radio.addEventListener('change',()=>{
-    const tagged=document.querySelector('input[name="vlanMode"]:checked').value==='tag';
-    document.getElementById('profileVlan').disabled=!tagged;
-    document.getElementById('profileVlan').required=tagged;
-    if(!tagged) document.getElementById('profileVlan').value='';
-}));
+// Edit User via Event Listener dari Data Attribute
+document.querySelectorAll('.edit-user-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const d = btn.dataset;
+        userForm.reset();
+        document.getElementById('userId').value = d.id;
+        document.getElementById('userDialogTitle').textContent = `EDIT OPERATOR: ${d.username.toUpperCase()}`;
+        document.getElementById('uUsername').value = d.username;
+        document.getElementById('uUsername').readOnly = true;
+        document.getElementById('uUsername').classList.add('opacity-60', 'cursor-not-allowed');
+        document.getElementById('uFullName').value = d.fullname;
+        document.getElementById('uEmail').value = d.email;
+        document.getElementById('uRole').value = d.role;
+        document.getElementById('uPassword').required = false;
+        document.getElementById('pwdHint').classList.remove('hidden');
+        document.getElementById('uIsActive').checked = (d.active === 'true');
+        userFormError.classList.add('hidden');
+        userDialog.showModal();
+    });
+});
 
-document.querySelectorAll('.edit-profile-btn').forEach(button=>button.addEventListener('click',()=>editProfile(button.closest('tr'))));
+// Delete User via Event Listener
+document.querySelectorAll('.delete-user-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const username = btn.dataset.username;
+        if (!confirm(`Cabut izin akses dan hapus operator '${username}' dari sistem?`)) return;
+        try {
+            const res = await fetch(`/api/user/${id}`, { method: 'DELETE' });
+            const result = await res.json();
+            if (!res.ok) throw new Error(result.detail || 'Gagal menghapus user');
+            location.reload();
+        } catch (err) {
+            alert(err.message);
+        }
+    });
+});
 
-document.querySelectorAll('.delete-profile-btn').forEach(button=>button.addEventListener('click',async()=>{
-    if(!confirm('Hapus TR069 Profile ini?')) return;
-    try{
-        const response=await fetch(`/api/olt-settings/data/${button.dataset.id}`,{method:'DELETE'});
-        const result=await response.json();
-        if(!response.ok) throw new Error(result.detail||'Gagal menghapus profil');
-        location.reload();
-    }catch(error){
-        alert(error.message);
-    }
-}));
+userForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('userId').value;
+    const isEdit = Boolean(id);
+    const saveBtn = document.getElementById('saveUserBtn');
 
-form.addEventListener('submit',async event=>{
-    event.preventDefault();
-    const id=document.getElementById('profileId').value,
-          name=document.getElementById('profileName').value.trim(),
-          tagged=document.querySelector('input[name="vlanMode"]:checked').value==='tag';
-    
-    const data={
-        acs_url:document.getElementById('acsUrl').value.trim(),
-        username:document.getElementById('acsUsername').value.trim(),
-        password:document.getElementById('acsPassword').value,
-        vlan:tagged?document.getElementById('profileVlan').value:'',
-        vlan_tag:tagged,
-        default_olts:selectedDefaultOlts(),
-        apply_default:selectedDefaultOlts().length>0
+    const payload = {
+        username: document.getElementById('uUsername').value.trim(),
+        full_name: document.getElementById('uFullName').value.trim(),
+        email: document.getElementById('uEmail').value.trim(),
+        role: document.getElementById('uRole').value,
+        password: document.getElementById('uPassword').value || null,
+        is_active: document.getElementById('uIsActive').checked
     };
-    data.default_olt=data.default_olts[0]||'';
-    
-    const saveButton=document.getElementById('saveTr069Profile');
-    saveButton.disabled=true;
-    saveButton.textContent='SAVING...';
-    
-    try{
-        const response=await fetch('/api/olt-settings/data',{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({
-                id:id?Number(id):null,
-                category:'tr069_profile',
-                name,
-                data
-            })
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'COMMITTING...';
+    userFormError.classList.add('hidden');
+
+    try {
+        const url = isEdit ? `/api/user/${id}/edit` : '/api/user/create';
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
         });
-        let result={};
-        try{ result=await response.json(); }catch{}
-        if(!response.ok) throw new Error(result.detail||'Gagal menyimpan profil');
-        if(result.status!=='success'||!result.id) throw new Error('Server belum mengonfirmasi penyimpanan.');
+
+        let result = {};
+        try { result = await res.json(); } catch {}
+
+        if (!res.ok) {
+            throw new Error(result.detail || `Gagal memproses data operator (HTTP ${res.status})`);
+        }
+
+        userDialog.close();
         location.reload();
-    }catch(error){
-        message.textContent=error.message;
-        message.className='text-xs font-mono p-2.5 rounded-lg bg-rose-50 dark:bg-[#ff3366]/10 border border-rose-200 dark:border-[#ff3366]/30 text-rose-600 dark:text-[#ff3366] transition-colors';
-        message.classList.remove('hidden');
-    }finally{
-        saveButton.disabled=false;
-        saveButton.textContent='SAVE TEMPLATE';
+    } catch (err) {
+        userFormError.textContent = err.message;
+        userFormError.classList.remove('hidden');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'SAVE OPERATOR';
     }
 });
 </script>

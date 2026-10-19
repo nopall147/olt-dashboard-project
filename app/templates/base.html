@@ -31,6 +31,33 @@
             font-family: 'JetBrains Mono', monospace; 
         }
 
+        :root {
+            color-scheme: light;
+            --menu-option-bg: #ffffff;
+            --menu-option-fg: #1e293b;
+            --menu-option-selected-bg: #dbeafe;
+            --menu-option-selected-fg: #1d4ed8;
+        }
+        html.dark {
+            color-scheme: dark;
+            --menu-option-bg: #08111e;
+            --menu-option-fg: #cbd5e1;
+            --menu-option-selected-bg: #145aa0;
+            --menu-option-selected-fg: #ffffff;
+        }
+        html, body { max-width: 100%; }
+        html.dark, html.dark body { background-color: #050b14; }
+        .adaptive-card-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); }
+        select option,
+        select optgroup {
+            color: var(--menu-option-fg);
+            background-color: var(--menu-option-bg);
+        }
+        select option:checked {
+            color: var(--menu-option-selected-fg);
+            background-color: var(--menu-option-selected-bg);
+        }
+
         /* Cyber grid hanya muncul di dark mode */
         html.dark .bg-cyber-grid {
             background-image: 
@@ -70,26 +97,78 @@
         }
 
         @media (max-width: 1279px) {
-            body .app-layout { overflow: visible; }
+            body { height: 100dvh; min-height: 0; overflow: hidden; }
+            body .app-layout {
+                width: 100%;
+                height: 0;
+                min-width: 0;
+                min-height: 0;
+                flex: 1 1 0%;
+                align-items: stretch;
+                overflow: hidden;
+                background: #f8fafc;
+            }
+            html.dark body .app-layout { background: #050b14; }
             #appSidebar { 
                 display: none; 
                 position: fixed; 
-                inset: 5.5rem auto 0 0; 
+                inset: 5.25rem auto 0 0;
                 z-index: 60; 
-                width: min(18rem, 86vw); 
+                width: min(18rem, 88vw);
+                max-height: calc(100dvh - 5.25rem);
                 box-shadow: 0 20px 40px rgba(0, 0, 0, 0.9); 
             }
             #appSidebar.mobile-open { display: block; }
-            body .app-main { width: 100%; min-width: 0; overflow-x: hidden; padding: 1rem; }
+            #sidebarBackdrop.mobile-open { display: block; }
+            #sidebarBackdrop { position: fixed; inset: 5.25rem 0 0; z-index: 55; background: rgba(2, 6, 23, .55); }
+            body .app-main { box-sizing: border-box; width: 100%; height: 100%; max-width: 100%; min-width: 0; min-height: 0; flex: 1 1 0%; overflow-x: hidden; overflow-y: auto; padding: 1rem; }
             header .topbar-inner { gap: .5rem; padding-left: .75rem; padding-right: .75rem; }
             header .topbar-left { min-width: 0; gap: .5rem; }
             header .topbar-left > :not([hidden]) ~ :not([hidden]) { margin-left: 0; }
             header .topbar-search, header .profile-name { display: none; }
             header .topbar-right { gap: .25rem; }
-            .app-main > * { min-width: 0; }
+            .app-main > *, .app-main :where(.grid, .flex) > * { min-width: 0; }
+            .app-main :where(.grid, .flex) { min-width: 0; }
+            .app-main table { max-width: 100%; }
+            .app-main input, .app-main select, .app-main textarea { max-width: 100%; }
+            body .app-layout.sidebar-expanded {
+                width: 100%;
+                align-items: stretch;
+            }
+            body .app-layout.sidebar-expanded .app-main {
+                width: 0;
+                min-width: 0;
+                flex: 1 1 0%;
+            }
+            #appSidebar.mobile-open {
+                position: relative;
+                inset: auto;
+                width: min(16rem, 40vw);
+                height: 100%;
+                max-height: 100%;
+                flex: 0 0 min(16rem, 40vw);
+                min-height: 0;
+                align-self: stretch;
+                overflow-y: auto;
+                z-index: 1;
+                box-shadow: none;
+            }
+            #sidebarBackdrop.mobile-open { display: none; }
         }
-        @media (min-width: 768px) and (max-width: 1279px) {
-            #appSidebar { position: static; inset: auto; width: 18rem; flex: 0 0 18rem; box-shadow: none; }
+        @media (max-width: 639px) {
+            header .topbar-inner { height: 3rem; }
+            header .topbar-left > a { gap: .4rem; }
+            header .topbar-left > a > span { font-size: 10px; letter-spacing: .08em; }
+            header .topbar-left > a > span span { font-size: 8px; }
+            header > div:nth-child(2) { padding-left: .75rem; padding-right: .75rem; }
+            body .app-main { padding: .75rem; }
+            .app-main h1 { font-size: 1.25rem; line-height: 1.5rem; }
+            .app-main h2 { overflow-wrap: anywhere; }
+            #appSidebar { inset: 5.25rem auto 0 0; }
+            #appSidebar.mobile-open { width: 40vw; flex-basis: 40vw; }
+            #appSidebar.mobile-open nav > :is(a, button) { padding-left: .45rem; padding-right: .45rem; font-size: 9px; }
+            #appSidebar.mobile-open nav > :is(a, button) > div { min-width: 0; gap: .35rem; }
+            #appSidebar.mobile-open nav > :is(a, button) span { overflow-wrap: anywhere; }
         }
     </style>
 </head>
@@ -172,8 +251,8 @@
         </div>
 
         <!-- ROW 2: TACTICAL METRIC STATUS RIBBON -->
-        <div class="px-4 lg:px-6 h-9 flex items-center justify-between text-[10px] bg-slate-50/80 dark:bg-[#060c17]/80">
-            <div class="flex items-center gap-3 overflow-x-auto no-scrollbar py-1">
+        <div class="status-ribbon px-4 lg:px-6 min-h-9 flex flex-wrap items-center gap-x-3 gap-y-1 py-1 text-[10px] bg-slate-50/80 dark:bg-[#060c17]/80">
+            <div class="status-pills flex min-w-0 flex-[1_1_30rem] flex-wrap items-center gap-2 sm:gap-3 py-0.5">
                 <span class="text-slate-600 dark:text-slate-500 font-bold uppercase tracking-wider shrink-0">STATUS:</span>
 
                 <!-- DyingGasp Pill -->
@@ -197,8 +276,12 @@
                 </a>
             </div>
 
-            <div class="hidden md:flex items-center gap-2 text-slate-500 shrink-0">
-                <span>TELEMETRY SYNC:</span>
+            <div class="status-runtime ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2 whitespace-nowrap text-[9px] sm:text-[10px] text-slate-500 pl-2" aria-label="Waktu sistem dan status telemetry">
+                <span class="hidden sm:inline">SYSTEM TIME:</span>
+                <time id="globalLiveClock" class="font-bold text-blue-700 dark:text-[#00e5ff] tabular-nums" aria-label="Waktu sistem">--:--:-- WIB</time>
+                <time id="globalLiveDate" class="hidden md:inline text-slate-500 tabular-nums" aria-label="Hari dan tanggal"></time>
+                <span class="text-slate-300 dark:text-slate-700">|</span>
+                <span class="hidden sm:inline">TELEMETRY SYNC:</span>
                 <span class="text-emerald-600 dark:text-emerald-400 font-bold">LIVE (15s)</span>
             </div>
         </div>
@@ -293,6 +376,10 @@
                     </div>
                     {% if request.url.path.startswith('/olt-management') or request.url.path.startswith('/olt-settings') %}<span class="h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-[#00e5ff]"></span>{% endif %}
                 </a>
+                <a href="/pppoe" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium tracking-wider transition hover:bg-slate-50 dark:hover:bg-[#0d1d33] border border-transparent {% if request.url.path == '/pppoe' %}bg-blue-50 dark:bg-[#0e223b] text-blue-700 dark:text-[#00e5ff] border-blue-200 dark:border-[#00e5ff]/40 shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200{% endif %}">
+                    <span class="flex items-center gap-2.5"><span class="text-blue-600 dark:text-[#00e5ff]">◎</span><span>PPPoE / MIKROTIK</span></span>
+                    {% if request.url.path == '/pppoe' %}<span class="h-1.5 w-1.5 rounded-full bg-blue-600 dark:bg-[#00e5ff]"></span>{% endif %}
+                </a>
                 {% endif %}
 
                 <!-- SECTION: ACCOUNT & SYSTEM -->
@@ -338,6 +425,8 @@
                 {% endif %}
             </nav>
         </aside>
+
+        <button type="button" id="sidebarBackdrop" class="hidden" aria-label="Tutup navigasi"></button>
 
         <!-- CONTENT STAGE -->
         <main class="app-main flex-1 min-w-0 p-6 space-y-6 overflow-y-auto bg-slate-50 dark:bg-[#050b14] transition-colors duration-300">
@@ -401,6 +490,25 @@
     <!-- SCRIPT JAVASCRIPT GLOBAL -->
     <!-- ========================================================= -->
     <script>
+    (() => {
+        const clock = document.getElementById('globalLiveClock');
+        const date = document.getElementById('globalLiveDate');
+        if (!clock || !date) return;
+        const timeFormatter = new Intl.DateTimeFormat('id-ID', {
+            timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+        });
+        const dateFormatter = new Intl.DateTimeFormat('id-ID', {
+            timeZone: 'Asia/Jakarta', weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
+        });
+        const updateClock = () => {
+            const now = new Date();
+            clock.textContent = `${timeFormatter.format(now)} WIB`;
+            date.textContent = dateFormatter.format(now);
+        };
+        updateClock();
+        setInterval(updateClock, 1000);
+    })();
+
         // Logika Dropdown Menu Sidebar dengan Dukungan Dark/Light Mode
         function bindSidebarGroup(buttonId, submenuId, groupName) {
             const button = document.getElementById(buttonId);
@@ -430,18 +538,21 @@
 
         const mobileNavToggle = document.getElementById('mobileNavToggle');
         const appSidebar = document.getElementById('appSidebar');
+        const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+        const appLayout = document.querySelector('.app-layout');
         function setMobileNav(open) {
             if (!mobileNavToggle || !appSidebar) return;
             appSidebar.classList.toggle('mobile-open', open);
+            sidebarBackdrop?.classList.toggle('mobile-open', open);
+            appLayout?.classList.toggle('sidebar-expanded', open);
             mobileNavToggle.setAttribute('aria-expanded', String(open));
             mobileNavToggle.setAttribute('aria-label', open ? 'Tutup navigasi' : 'Buka navigasi');
-            try { sessionStorage.setItem('olt-sidebar-open', String(open)); } catch (_) {}
         }
         mobileNavToggle?.addEventListener('click', () => setMobileNav(mobileNavToggle.getAttribute('aria-expanded') !== 'true'));
-        try {
-            if (window.innerWidth < 1280 && sessionStorage.getItem('olt-sidebar-open') === 'true') setMobileNav(true);
-        } catch (_) {}
+        sidebarBackdrop?.addEventListener('click', () => setMobileNav(false));
         document.addEventListener('keydown', event => { if (event.key === 'Escape') setMobileNav(false); });
+        appSidebar?.querySelectorAll('a').forEach(link => link.addEventListener('click', () => setMobileNav(false)));
+        window.addEventListener('resize', () => { if (window.innerWidth >= 1280) setMobileNav(false); });
 
         const quickTr069Button = document.getElementById('quickAddTr069');
         const quickTr069Dialog = document.getElementById('quickTr069Dialog');

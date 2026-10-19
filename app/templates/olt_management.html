@@ -265,7 +265,7 @@
             </div>
 
             <!-- Connection Status Message -->
-            <div id="connectionMessage" class="hidden rounded-lg p-3 text-xs font-mono border"></div>
+            <div id="connectionMessage" class="hidden whitespace-pre-line rounded-lg p-3 text-xs font-mono border"></div>
         </div>
 
         <footer class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 dark:border-[#162a45] bg-slate-50 dark:bg-[#08111e] px-6 py-4 transition-colors">
@@ -434,6 +434,7 @@ async function testOltConnection() {
         // Dukung kedua format key (lowercase dan uppercase)
         const snmp = result.snmp || result.SNMP || {};
         const telnet = result.telnet || result.Telnet || {};
+        const diagnostics = result.diagnostics || {};
 
         const snmpConnected = Boolean(snmp.connected ?? snmp.ok ?? (snmp.status === 'Connected'));
         const telnetConnected = Boolean(telnet.connected ?? telnet.ok ?? (telnet.status === 'Connected'));
@@ -444,7 +445,18 @@ async function testOltConnection() {
         const snmpDetail = typeof snmp.detail === 'object' ? JSON.stringify(snmp.detail) : (snmp.detail || 'OK');
         const telnetDetail = telnet.detail || 'OK';
 
-        message.textContent = `SNMP: ${snmpMsg} (${snmpDetail}) | Telnet: ${telnetMsg} (${telnetDetail})`;
+        const telnetPort = diagnostics.telnet_port || document.getElementById('telnetPort').value || 23;
+        const tcpState = diagnostics.telnet_tcp_reachable ? 'TERBUKA' : 'TIDAK TERJANGKAU';
+        const hint = diagnostics.telnet_tcp_reachable
+            ? (telnetConnected ? 'Jalur Telnet dan login berhasil.' : 'Port bisa dijangkau; cek username/password atau hak akses Telnet OLT.')
+            : 'Cek VPN/jaringan, VLAN atau routing ke jaringan OLT, firewall, dan apakah layanan Telnet aktif.';
+        message.textContent = [
+            `Server aplikasi: ${diagnostics.server_source_ip || 'tidak diketahui'} → OLT ${diagnostics.target_ip || ''}`,
+            `TCP ${telnetPort}: ${tcpState}${diagnostics.telnet_tcp_detail ? ` (${diagnostics.telnet_tcp_detail})` : ''}`,
+            `SNMP: ${snmpMsg} (${snmpDetail})`,
+            `Telnet login: ${telnetMsg} (${telnetDetail})`,
+            `Petunjuk: ${hint}`
+        ].join('\n');
 
         if (snmpConnected && telnetConnected) {
             message.className = 'rounded-lg p-3 text-xs border transition-colors bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30 font-medium';

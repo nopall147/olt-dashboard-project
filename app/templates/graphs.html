@@ -15,12 +15,8 @@
             </div>
             <p class="text-[10px] text-slate-500 tracking-widest uppercase">REAL-TIME GPON PACKET FLOW // COUNTER STREAM & HISTORICAL SAMPLES</p>
         </div>
+        <span class="text-xs text-blue-600 dark:text-[#00e5ff]">TRAFFIC</span>
 
-        <div class="flex items-center gap-2 text-xs">
-            <a href="/" class="text-slate-500 hover:text-blue-600 dark:hover:text-[#00e5ff] transition">CORE</a>
-            <span class="text-slate-600">/</span>
-            <span class="text-blue-600 dark:text-[#00e5ff]">TRAFFIC</span>
-        </div>
     </div>
 
     <!-- ========================================================= -->
@@ -105,9 +101,9 @@
         <!-- ===================================================== -->
         <!-- 3. TRAFFIC OSCILLOSCOPE CARDS GRID -->
         <!-- ===================================================== -->
-        <div id="trafficCards" class="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+    <div id="trafficCards" class="grid min-w-0 gap-4" style="grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));">
             {% for onu in onus %}
-            <article class="traffic-card rounded-xl border border-slate-200 dark:border-[#162a45] bg-slate-50 dark:bg-[#091322] p-4 relative overflow-hidden shadow-sm dark:shadow-lg hover:border-blue-300 dark:hover:border-[#1e3a5f] transition duration-200 transition-colors" data-kind="onu" data-id="{{ onu.id }}" data-olt="{{ onu.olt_name }}" data-port="{{ onu.gpon_port }}" data-name="{{ onu.customer_name }} {{ onu.sn_mac }} {{ onu.gpon_port }}">
+            <article class="traffic-card min-w-0 rounded-xl border border-slate-200 dark:border-[#162a45] bg-slate-50 dark:bg-[#091322] p-4 relative overflow-hidden shadow-sm dark:shadow-lg hover:border-blue-300 dark:hover:border-[#1e3a5f] transition duration-200 transition-colors" data-kind="onu" data-id="{{ onu.id }}" data-olt="{{ onu.olt_name }}" data-port="{{ onu.gpon_port }}" data-name="{{ onu.customer_name }} {{ onu.sn_mac }} {{ onu.gpon_port }}">
                 
                 <!-- Card Header -->
                 <div class="flex items-start justify-between pb-3 border-b border-slate-200 dark:border-[#162a45]/60 transition-colors">
@@ -151,6 +147,29 @@
                     </div>
                 </div>
 
+                <div class="mt-2 grid grid-cols-2 gap-2 text-[10px] font-mono">
+                    <div class="rounded-lg border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#060c17] px-3 py-2">
+                        <span class="text-slate-500">RX ONU</span>
+                        <strong class="ml-2 text-emerald-600 dark:text-emerald-400">{{ '%.2f dBm'|format(onu.rx_onu) if onu.rx_onu is not none else 'Belum ada data' }}</strong>
+                    </div>
+                    <div class="rounded-lg border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#060c17] px-3 py-2">
+                        <span class="text-slate-500">RX OLT</span>
+                        <strong class="ml-2 text-blue-600 dark:text-[#00e5ff]">{{ '%.2f dBm'|format(onu.rx_olt) if onu.rx_olt is not none else 'Belum ada data' }}</strong>
+                    </div>
+                </div>
+
+                <div class="mt-2 grid grid-cols-2 gap-2 text-[10px] font-mono">
+                    <div class="rounded-lg border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#060c17] px-3 py-2"><span class="text-slate-500">LATEST RX ONU</span><strong class="rxOnuValue ml-2 text-emerald-600 dark:text-emerald-400">{{ '%.2f'|format(onu.rx_onu) if onu.rx_onu is not none else '—' }} dBm</strong></div>
+                    <div class="rounded-lg border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#060c17] px-3 py-2"><span class="text-slate-500">LATEST RX OLT</span><strong class="rxOltValue ml-2 text-blue-600 dark:text-[#00e5ff]">{{ '%.2f'|format(onu.rx_olt) if onu.rx_olt is not none else '—' }} dBm</strong></div>
+                </div>
+                <div class="mt-2 rounded-lg border border-slate-300 dark:border-[#162a45] bg-white dark:bg-[#060c17] p-1.5" title="Riwayat redaman optik dBm">
+                    <svg viewBox="0 0 600 100" class="h-20 w-full" preserveAspectRatio="none" aria-label="Grafik redaman optik">
+                        <path d="M40 15H600M40 50H600M40 85H600" class="stroke-slate-200 dark:stroke-[#162a45]" stroke-dasharray="4 4"/>
+                        <path class="rxOnuLine" d="" fill="none" stroke="#10b981" stroke-width="2"/>
+                        <path class="rxOltLine" d="" fill="none" stroke="#00e5ff" stroke-width="2"/>
+                    </svg>
+                </div>
+
                 <!-- Oscilloscope Screen (SVG) -->
                 <div class="mt-3 relative rounded-lg border border-slate-300 dark:border-[#162a45] bg-white dark:bg-[#060c17] overflow-hidden p-1.5 transition-colors">
                     <svg viewBox="0 0 600 190" class="h-36 w-full" preserveAspectRatio="none">
@@ -174,6 +193,7 @@
             </article>
             {% endfor %}
         </div>
+        <div id="interfaceCards" class="hidden grid min-w-0 gap-4" style="grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));"></div>
 
         <!-- Empty State Placeholders -->
         <div id="emptyGraphs" class="hidden rounded-xl border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#091322] p-8 text-center text-xs text-slate-500 font-mono transition-colors">
@@ -191,7 +211,8 @@
 
 <script>
 const cards=[...document.querySelectorAll('.traffic-card')];
-let kind='onu', period='6H';
+const interfaceContainer=document.getElementById('interfaceCards');
+let interfaceCards=[], kind='onu', period='6H', interfaceErrors=[];
 const zones=[...Array(27)].map((_,i)=>i-12), timezoneToggle=document.getElementById('timezoneToggle'),timezoneMenu=document.getElementById('timezoneMenu'),timezoneOptions=document.getElementById('timezoneOptions');
 let timezone=Number(localStorage.getItem('graphsTimezone')||7);
 
@@ -241,6 +262,60 @@ function renderLine(path,values){
     path.setAttribute('d',values.map((v,i)=>`${i?'L':'M'} ${40+i*560/Math.max(values.length-1,1)} ${155-(v/max)*125}`).join(' '));
 }
 
+function renderOpticalLine(path,values){
+    const valid=values.filter(value=>Number.isFinite(value));
+    if(!valid.length){path.setAttribute('d','');return;}
+    path.setAttribute('d',values.map((value,i)=>{
+        if(!Number.isFinite(value)) return '';
+        const y=85-((Math.min(-5,Math.max(-35,value))+35)/30)*70;
+        return `${i?'L':'M'} ${40+i*560/Math.max(values.length-1,1)} ${y}`;
+    }).filter(Boolean).join(' '));
+}
+
+function makeInterfaceCard(item){
+    const card=document.createElement('article');
+    card.className='interface-card rounded-xl border border-slate-200 dark:border-[#162a45] bg-slate-50 dark:bg-[#091322] p-4 shadow-sm dark:shadow-lg';
+    card.dataset.olt=item.olt_name;card.dataset.interface=item.interface_name;
+    card.innerHTML='<div class="flex items-start justify-between border-b border-slate-200 dark:border-[#162a45] pb-3"><div><p class="interface-olt text-[9px] font-bold uppercase text-blue-600 dark:text-[#00e5ff]"></p><h2 class="interface-title mt-1 text-sm font-bold text-slate-800 dark:text-slate-100"></h2><p class="text-[10px] text-slate-500">SNMP INTERFACE COUNTERS</p></div><span class="interface-current text-[10px] text-emerald-600 dark:text-emerald-400"></span></div><div class="mt-3 flex justify-between rounded-lg border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#060c17] px-3 py-2 text-xs"><span>IN <strong class="interface-download text-rose-500"></strong></span><span>OUT <strong class="interface-upload text-blue-600 dark:text-[#00e5ff]"></strong></span></div><div class="mt-3 rounded-lg border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#060c17] p-1.5"><svg viewBox="0 0 600 190" class="h-36 w-full" preserveAspectRatio="none"><path d="M40 25H600M40 90H600M40 155H600" class="stroke-slate-200 dark:stroke-[#162a45]" stroke-dasharray="4 4"/><path class="downloadLine" d="" fill="none" stroke="#ff3366" stroke-width="2.5"/><path class="uploadLine" d="" fill="none" stroke="#00e5ff" stroke-width="2.5"/></svg></div><div class="mt-3 flex justify-between text-[10px] text-slate-500"><span class="interface-samples"></span><span class="interface-period"></span></div>';
+    card.querySelector('.interface-olt').textContent=item.olt_name;
+    card.querySelector('.interface-title').textContent=item.interface_name;
+    return card;
+}
+
+async function refreshInterfaces(){
+    if(kind==='onu')return;
+    const params=new URLSearchParams({olt:document.getElementById('oltSelect').value,kind,period});
+    try{
+        const response=await fetch(`/api/traffic/interfaces?${params}`);
+        const result=await response.json();
+        if(!response.ok)throw new Error(result.detail||'Gagal membaca counter OLT');
+        interfaceErrors=result.errors||[];
+        const filterSlot=document.getElementById('cardSelect').value;
+        const filterPon=document.getElementById('ponSelect').value;
+        const search=document.getElementById('interfaceSearch').value.toLowerCase();
+        interfaceContainer.replaceChildren();interfaceCards=[];
+        result.interfaces.forEach(item=>{
+            const port=(item.interface_name.match(/\d+\/\d+\/\d+/)||[])[0]||'';
+            const slot=port.split('/')[1]||'';
+            const visible=(filterSlot==='all'||slot===filterSlot)&&(filterPon==='all'||port===filterPon)&&`${item.olt_name} ${item.interface_name}`.toLowerCase().includes(search);
+            if(!visible)return;
+            const card=makeInterfaceCard(item),samples=item.samples||[];
+            renderLine(card.querySelector('.downloadLine'),samples.map(sample=>sample.download_bps));
+            renderLine(card.querySelector('.uploadLine'),samples.map(sample=>sample.upload_bps));
+            const latest=samples.at(-1);
+            card.querySelector('.interface-download').textContent=`${(item.download_bps/1e6).toFixed(2)} Mbps`;
+            card.querySelector('.interface-upload').textContent=`${(item.upload_bps/1e6).toFixed(2)} Mbps`;
+            card.querySelector('.interface-current').textContent=latest?`LIVE ${new Date(latest.sampled_at).toLocaleTimeString('id-ID')}`:'WAITING FOR COUNTERS';
+            card.querySelector('.interface-samples').textContent=`${samples.length} SAMPLES`;
+            card.querySelector('.interface-period').textContent=`${period} WINDOW`;
+            interfaceContainer.append(card);interfaceCards.push(card);
+        });
+        filterCards();
+    }catch(error){
+        interfaceErrors=[{detail:error.message}];interfaceContainer.replaceChildren();interfaceCards=[];filterCards();
+    }
+}
+
 async function refreshCard(card){
     try{
         const response=await fetch(`/api/traffic/${card.dataset.id}/history?period=${period}`);
@@ -249,6 +324,8 @@ async function refreshCard(card){
         
         renderLine(card.querySelector('.downloadLine'),data.map(s=>s.download_bps));
         renderLine(card.querySelector('.uploadLine'),data.map(s=>s.upload_bps));
+        renderOpticalLine(card.querySelector('.rxOnuLine'),data.map(s=>s.rx_onu));
+        renderOpticalLine(card.querySelector('.rxOltLine'),data.map(s=>s.rx_olt));
         
         card.querySelector('.sampleCount').textContent=`${data.length} SAMPLES LOGGED`;
         card.querySelector('.periodLabel').textContent=`${period} WINDOW`;
@@ -257,6 +334,8 @@ async function refreshCard(card){
         if(latest){
             card.querySelector('.downloadValue').textContent=(latest.download_bps/1e6).toFixed(2);
             card.querySelector('.uploadValue').textContent=(latest.upload_bps/1e6).toFixed(2);
+            if(latest.rx_onu!==null) card.querySelector('.rxOnuValue').textContent=`${Number(latest.rx_onu).toFixed(2)} dBm`;
+            if(latest.rx_olt!==null) card.querySelector('.rxOltValue').textContent=`${Number(latest.rx_olt).toFixed(2)} dBm`;
             const shifted=new Date(new Date(latest.sampled_at).getTime()+timezone*3600000);
             card.querySelector('.traffic-status').textContent='SYNC '+shifted.toLocaleTimeString('id-ID',{timeZone:'UTC'});
             card.querySelector('.traffic-status').className='traffic-status block px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 text-[9px] font-bold font-mono';
@@ -292,16 +371,21 @@ function filterCards(){
         if(visible) shown++;
     });
 
+    if(kind!=='onu'){
+        interfaceCards.forEach(card=>card.classList.remove('hidden'));
+        shown=interfaceCards.length;
+    }
+    document.getElementById('trafficCards').classList.toggle('hidden',kind!=='onu');
+    interfaceContainer.classList.toggle('hidden',kind==='onu');
     document.getElementById('entryCount').textContent=shown;
     const empty=document.getElementById('emptyGraphs');
     const none=document.getElementById('noGraphs');
     
     empty.classList.toggle('hidden',kind!=='onu'||cards.length>0);
-    none.classList.toggle('hidden',shown>0||kind==='onu'&&cards.length===0);
-    none.textContent=kind==='onu'?'TIDAK ADA ONU YANG COCOK DENGAN FILTER.':`DATA TRAFFIC ${kind.toUpperCase()} BELUM TERSEDIA.`;
-    
-    document.getElementById('cardSelect').classList.toggle('hidden',kind!=='pon');
-    document.getElementById('ponSelect').classList.toggle('hidden',kind!=='onu');
+    none.classList.toggle('hidden',shown>0||(kind==='onu'&&cards.length===0));
+    none.textContent=interfaceErrors.length?`GAGAL MEMBACA SNMP: ${interfaceErrors.map(error=>error.olt||error.detail).join(', ')}`:kind==='onu'?'TIDAK ADA ONU YANG COCOK DENGAN FILTER.':`DATA TRAFFIC ${kind.toUpperCase()} BELUM DITEMUKAN PADA CHASSIS TERPILIH.`;
+    document.getElementById('cardSelect').classList.toggle('hidden',kind==='uplink');
+    document.getElementById('ponSelect').classList.toggle('hidden',kind==='uplink');
 }
 
 document.querySelectorAll('.graph-tab').forEach(button=>button.addEventListener('click',()=>{
@@ -315,6 +399,7 @@ document.querySelectorAll('.graph-tab').forEach(button=>button.addEventListener(
     button.classList.remove('text-slate-600','dark:text-slate-400','border-transparent');
     button.setAttribute('aria-selected','true');
     filterCards();
+    if(kind!=='onu')refreshInterfaces();
 }));
 
 document.querySelectorAll('.period-tab').forEach(button=>button.addEventListener('click',()=>{
@@ -325,13 +410,16 @@ document.querySelectorAll('.period-tab').forEach(button=>button.addEventListener
     });
     button.classList.add('bg-blue-100','dark:bg-[#0e223b]','border-blue-300','dark:border-[#00e5ff]/40','text-blue-700','dark:text-[#00e5ff]','font-bold','shadow-none','dark:shadow-[0_0_8px_rgba(0,229,255,0.2)]');
     button.classList.remove('text-slate-600','dark:text-slate-400','border-transparent');
-    cards.forEach(refreshCard);
+    if(kind==='onu')cards.filter(card=>!card.classList.contains('hidden')).forEach(refreshCard);
+    else refreshInterfaces();
 }));
 
-['oltSelect','cardSelect','ponSelect'].forEach(id=>document.getElementById(id).addEventListener('change',filterCards));
-document.getElementById('interfaceSearch').addEventListener('input',filterCards);
+['oltSelect','cardSelect','ponSelect'].forEach(id=>document.getElementById(id).addEventListener('change',()=>kind==='onu'?filterCards():refreshInterfaces()));
+document.getElementById('interfaceSearch').addEventListener('input',()=>kind==='onu'?filterCards():refreshInterfaces());
 
 filterCards();
 cards.forEach(refreshCard);
+setInterval(()=>cards.filter(card=>!card.classList.contains('hidden')).forEach(refreshCard),60000);
+setInterval(()=>{if(kind!=='onu')refreshInterfaces();},60000);
 </script>
 {% endblock %}

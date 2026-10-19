@@ -47,6 +47,8 @@ class OnuDevice(Base):
     sn_mac = Column(String(50), unique=True, index=True) # Serial Number / MAC (Misal: FHTTC27552A0)
     actual_type = Column(String(50), default="GPON")     # Tipe ONU (Misal: HG6145D2 / F660)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    online_since = Column(DateTime(timezone=True), nullable=True)
+    last_seen = Column(DateTime(timezone=True), nullable=True)
 
 
 class ActivityEvent(Base):
@@ -89,6 +91,23 @@ class TrafficSample(Base):
     onu_id = Column(Integer, ForeignKey("onu_devices.id", ondelete="CASCADE"), nullable=False, index=True)
     download_bps = Column(Float, nullable=False)
     upload_bps = Column(Float, nullable=False)
+    rx_olt = Column(Float, nullable=True)
+    rx_onu = Column(Float, nullable=True)
+    sampled_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class InterfaceTrafficSample(Base):
+    __tablename__ = "interface_traffic_samples"
+
+    id = Column(Integer, primary_key=True, index=True)
+    olt_id = Column(Integer, ForeignKey("olt_configs.id", ondelete="CASCADE"), nullable=False, index=True)
+    interface_index = Column(Integer, nullable=False)
+    interface_name = Column(String(160), nullable=False)
+    kind = Column(String(12), nullable=False, index=True)
+    input_octets = Column(BigInteger, nullable=False)
+    output_octets = Column(BigInteger, nullable=False)
+    download_bps = Column(Float, nullable=False, default=0)
+    upload_bps = Column(Float, nullable=False, default=0)
     sampled_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
 
 

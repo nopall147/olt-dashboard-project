@@ -1,0 +1,700 @@
+{% extends "base.html" %}
+{% block title %}PPPoE / MikroTik - OLT Monitoring System{% endblock %}
+
+{% block content %}
+<div class="space-y-5 font-mono text-slate-800 dark:text-slate-300 transition-colors">
+
+    <!-- ========================================================= -->
+    <!-- 1. HEADER & CONTROL ACTION STRIP -->
+    <!-- ========================================================= -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 dark:border-[#162a45] gap-4">
+        <div>
+            <div class="flex items-center gap-2.5">
+                <span class="inline-block h-2 w-2 rounded-full bg-blue-600 dark:bg-[#00e5ff] shadow-sm dark:shadow-[0_0_8px_#00e5ff]"></span>
+                <h1 class="text-base font-bold tracking-wider text-slate-800 dark:text-slate-100 uppercase dark:neon-glow-cyan">PPPoE &amp; MIKROTIK CONSOLE</h1>
+            </div>
+            <p class="text-[10px] text-slate-500 tracking-widest uppercase mt-0.5">ROUTEROS API · LIVE SUBSCRIBER TELEMETRY &amp; SECRET ACCOUNTS</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            <!-- Connection Status Pill -->
+            <div id="routerStatusBadge" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#08111e] text-[11px] font-bold flex items-center gap-2 shadow-sm">
+                <span id="routerStatusDot" class="h-2 w-2 rounded-full bg-slate-400"></span>
+                <span id="routerStatusText" class="text-slate-500">MEMERIKSA ROUTER...</span>
+            </div>
+
+            <!-- Action Buttons -->
+            {% if role == 'Super Admin' %}
+            <button type="button" onclick="openRouterConfigModal()" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#08111e] hover:bg-slate-50 dark:hover:bg-[#0d1d33] text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm" title="Pengaturan Koneksi MikroTik">
+                <span>⚙️ KONEKSI</span>
+            </button>
+            {% endif %}
+
+            <button type="button" onclick="openAddSecretModal()" class="px-3.5 py-1.5 rounded-lg bg-blue-600 dark:bg-[#00e5ff] hover:bg-blue-700 dark:hover:bg-[#00c8e0] text-white dark:text-black text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-sm">
+                + TAMBAH SECRET
+            </button>
+
+            <button id="refreshPppoe" type="button" class="px-3 py-1.5 rounded-lg border border-blue-300 dark:border-[#00e5ff]/40 bg-blue-50/50 dark:bg-[#00e5ff]/10 text-blue-700 dark:text-[#00e5ff] text-xs font-bold hover:bg-blue-100 transition cursor-pointer">
+                REFRESH
+            </button>
+        </div>
+    </div>
+
+    <!-- Alert Message Bar -->
+    <p id="pppoeMessage" class="hidden rounded-xl border p-3.5 text-xs font-mono" role="status"></p>
+
+    <!-- ========================================================= -->
+    <!-- 2. SUMMARY METRICS CARDS -->
+    <!-- ========================================================= -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Active Sessions Tab Trigger Card -->
+        <div onclick="switchTab('active')" id="cardActiveTab" class="rounded-xl border border-emerald-500/50 dark:border-emerald-500/40 bg-white dark:bg-[#08111e] p-4 shadow-sm cursor-pointer hover:border-emerald-500 transition relative overflow-hidden group">
+            <div class="flex items-center justify-between text-slate-500">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">SESI AKTIF (ONLINE)</span>
+                <span class="text-[9px] bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded font-bold border border-emerald-200 dark:border-emerald-500/30">LIVE SESSIONS</span>
+            </div>
+            <div class="mt-2 flex items-baseline justify-between">
+                <strong id="activeCount" class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight">—</strong>
+                <span class="text-[10px] text-slate-400 uppercase font-bold group-hover:text-emerald-500 transition">LIHAT TABEL →</span>
+            </div>
+            <div class="mt-3 w-full bg-slate-100 dark:bg-[#060c17] h-1 rounded-full overflow-hidden">
+                <div class="bg-emerald-500 h-full w-full"></div>
+            </div>
+        </div>
+
+        <!-- PPP Secrets Tab Trigger Card -->
+        <div onclick="switchTab('secrets')" id="cardSecretTab" class="rounded-xl border border-slate-200 dark:border-[#162a45] bg-white dark:bg-[#08111e] p-4 shadow-sm cursor-pointer hover:border-blue-500 transition relative overflow-hidden group">
+            <div class="flex items-center justify-between text-slate-500">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-[#00e5ff]">PPP SECRETS (DATABASE)</span>
+                <span class="text-[9px] bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-[#00e5ff] px-2 py-0.5 rounded font-bold border border-blue-200 dark:border-blue-500/30">REGISTERED</span>
+            </div>
+            <div class="mt-2 flex items-baseline justify-between">
+                <strong id="secretCount" class="text-3xl font-extrabold text-blue-600 dark:text-[#00e5ff] tracking-tight">—</strong>
+                <span class="text-[10px] text-slate-400 uppercase font-bold group-hover:text-blue-500 transition">LIHAT TABEL →</span>
+            </div>
+            <div class="mt-3 w-full bg-slate-100 dark:bg-[#060c17] h-1 rounded-full overflow-hidden">
+                <div class="bg-blue-600 dark:bg-[#00e5ff] h-full w-full"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- 3. TAB CONTROLS & MAIN CONTENT BOX -->
+    <!-- ========================================================= -->
+    <div class="bg-white dark:bg-[#08111e] rounded-xl border border-slate-200 dark:border-[#162a45] shadow-sm overflow-hidden transition-colors">
+        
+        <!-- Tab Navigation Bar -->
+        <div class="flex items-center border-b border-slate-200 dark:border-[#162a45] bg-slate-50 dark:bg-[#091322] px-4 pt-3 gap-2">
+            <button type="button" id="tabBtnActive" onclick="switchTab('active')" class="px-4 py-2.5 text-xs font-bold border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 flex items-center gap-2 cursor-pointer transition">
+                <span>SESI AKTIF</span>
+                <span id="badgeTabActive" class="px-2 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-[10px]">0</span>
+            </button>
+            <button type="button" id="tabBtnSecrets" onclick="switchTab('secrets')" class="px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-2 cursor-pointer transition">
+                <span>AKUN PPP SECRET</span>
+                <span id="badgeTabSecrets" class="px-2 py-0.2 rounded-full bg-slate-200 dark:bg-slate-800 text-[10px]">0</span>
+            </button>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- TAB PANE 1: SESI PPP AKTIF -->
+        <!-- ========================================================= -->
+        <div id="paneActive" class="space-y-0">
+            <!-- Filter & Search Toolbar -->
+            <div class="p-3.5 bg-slate-50/50 dark:bg-[#060c17]/50 border-b border-slate-200 dark:border-[#162a45] flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="w-full sm:w-80 relative">
+                    <input id="searchActive" type="search" placeholder="CARI USERNAME, IP, CALLER ID..." class="w-full text-xs bg-white dark:bg-[#08111e] border border-slate-300 dark:border-[#162a45] rounded-lg pl-8 pr-3 py-1.5 outline-none focus:border-blue-500 dark:focus:border-[#00e5ff]">
+                    <svg class="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                <div class="text-[11px] text-slate-500 font-mono">
+                    Menampilkan modem pelanggan yang sedang online aktif[cite: 1].
+                </div>
+            </div>
+
+            <!-- Table Active -->
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[780px] text-left text-xs border-collapse">
+                    <thead class="text-[10px] uppercase text-slate-500 bg-slate-100/70 dark:bg-[#060c17] border-b border-slate-200 dark:border-[#162a45]">
+                        <tr>
+                            <th class="p-3">USER</th>
+                            <th class="p-3">SERVICE</th>
+                            <th class="p-3">ADDRESS</th>
+                            <th class="p-3">CALLER ID / MAC</th>
+                            <th class="p-3">MATCHED ONU INVENTORY</th>
+                            <th class="p-3">UPTIME</th>
+                            <th class="p-3 text-center">ACTION</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activeRows" class="divide-y divide-slate-100 dark:divide-[#162a45]/60 bg-white dark:bg-[#08111e]">
+                        <tr><td colspan="7" class="p-6 text-slate-500 text-center">Memuat sesi RouterOS...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Bar Active -->
+            <div class="p-3 bg-slate-50 dark:bg-[#091322] border-t border-slate-200 dark:border-[#162a45] flex items-center justify-between text-xs text-slate-500">
+                <span id="activePageInfo">Showing 0 entries</span>
+                <div class="flex gap-1.5">
+                    <button type="button" id="prevActivePage" class="px-3 py-1 rounded-lg border border-slate-300 dark:border-[#162a45] bg-white dark:bg-[#060c17] disabled:opacity-30 cursor-pointer">PREV</button>
+                    <button type="button" id="nextActivePage" class="px-3 py-1 rounded-lg border border-slate-300 dark:border-[#162a45] bg-white dark:bg-[#060c17] disabled:opacity-30 cursor-pointer">NEXT</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- TAB PANE 2: AKUN PPP SECRET -->
+        <!-- ========================================================= -->
+        <div id="paneSecrets" class="hidden space-y-0">
+            <!-- Filter & Search Toolbar -->
+            <div class="p-3.5 bg-slate-50/50 dark:bg-[#060c17]/50 border-b border-slate-200 dark:border-[#162a45] flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                    <div class="w-full sm:w-72 relative">
+                        <input id="searchSecret" type="search" placeholder="CARI USERNAME, PROFIL..." class="w-full text-xs bg-white dark:bg-[#08111e] border border-slate-300 dark:border-[#162a45] rounded-lg pl-8 pr-3 py-1.5 outline-none focus:border-blue-500 dark:focus:border-[#00e5ff]">
+                        <svg class="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <select id="filterSecretStatus" class="text-xs bg-white dark:bg-[#08111e] border border-slate-300 dark:border-[#162a45] rounded-lg px-2.5 py-1.5 outline-none cursor-pointer">
+                        <option value="">STATUS: ALL</option>
+                        <option value="false">ENABLED (AKTIF)</option>
+                        <option value="true">DISABLED (ISOLIR)</option>
+                    </select>
+                </div>
+                <div class="text-[11px] text-slate-500 font-mono">
+                    Manajemen akun klien PPPoE tersimpan di database MikroTik[cite: 1].
+                </div>
+            </div>
+
+            <!-- Table Secrets -->
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[750px] text-left text-xs border-collapse">
+                    <thead class="text-[10px] uppercase text-slate-500 bg-slate-100/70 dark:bg-[#060c17] border-b border-slate-200 dark:border-[#162a45]">
+                        <tr>
+                            <th class="p-3">USER</th>
+                            <th class="p-3">SERVICE</th>
+                            <th class="p-3">PROFILE</th>
+                            <th class="p-3">REMOTE ADDRESS</th>
+                            <th class="p-3">STATUS</th>
+                            <th class="p-3 text-center">MANAGE ACTION</th>
+                        </tr>
+                    </thead>
+                    <tbody id="secretRows" class="divide-y divide-slate-100 dark:divide-[#162a45]/60 bg-white dark:bg-[#08111e]">
+                        <tr><td colspan="6" class="p-6 text-slate-500 text-center">Memuat akun secret...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Bar Secrets -->
+            <div class="p-3 bg-slate-50 dark:bg-[#091322] border-t border-slate-200 dark:border-[#162a45] flex items-center justify-between text-xs text-slate-500">
+                <span id="secretPageInfo">Showing 0 entries</span>
+                <div class="flex gap-1.5">
+                    <button type="button" id="prevSecretPage" class="px-3 py-1 rounded-lg border border-slate-300 dark:border-[#162a45] bg-white dark:bg-[#060c17] disabled:opacity-30 cursor-pointer">PREV</button>
+                    <button type="button" id="nextSecretPage" class="px-3 py-1 rounded-lg border border-slate-300 dark:border-[#162a45] bg-white dark:bg-[#060c17] disabled:opacity-30 cursor-pointer">NEXT</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- 4. MODAL DIALOG: KONEKSI ROUTER MIKROTIK (POPUP RAPI) -->
+<!-- ========================================================= -->
+<dialog id="routerConfigDialog" class="w-[min(94vw,560px)] rounded-2xl border border-slate-200 dark:border-[#162a45] p-6 shadow-2xl bg-white dark:bg-[#091322] font-mono text-xs text-slate-800 dark:text-slate-200 backdrop:bg-black/60">
+    <div class="flex items-center justify-between border-b border-slate-200 dark:border-[#162a45] pb-3 mb-4">
+        <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-blue-600 dark:bg-[#00e5ff]"></span>
+            <h3 class="font-bold text-sm text-slate-900 dark:text-white uppercase">PENGATURAN KONEKSI ROUTEROS</h3>
+        </div>
+        <button type="button" onclick="document.getElementById('routerConfigDialog').close()" class="text-slate-400 hover:text-white text-lg cursor-pointer">✕</button>
+    </div>
+
+    <form id="mikrotikForm" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="sm:col-span-2">
+                <label class="text-[10px] text-slate-500 font-bold uppercase">HOST / IP ADDRESS</label>
+                <input id="routerHost" required maxlength="253" value="{{ router_config.host }}" placeholder="misal: 103.183.8.187" class="mt-1 w-full rounded-lg border border-slate-300 dark:border-[#162a45] bg-slate-50 dark:bg-[#060c17] px-3 py-2 text-xs outline-none focus:border-blue-500 dark:focus:border-[#00e5ff]">
+            </div>
+            <div>
+                <label class="text-[10px] text-slate-500 font-bold uppercase">API PORT</label>
+                <input id="routerPort" required type="number" min="1" max="65535" value="{{ router_config.port }}" class="mt-1 w-full rounded-lg border border-slate-300 dark:border-[#162a45] bg-slate-50 dark:bg-[#060c17] px-3 py-2 text-xs outline-none focus:border-blue-500 dark:focus:border-[#00e5ff]">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+                <label class="text-[10px] text-slate-500 font-bold uppercase">API USERNAME</label>
+                <input id="routerUsername" required maxlength="100" value="{{ router_config.username }}" placeholder="User API" class="mt-1 w-full rounded-lg border border-slate-300 dark:border-[#162a45] bg-slate-50 dark:bg-[#060c17] px-3 py-2 text-xs outline-none focus:border-blue-500 dark:focus:border-[#00e5ff]">
+            </div>
+            <div>
+                <label class="text-[10px] text-slate-500 font-bold uppercase">API PASSWORD</label>
+                <input id="routerPassword" type="password" maxlength="255" autocomplete="new-password" placeholder="Kosongkan bila tidak diganti" class="mt-1 w-full rounded-lg border border-slate-300 dark:border-[#162a45] bg-slate-50 dark:bg-[#060c17] px-3 py-2 text-xs outline-none focus:border-blue-500 dark:focus:border-[#00e5ff]">
+            </div>
+        </div>
+
+        <div class="p-3 bg-slate-50 dark:bg-[#060c17] border border-slate-200 dark:border-[#162a45] rounded-xl flex items-center justify-between">
+            <label class="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                <input id="routerTls" type="checkbox" {% if router_config.use_tls %}checked{% endif %} class="rounded accent-blue-600 dark:accent-[#00e5ff]">
+                <span>Gunakan Protokol Aman (TLS / API-SSL)</span>
+            </label>
+            <span class="text-[10px] text-slate-400">Rekomendasi Port: 8729[cite: 5]</span>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-[#162a45]">
+            <button type="button" onclick="document.getElementById('routerConfigDialog').close()" class="px-3.5 py-1.5 rounded-lg border text-xs cursor-pointer">BATAL</button>
+            <button type="submit" class="px-4 py-1.5 rounded-lg bg-blue-600 text-white font-bold text-xs uppercase hover:bg-blue-700 dark:bg-[#00e5ff] dark:text-black cursor-pointer">SIMPAN KONEKSI</button>
+        </div>
+    </form>
+</dialog>
+
+<!-- ========================================================= -->
+<!-- 5. MODAL DIALOG: TAMBAH PPP SECRET BARU -->
+<!-- ========================================================= -->
+<dialog id="addSecretDialog" class="w-[min(92vw,440px)] rounded-2xl border border-slate-200 dark:border-[#162a45] p-5 shadow-2xl bg-white dark:bg-[#091322] font-mono text-xs text-slate-800 dark:text-slate-200 backdrop:bg-black/60">
+    <div class="flex items-center justify-between border-b border-slate-200 dark:border-[#162a45] pb-3 mb-4">
+        <h3 class="font-bold text-sm text-blue-600 dark:text-[#00e5ff] uppercase">TAMBAH PPP SECRET BARU</h3>
+        <button type="button" onclick="document.getElementById('addSecretDialog').close()" class="text-slate-400 hover:text-white text-lg cursor-pointer">✕</button>
+    </div>
+    <form id="addSecretForm" class="space-y-3">
+        <div>
+            <label class="text-[10px] text-slate-500 uppercase font-bold">USERNAME PPPoE</label>
+            <input id="sec_username" required placeholder="misal: user_wifi12" class="mt-1 w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] p-2 text-xs outline-none">
+        </div>
+        <div>
+            <label class="text-[10px] text-slate-500 uppercase font-bold">PASSWORD</label>
+            <input id="sec_password" required type="password" placeholder="Password PPPoE" class="mt-1 w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] p-2 text-xs outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+            <div>
+                <label class="text-[10px] text-slate-500 uppercase font-bold">SERVICE</label>
+                <select id="sec_service" class="mt-1 w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] p-2 text-xs">
+                    <option value="pppoe" selected>pppoe</option>
+                    <option value="any">any</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-[10px] text-slate-500 uppercase font-bold">PROFILE</label>
+                <input id="sec_profile" required value="default" placeholder="default" class="mt-1 w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] p-2 text-xs outline-none">
+            </div>
+        </div>
+        <div>
+            <label class="text-[10px] text-slate-500 uppercase font-bold">REMOTE IP ADDRESS (OPSIONAL)</label>
+            <input id="sec_remote_ip" placeholder="Kosongkan jika dynamic pool" class="mt-1 w-full rounded-lg bg-slate-50 dark:bg-[#060c17] border border-slate-300 dark:border-[#162a45] p-2 text-xs outline-none">
+        </div>
+        <div class="mt-5 flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-[#162a45]">
+            <button type="button" onclick="document.getElementById('addSecretDialog').close()" class="px-3 py-1.5 rounded-lg border text-xs cursor-pointer">BATAL</button>
+            <button type="submit" class="px-4 py-1.5 rounded-lg bg-blue-600 text-white font-bold text-xs uppercase hover:bg-blue-700 dark:bg-[#00e5ff] dark:text-black cursor-pointer">SIMPAN SECRET</button>
+        </div>
+    </form>
+</dialog>
+
+<!-- ========================================================= -->
+<!-- 6. LOGIKA CONTROLLER & SCRIPT TAB -->
+<!-- ========================================================= -->
+<script>
+const pppMessage = document.getElementById('pppoeMessage');
+let cachedOnus = [];
+let allActiveData = [];
+let allSecretData = [];
+
+let activePage = 1, secretPage = 1;
+const PAGE_SIZE = 15;
+
+// Tab Switcher Controller
+function switchTab(tabName) {
+    const isAct = tabName === 'active';
+    document.getElementById('paneActive').classList.toggle('hidden', !isAct);
+    document.getElementById('paneSecrets').classList.toggle('hidden', isAct);
+
+    // Update Header Tab Buttons
+    document.getElementById('tabBtnActive').className = isAct
+        ? 'px-4 py-2.5 text-xs font-bold border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 flex items-center gap-2 cursor-pointer transition'
+        : 'px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-2 cursor-pointer transition';
+
+    document.getElementById('tabBtnSecrets').className = !isAct
+        ? 'px-4 py-2.5 text-xs font-bold border-b-2 border-blue-500 text-blue-600 dark:text-[#00e5ff] flex items-center gap-2 cursor-pointer transition'
+        : 'px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-2 cursor-pointer transition';
+
+    // Update Highlight Cards
+    document.getElementById('cardActiveTab').classList.toggle('border-emerald-500', isAct);
+    document.getElementById('cardSecretTab').classList.toggle('border-blue-500', !isAct);
+}
+
+function showPppMessage(message, error = false) {
+    pppMessage.textContent = message;
+    pppMessage.className = `rounded-xl border p-3.5 text-xs font-mono ${
+        error
+            ? 'border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300'
+            : 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300'
+    }`;
+    pppMessage.classList.remove('hidden');
+}
+
+function safeCell(value) {
+    const cell = document.createElement('td');
+    cell.className = 'p-3 text-slate-700 dark:text-slate-300';
+    cell.textContent = value || '—';
+    return cell;
+}
+
+async function loadBriefOnus() {
+    try {
+        const res = await fetch('/api/onus/brief');
+        if (res.ok) cachedOnus = await res.json();
+    } catch (e) {
+        console.warn("Gagal membaca brief ONUs:", e);
+    }
+}
+
+// ----------------- TABEL 1: SESI AKTIF -----------------
+function renderActiveTable() {
+    const body = document.getElementById('activeRows');
+    const query = document.getElementById('searchActive').value.toLowerCase().trim();
+
+    const filtered = allActiveData.filter(row => {
+        if (!query) return true;
+        return (row.name || '').toLowerCase().includes(query) ||
+               (row.address || '').toLowerCase().includes(query) ||
+               (row['caller-id'] || '').toLowerCase().includes(query);
+    });
+
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    activePage = Math.min(activePage, totalPages);
+    const start = (activePage - 1) * PAGE_SIZE;
+    const pageRows = filtered.slice(start, start + PAGE_SIZE);
+
+    body.replaceChildren();
+    if (!pageRows.length) {
+        const tr = document.createElement('tr');
+        const td = safeCell('Tidak ada sesi aktif yang cocok.');
+        td.colSpan = 7;
+        td.className = 'p-6 text-slate-500 text-center';
+        tr.append(td);
+        body.append(tr);
+    } else {
+        pageRows.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-slate-50 dark:hover:bg-[#0d1d33]/50 transition';
+
+            tr.append(safeCell(row['name']));
+            tr.append(safeCell(row['service']));
+            tr.append(safeCell(row['address']));
+            tr.append(safeCell(row['caller-id']));
+
+            // Cross-reference link ke menu All ONUs
+            const callerClean = (row['caller-id'] || '').toLowerCase().replace(/[:-]/g, '');
+            const matched = cachedOnus.find(o => {
+                const onuClean = (o.sn_mac || '').toLowerCase().replace(/[:-]/g, '');
+                return (callerClean && onuClean && onuClean.includes(callerClean)) || 
+                       (o.pppoe_user && o.pppoe_user === row['name']);
+            });
+
+            const matchTd = document.createElement('td');
+            matchTd.className = 'p-3 text-xs font-mono';
+            if (matched) {
+                matchTd.innerHTML = `
+                    <a href="/all-onus" title="Lihat di All ONUs" class="font-bold text-blue-600 dark:text-[#00e5ff] hover:underline flex items-center gap-1">
+                        <span>${matched.customer_name}</span>
+                        <span class="text-[9px] text-slate-400">↗</span>
+                    </a>
+                    <span class="text-[10px] text-slate-500 block">${matched.gpon_port}</span>
+                `;
+            } else {
+                matchTd.innerHTML = `<span class="text-slate-400 dark:text-slate-600 text-[11px]">—</span>`;
+            }
+            tr.append(matchTd);
+
+            tr.append(safeCell(row['uptime']));
+
+            // Kick action button
+            const actTd = document.createElement('td');
+            actTd.className = 'p-3 text-center';
+            const kickBtn = document.createElement('button');
+            kickBtn.type = 'button';
+            kickBtn.textContent = 'KICK';
+            kickBtn.className = 'rounded bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] px-2.5 py-1 tracking-wider uppercase transition cursor-pointer';
+            kickBtn.onclick = () => kickSession(row['.id'] || row['name']);
+            actTd.append(kickBtn);
+            tr.append(actTd);
+
+            body.append(tr);
+        });
+    }
+
+    document.getElementById('activePageInfo').textContent = filtered.length
+        ? `Showing ${start + 1} to ${Math.min(start + PAGE_SIZE, filtered.length)} of ${filtered.length} entries`
+        : 'Showing 0 entries';
+    document.getElementById('prevActivePage').disabled = activePage <= 1;
+    document.getElementById('nextActivePage').disabled = activePage >= totalPages;
+}
+
+// ----------------- TABEL 2: AKUN PPP SECRET -----------------
+function renderSecretTable() {
+    const body = document.getElementById('secretRows');
+    const query = document.getElementById('searchSecret').value.toLowerCase().trim();
+    const statusFilter = document.getElementById('filterSecretStatus').value;
+
+    const filtered = allSecretData.filter(row => {
+        const matchesQuery = !query || 
+            (row.name || '').toLowerCase().includes(query) ||
+            (row.profile || '').toLowerCase().includes(query);
+        const matchesStatus = !statusFilter || String(row.disabled) === statusFilter;
+        return matchesQuery && matchesStatus;
+    });
+
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    secretPage = Math.min(secretPage, totalPages);
+    const start = (secretPage - 1) * PAGE_SIZE;
+    const pageRows = filtered.slice(start, start + PAGE_SIZE);
+
+    body.replaceChildren();
+    if (!pageRows.length) {
+        const tr = document.createElement('tr');
+        const td = safeCell('Tidak ada akun PPP secret yang cocok.');
+        td.colSpan = 6;
+        td.className = 'p-6 text-slate-500 text-center';
+        tr.append(td);
+        body.append(tr);
+    } else {
+        pageRows.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-slate-50 dark:hover:bg-[#0d1d33]/50 transition';
+
+            tr.append(safeCell(row['name']));
+            tr.append(safeCell(row['service']));
+            tr.append(safeCell(row['profile']));
+            tr.append(safeCell(row['remote-address']));
+
+            // Status Badge
+            const statusTd = document.createElement('td');
+            statusTd.className = 'p-3 text-[10px] font-bold uppercase';
+            const isDisabled = String(row['disabled']) === 'true';
+            statusTd.innerHTML = isDisabled
+                ? `<span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30">ISOLIR</span>`
+                : `<span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30">ACTIVE</span>`;
+            tr.append(statusTd);
+
+            // Action Buttons (Toggle Enable/Disable + Delete)
+            const actionTd = document.createElement('td');
+            actionTd.className = 'p-3 text-center flex items-center justify-center gap-1.5';
+            
+            const toggleBtn = document.createElement('button');
+            toggleBtn.type = 'button';
+            toggleBtn.textContent = isDisabled ? 'ENABLE' : 'ISOLIR';
+            toggleBtn.className = `rounded px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition cursor-pointer ${
+                isDisabled
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    : 'bg-amber-600 hover:bg-amber-700 text-white'
+            }`;
+            toggleBtn.onclick = () => toggleSecret(row['name'], !isDisabled);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.textContent = '✕';
+            deleteBtn.title = 'Hapus akun secret';
+            deleteBtn.className = 'rounded bg-slate-100 dark:bg-slate-800 hover:bg-rose-600 hover:text-white px-2 py-1 text-xs font-bold transition cursor-pointer text-slate-500';
+            deleteBtn.onclick = () => deleteSecret(row['name']);
+
+            actionTd.append(toggleBtn, deleteBtn);
+            tr.append(actionTd);
+
+            body.append(tr);
+        });
+    }
+
+    document.getElementById('secretPageInfo').textContent = filtered.length
+        ? `Showing ${start + 1} to ${Math.min(start + PAGE_SIZE, filtered.length)} of ${filtered.length} entries`
+        : 'Showing 0 entries';
+    document.getElementById('prevSecretPage').disabled = secretPage <= 1;
+    document.getElementById('nextSecretPage').disabled = secretPage >= totalPages;
+}
+
+// ----------------- API CALLS -----------------
+async function loadSessions() {
+    try {
+        await loadBriefOnus();
+        const response = await fetch('/api/mikrotik/pppoe/sessions');
+        const result = await response.json();
+        
+        if (!response.ok) {
+            updateRouterBadge(false, 'Gagal Terhubung');
+            throw new Error(result.detail || 'Tidak dapat membaca data MikroTik');
+        }
+
+        updateRouterBadge(true, 'Connected');
+        document.getElementById('activeCount').textContent = result.active_count;
+        document.getElementById('secretCount').textContent = result.secret_count;
+        document.getElementById('badgeTabActive').textContent = result.active_count;
+        document.getElementById('badgeTabSecrets').textContent = result.secret_count;
+
+        allActiveData = result.active || [];
+        allSecretData = result.secrets || [];
+
+        renderActiveTable();
+        renderSecretTable();
+        showPppMessage('Koneksi RouterOS aktif & data berhasil disinkronkan.');
+    } catch (error) {
+        updateRouterBadge(false, 'Disconnected');
+        showPppMessage(error.message, true);
+    }
+}
+
+function updateRouterBadge(connected, text) {
+    const dot = document.getElementById('routerStatusDot');
+    const txt = document.getElementById('routerStatusText');
+    if (connected) {
+        dot.className = 'h-2 w-2 rounded-full bg-emerald-500 animate-pulse';
+        txt.className = 'text-emerald-600 dark:text-emerald-400 font-bold';
+        txt.textContent = text;
+    } else {
+        dot.className = 'h-2 w-2 rounded-full bg-rose-500';
+        txt.className = 'text-rose-600 dark:text-rose-400 font-bold';
+        txt.textContent = text;
+    }
+}
+
+async function kickSession(sessionId) {
+    if (!confirm('Putus sesi PPPoE ini sekarang?')) return;
+    try {
+        const res = await fetch('/api/mikrotik/pppoe/kick', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ session_id: sessionId })
+        });
+        const result = await res.json();
+        if (res.ok) {
+            showPppMessage(result.message);
+            await loadSessions();
+        } else {
+            showPppMessage(result.detail || 'Gagal memutus sesi', true);
+        }
+    } catch (err) {
+        showPppMessage(err.message, true);
+    }
+}
+
+async function toggleSecret(username, disabledState) {
+    const actionLabel = disabledState ? 'menonaktifkan (isolir)' : 'mengaktifkan kembali';
+    if (!confirm(`Konfirmasi untuk ${actionLabel} akun '${username}'?`)) return;
+
+    try {
+        const res = await fetch('/api/mikrotik/pppoe/secret/toggle', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name: username, disabled: disabledState })
+        });
+        const result = await res.json();
+        if (res.ok) {
+            showPppMessage(result.message);
+            await loadSessions();
+        } else {
+            showPppMessage(result.detail || 'Gagal mengubah status akun', true);
+        }
+    } catch (err) {
+        showPppMessage(err.message, true);
+    }
+}
+
+async function deleteSecret(username) {
+    if (!confirm(`Hapus permanen akun secret '${username}' dari router MikroTik?`)) return;
+
+    try {
+        const res = await fetch('/api/mikrotik/pppoe/secret', {
+            method: 'DELETE',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name: username })
+        });
+        const result = await res.json();
+        if (res.ok) {
+            showPppMessage(result.message);
+            await loadSessions();
+        } else {
+            showPppMessage(result.detail || 'Gagal menghapus akun secret', true);
+        }
+    } catch (err) {
+        showPppMessage(err.message, true);
+    }
+}
+
+function openRouterConfigModal() {
+    document.getElementById('routerConfigDialog').showModal();
+}
+
+function openAddSecretModal() {
+    document.getElementById('addSecretForm').reset();
+    document.getElementById('addSecretDialog').showModal();
+}
+
+document.getElementById('addSecretForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+        name: document.getElementById('sec_username').value.trim(),
+        password: document.getElementById('sec_password').value,
+        service: document.getElementById('sec_service').value,
+        profile: document.getElementById('sec_profile').value.trim(),
+        remote_address: document.getElementById('sec_remote_ip').value.trim() || null
+    };
+
+    try {
+        const res = await fetch('/api/mikrotik/pppoe/secret', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (res.ok) {
+            document.getElementById('addSecretDialog').close();
+            showPppMessage(result.message);
+            await loadSessions();
+        } else {
+            alert('Gagal: ' + (result.detail || 'Terjadi kesalahan'));
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+});
+
+// Event Listeners Filter & Pagination
+document.getElementById('searchActive').addEventListener('input', () => { activePage = 1; renderActiveTable(); });
+document.getElementById('prevActivePage').addEventListener('click', () => { if (activePage > 1) { activePage--; renderActiveTable(); } });
+document.getElementById('nextActivePage').addEventListener('click', () => { activePage++; renderActiveTable(); });
+
+document.getElementById('searchSecret').addEventListener('input', () => { secretPage = 1; renderSecretTable(); });
+document.getElementById('filterSecretStatus').addEventListener('change', () => { secretPage = 1; renderSecretTable(); });
+document.getElementById('prevSecretPage').addEventListener('click', () => { if (secretPage > 1) { secretPage--; renderSecretTable(); } });
+document.getElementById('nextSecretPage').addEventListener('click', () => { secretPage++; renderSecretTable(); });
+
+document.getElementById('refreshPppoe').addEventListener('click', loadSessions);
+
+// Form Koneksi Router Submit
+const form = document.getElementById('mikrotikForm');
+form?.addEventListener('submit', async event => {
+    event.preventDefault();
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+        const response = await fetch('/api/mikrotik/pppoe', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                host: document.getElementById('routerHost').value.trim(),
+                port: Number(document.getElementById('routerPort').value),
+                username: document.getElementById('routerUsername').value.trim(),
+                password: document.getElementById('routerPassword').value,
+                use_tls: document.getElementById('routerTls').checked
+            })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || 'Gagal menyimpan konfigurasi');
+        document.getElementById('routerPassword').value = '';
+        document.getElementById('routerConfigDialog').close();
+        showPppMessage(result.message);
+        await loadSessions();
+    } catch (error) {
+        showPppMessage(error.message, true);
+    } finally {
+        button.disabled = false;
+    }
+});
+
+// Inisialisasi awal
+loadSessions();
+</script>
+{% endblock %}

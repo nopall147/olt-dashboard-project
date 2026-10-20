@@ -23,6 +23,10 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+def is_mock_active() -> bool:
+    mock_env = os.getenv("MOCK_OLT") or os.getenv("USE_MOCK_DATA") or "false"
+    return mock_env.lower() in ("true", "1", "yes")
+
 # MAIL LUPA PASSWORD
 from app.services.email_service import send_otp_email
 
@@ -293,10 +297,13 @@ with SessionLocal() as startup_db:
     startup_db.commit()
 
 # ==============================================================================
-# LIFESPAN (AUTO MIGRATE & SEED SUPER ADMIN)
+# WORKERS & LIFESPAN
 # ==============================================================================
 def poll_onu_status_once():
     """Poll registered ONU states by PON and persist offline transitions."""
+    if is_mock_active():
+        return
+
     with SessionLocal() as db:
         olts = db.query(OLTConfig).all()
         onus = db.query(OnuDevice).all()
@@ -348,11 +355,57 @@ def poll_onu_status_once():
 async def onu_status_monitor():
     poll_seconds = max(30, int(os.getenv("ONU_STATUS_POLL_SECONDS", "60")))
     while True:
-        await run_in_threadpool(poll_onu_status_once)
-        await asyncio.sleep(poll_seconds)
+        try:
+            await run_in_threadpool(poll_onu_status_once)
+            await asyncio.sleep(poll_seconds)
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            print(f"[MONITOR ERROR]: {e}")
+            await asyncio.sleep(10)
+
+async def periodic_telemetry_poller():
+    """Tugas latar belakang untuk memperbarui redaman optik dan status ONU secara berkala."""
+    while True:
+        try:
+            await asyncio.sleep(300)
+            if is_mock_active():
+                continue
+
+            def run_sync_job():
+                from app.services.olt_fetcher import fetch_onu_realtime
+                with SessionLocal() as db:
+                    try:
+                        olts = db.query(OLTConfig).all()
+                        for olt in olts:
+                            live_data = fetch_onu_realtime(olt)
+                            for item in live_data:
+                                onu = db.query(OnuDevice).filter(
+                                    OnuDevice.olt_name == olt.name,
+                                    OnuDevice.sn_mac == item.get("sn_mac")
+                                ).first()
+                                if onu:
+                                    onu.status = item.get("status", onu.status)
+                                    if "rx_onu" in item:
+                                        onu.rx_onu = item["rx_onu"]
+                                    if hasattr(onu, "updated_at"):
+                                        onu.updated_at = datetime.now(timezone.utc)
+                            db.commit()
+                    except Exception as err:
+                        db.rollback()
+                        print(f"[POLLER ERROR] Gagal update telemetri: {err}")
+
+            await asyncio.to_thread(run_sync_job)
+
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            print(f"[WORKER ERROR] Poller crash: {e}")
+            await asyncio.sleep(60)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # 1. Inisialisasi Database & Seeding Super Admin
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
@@ -376,15 +429,23 @@ async def lifespan(app: FastAPI):
         db.rollback()
     finally:
         db.close()
-    monitor_task = asyncio.create_task(onu_status_monitor())
+
+    # 2. Jalankan background worker hanya jika BUKAN mode mock
+    tasks = []
+    if not is_mock_active():
+        tasks.append(asyncio.create_task(onu_status_monitor()))
+        tasks.append(asyncio.create_task(periodic_telemetry_poller()))
+    else:
+        print("INFO: Mode simulasi (MOCK) aktif. Background poller ke OLT fisik dinonaktifkan.")
+
     try:
         yield
     finally:
-        monitor_task.cancel()
-        try:
-            await monitor_task
-        except asyncio.CancelledError:
-            pass
+        # 3. Batalkan background tasks saat server shutdown
+        for t in tasks:
+            t.cancel()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
 
 # =========================================================
 # === TARUH DI SINI (Background Worker Telemetri) =======
@@ -395,8 +456,8 @@ async def periodic_telemetry_poller():
         try:
             await asyncio.sleep(300)
             
-            is_mock = os.getenv("MOCK_OLT", "false").lower() in ("true", "1", "yes")
-            if is_mock:
+            # Gunakan fungsi helper mock agar seragam
+            if is_mock_active():
                 continue
 
             def run_sync_job():
@@ -410,14 +471,15 @@ async def periodic_telemetry_poller():
                         live_data = fetch_onu_realtime(olt)
                         for item in live_data:
                             onu = db.query(OnuDevice).filter(
-                                OnuDevice.olt_id == olt.id,
+                                OnuDevice.olt_name == olt.name,
                                 OnuDevice.sn_mac == item.get("sn_mac")
                             ).first()
                             if onu:
                                 onu.status = item.get("status", onu.status)
                                 if "rx_onu" in item:
-                                    onu.rx_power = item["rx_onu"]
-                                onu.updated_at = datetime.utcnow()
+                                    onu.rx_onu = item["rx_onu"]  # Gunakan rx_onu
+                                if hasattr(onu, "updated_at"):
+                                    onu.updated_at = datetime.now(timezone.utc)
                         db.commit()
                 except Exception as err:
                     db.rollback()
@@ -432,7 +494,6 @@ async def periodic_telemetry_poller():
         except Exception as e:
             print(f"[WORKER ERROR] Poller crash: {e}")
             await asyncio.sleep(60)
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -899,8 +960,9 @@ def move_onu_port(
     if not onu:
         raise HTTPException(status_code=404, detail="ONU tidak ditemukan di database.")
     
-    target_slot = payload.target_slot
-    target_port = payload.target_port
+    target_slot = getattr(payload, "target_slot", payload.slot)
+    target_port = getattr(payload, "target_port", payload.port)
+    target_onu_id = getattr(payload, "target_onu_id", payload.onu_id)
     
     # 1. Tentukan target_onu_id (auto allocation atau manual)
     if payload.mode == "auto" or payload.target_onu_id is None:
@@ -927,43 +989,34 @@ def move_onu_port(
     old_port_full = onu.gpon_port  # misal: "gpon-onu_1/1/1:2" atau "1/1/1:2"
     new_port_full = f"gpon-onu_{target_slot}/{target_port}:{new_onu_id}"
 
-    # 2. Parsing interface OLT lama dan ID lama
-    # Format GPON ZTE: gpon-olt_1/slot/port
     clean_old = old_port_full.replace("gpon-onu_", "").replace("gpon-olt_", "")
     try:
         old_slot_port, old_onu_index = clean_old.split(":")
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Format port lama tidak valid: {old_port_full}")
 
-    # Cek mode mock
     is_mock = os.getenv("MOCK_OLT", "false").lower() in ("true", "1", "yes")
 
-    # Ambil data profil OLT
     olt = None
     if hasattr(onu, "olt_id") and onu.olt_id:
         olt = db.query(OLTConfig).filter(OLTConfig.id == onu.olt_id).first()
     if not olt and hasattr(onu, "olt_name") and onu.olt_name:
         olt = db.query(OLTConfig).filter(OLTConfig.name == onu.olt_name).first()
 
-    # 3. Eksekusi CLI Netmiko ke ZTE OLT Fisik
     if not is_mock and olt:
         password = get_telnet_password(olt) if "get_telnet_password" in globals() else getattr(olt, "telnet_password", None)
         if not password:
             raise HTTPException(status_code=503, detail=f"Kredensial OLT {olt.name} belum disetel di OLT Management.")
 
-        # Interface OLT ZTE C300/C320 menggunakan prefiks 'gpon-olt_'
         old_olt_interface = f"gpon-olt_{old_slot_port}"
         target_olt_interface = f"gpon-olt_{target_slot}/{target_port}"
 
-        # Tipe ONU (default ke ZTE-F660 atau tipe yang tersimpan di field onu_type)
         onu_type = getattr(onu, "onu_type", None) or "ZTE-F660"
 
         commands = [
-            # Hapus ONU di port lama
             f"interface {old_olt_interface}",
             f"no onu {old_onu_index}",
             "exit",
-            # Daftarkan ONU di port tujuan
             f"interface {target_olt_interface}",
             f"onu {new_onu_id} type {onu_type} sn {onu.sn_mac}",
             "exit",
@@ -991,7 +1044,6 @@ def move_onu_port(
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"Gagal menghubungkan ke OLT ({olt.ip_address}): {str(exc)[:500]}")
 
-    # 4. Simpan perubahan ke Database
     try:
         onu.gpon_port = new_port_full
 
@@ -1034,7 +1086,7 @@ def update_onu_metadata(
     is_mock = os.getenv("MOCK_OLT", "false").lower() in ("true", "1", "yes")
 
     # Ambil data OLT terkait ONU ini
-    olt = db.query(OLTConfig).filter(OLTConfig.id == onu.olt_id).first() if hasattr(onu, "olt_id") else None
+    olt = db.query(OLTConfig).filter(OLTConfig.name == onu.olt_name).first()
 
     # Eksekusi ke perangkat fisik jika bukan mode mock
     if not is_mock and olt:
@@ -1150,67 +1202,6 @@ def execute_onu_action(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Gagal mengeksekusi {action}: {e}")
 
-@app.post("/api/onu/{onu_id}/move")
-def move_onu_port(
-    onu_id: int,
-    payload: OnuMoveInput,
-    request: Request,
-    db: Session = Depends(get_db),
-    user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))
-):
-    onu = db.query(OnuDevice).filter(OnuDevice.id == onu_id).first()
-    if not onu:
-        raise HTTPException(status_code=404, detail="ONU tidak ditemukan")
-
-    olt = db.query(OLTConfig).filter(OLTConfig.name == onu.olt_name).first()
-    target_onu_id = payload.onu_id if payload.mode == "manual" and payload.onu_id else 1
-    new_gpon_port = f"1/{payload.slot}/{payload.port}:{target_onu_id}"
-
-    if olt:
-        try:
-            conn = open_telnet(olt)
-            old_port_base = onu.gpon_port.rsplit(":", 1)[0]
-            old_onu_num = onu.gpon_port.rsplit(":", 1)[1]
-            cmds = [
-                "conf t",
-                f"interface {old_port_base}",
-                f"no onu {old_onu_num}",
-                "exit",
-                f"interface 1/{payload.slot}/{payload.port}",
-                f"onu {target_onu_id} type {onu.actual_type or 'ZTE-GPON'} sn {onu.sn_mac}",
-                "exit",
-                "write"
-            ]
-            for cmd in cmds:
-                conn.send_command(cmd, read_timeout=5)
-            conn.disconnect()
-        except Exception as e:
-            raise HTTPException(status_code=502, detail=f"Gagal memindahkan port di OLT: {e}")
-
-    old_port = onu.gpon_port
-    onu.gpon_port = new_gpon_port
-    db.add(audit_event(request, "Update", f"Pindah ONU {onu.sn_mac} dari {old_port} ke {new_gpon_port}"))
-    db.commit()
-    return {"status": "success", "message": f"ONU berhasil dipindahkan ke {new_gpon_port}"}
-
-@app.post("/api/onu/{onu_id}/meta")
-def update_onu_metadata(
-    onu_id: int,
-    payload: OnuUpdateMetaInput,
-    request: Request,
-    db: Session = Depends(get_db),
-    user: User = Depends(require_roles([Role.SUPER_ADMIN, Role.NOC]))
-):
-    onu = db.query(OnuDevice).filter(OnuDevice.id == onu_id).first()
-    if not onu:
-        raise HTTPException(status_code=404, detail="ONU tidak ditemukan")
-
-    onu.customer_name = payload.customer_name.strip().upper()
-    onu.description = payload.description.strip() if payload.description else None
-    db.add(audit_event(request, "Update", f"Perbarui metadata ONU {onu.sn_mac} ({onu.customer_name})"))
-    db.commit()
-    return {"status": "success", "message": "Konfigurasi metadata ONU berhasil disimpan."}
-
 @app.post("/api/onu/{onu_id}/replace-sn")
 def replace_onu_sn(
     onu_id: int,
@@ -1284,10 +1275,6 @@ def delete_onu_config(
     db.add(audit_event(request, "Delete", f"Hapus konfigurasi ONU {onu.sn_mac} ({onu.customer_name})"))
     db.commit()
     return {"status": "success", "message": "Konfigurasi ONU berhasil dihapus"}
-
-# =========================================================
-# === TARUH DI SINI (Di bawah move_onu_port / blok ONU) ===
-# =========================================================
 
 @app.get("/api/traffic/{onu_id}/history")
 def get_traffic_history(
